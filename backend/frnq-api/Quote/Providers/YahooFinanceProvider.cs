@@ -1,0 +1,154 @@
+using System.Text.Json.Nodes;
+using Microsoft.AspNetCore.Http.Extensions;
+
+namespace DSaladin.Frnq.Api.Quote.Providers;
+
+public class YahooFinanceProvider : IFinanceProvider
+{
+    public string InternalId => "yahoo-finance";
+    public string Name => "Yahoo Finance";
+
+    public async Task<QuoteModel?> GetQuoteAsync(string symbol)
+    {
+        // https://query1.finance.yahoo.com/v7/finance/quote?formatted=true&imgHeights=50&imgLabels=logoUrl&imgWidths=50&symbols=0P0001IFRI.SW&enablePrivateCompany=true&lang=en-US&region=US&crumb=CwC4KGJS1%2FR
+        UriBuilder uriBuilder = new($"https://query1.finance.yahoo.com/v7/finance/quote");
+        QueryBuilder queryBuilder = new()
+        {
+            { "formatted", "true" },
+            { "symbols", symbol },
+            { "lang", "en-US" },
+            { "region", "US" }
+        };
+        uriBuilder.Query = queryBuilder.ToString();
+        string url = uriBuilder.ToString();
+        HttpClient httpClient = new();
+        httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3");
+        httpClient.DefaultRequestHeaders.Add("Accept", "*/*");
+        HttpResponseMessage response = await httpClient.GetAsync(url);
+        using Stream responseStream = await response.Content.ReadAsStreamAsync();
+        JsonNode? json = await JsonNode.ParseAsync(responseStream);
+        JsonNode? quoteNode = json?["quoteResponse"]?["result"]?[0];
+
+        if (quoteNode is null)
+            return null;
+
+        return new QuoteModel
+        {
+            ProviderId = InternalId,
+            Symbol = quoteNode["symbol"]?.ToString() ?? string.Empty,
+            Name = quoteNode["longName"]?.ToString() ?? string.Empty,
+            ExchangeDisposition = quoteNode["exchangeDisp"]?.ToString() ?? string.Empty,
+            TypeDisposition = quoteNode["quoteType"]?.ToString() ?? string.Empty,
+            Currency = quoteNode["currency"]?.ToString() ?? string.Empty
+        };
+    }
+
+    public async Task<IEnumerable<QuoteModel>> SearchAsync(string query)
+    {
+        UriBuilder uriBuilder = new("https://query2.finance.yahoo.com/v1/finance/search");
+        QueryBuilder queryBuilder = new()
+        {
+            { "q", query },
+            { "lang", "en-US" },
+            { "quotesCount", "6" },
+            { "newsCount", "0" },
+            { "listsCount", "0" },
+            { "enableFuzzyQuery", "false" }
+        };
+        uriBuilder.Query = queryBuilder.ToString();
+
+        string url = uriBuilder.ToString();
+        HttpClient httpClient = new();
+        httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3");
+        httpClient.DefaultRequestHeaders.Add("Accept", "*/*");
+        HttpResponseMessage response = await httpClient.GetAsync(url);
+
+        using Stream responseStream = await response.Content.ReadAsStreamAsync();
+        JsonNode? json = await JsonNode.ParseAsync(responseStream);
+        JsonArray? quotesArray = json?["quotes"]?.AsArray();
+
+        if (quotesArray is null)
+            return [];
+
+        List<QuoteModel> quotes = [];
+
+        foreach (JsonNode item in quotesArray!)
+        {
+            if (item is null)
+                continue;
+
+            quotes.Add(new QuoteModel
+            {
+                ProviderId = InternalId,
+                Symbol = item["symbol"]?.ToString() ?? string.Empty,
+                Name = item["longname"]?.ToString() ?? string.Empty,
+                ExchangeDisposition = item["exchDisp"]?.ToString() ?? string.Empty,
+                TypeDisposition = item["typeDisp"]?.ToString() ?? string.Empty
+            });
+        }
+
+        return quotes;
+    }
+
+    public async Task<IEnumerable<QuotePrice>> GetHistoricalPricesAsync(string symbol, DateTime from, DateTime to)
+    {
+        UriBuilder uriBuilder = new($"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}");
+        QueryBuilder queryBuilder = new()
+        {
+            { "formatted", "true" },
+            { "includeAdjustedClose", "true" },
+            { "interval", "1d" },
+            { "period1", ((DateTimeOffset)from).ToUnixTimeSeconds().ToString() },
+            { "period2", ((DateTimeOffset)to).ToUnixTimeSeconds().ToString() },
+            { "userYfid", "true" },
+            { "lang", "en-US" },
+            { "region", "US" }
+        };
+
+        uriBuilder.Query = queryBuilder.ToString();
+        string url = uriBuilder.ToString();
+        HttpClient httpClient = new();
+        httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3");
+        httpClient.DefaultRequestHeaders.Add("Accept", "*/*");
+        HttpResponseMessage response = await httpClient.GetAsync(url);
+        using Stream responseStream = await response.Content.ReadAsStreamAsync();
+        JsonNode? json = await JsonNode.ParseAsync(responseStream);
+
+        if (json is null)
+            return [];
+
+        JsonArray? timestamps = json["chart"]?["result"]?[0]?["timestamp"]?.AsArray();
+        JsonNode? quoteNode = json["chart"]?["result"]?[0]?["indicators"]?["quote"]?[0];
+        JsonNode? adjCloseNode = json["chart"]?["result"]?[0]?["indicators"]?["adjclose"]?[0]?["adjclose"];
+
+        JsonArray? opens = quoteNode?["open"]?.AsArray();
+        JsonArray? closes = quoteNode?["close"]?.AsArray();
+        JsonArray? highs = quoteNode?["high"]?.AsArray();
+        JsonArray? lows = quoteNode?["low"]?.AsArray();
+        JsonArray? adjCloses = adjCloseNode?.AsArray();
+
+        if (timestamps is null || opens is null || closes is null || highs is null || lows is null || adjCloses is null)
+            return [];
+
+        List<QuotePrice> result = [];
+
+        for (int i = 0; i < opens.Count; i++)
+        {
+            if (timestamps[i] is null || opens[i] is null || closes[i] is null || highs[i] is null || lows[i] is null || adjCloses[i] is null)
+                continue;
+
+            result.Add(new QuotePrice
+            {
+                Symbol = symbol,
+                Date = DateTimeOffset.FromUnixTimeSeconds(timestamps[i]!.GetValue<long>()).UtcDateTime,
+                Open = opens[i]!.GetValue<decimal>(),
+                Close = closes[i]!.GetValue<decimal>(),
+                High = highs[i]!.GetValue<decimal>(),
+                Low = lows[i]!.GetValue<decimal>(),
+                AdjustedClose = adjCloses[i]!.GetValue<decimal>()
+            });
+        }
+
+        return result;
+    }
+}
