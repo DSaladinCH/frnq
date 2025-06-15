@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DSaladin.Frnq.Api.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20250615161056_Initial")]
+    [Migration("20250615210319_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -52,6 +52,9 @@ namespace DSaladin.Frnq.Api.Migrations
 
                     b.Property<decimal>("TotalFees")
                         .HasColumnType("numeric");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -122,15 +125,7 @@ namespace DSaladin.Frnq.Api.Migrations
                     b.Property<decimal>("Open")
                         .HasColumnType("numeric");
 
-                    b.Property<string>("QuoteModelProviderId")
-                        .HasColumnType("text");
-
-                    b.Property<string>("QuoteModelSymbol")
-                        .HasColumnType("text");
-
                     b.HasKey("ProviderId", "Symbol", "Date");
-
-                    b.HasIndex("QuoteModelProviderId", "QuoteModelSymbol");
 
                     b.ToTable("quote_price");
                 });
@@ -149,14 +144,10 @@ namespace DSaladin.Frnq.Api.Migrations
             modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuotePrice", b =>
                 {
                     b.HasOne("DSaladin.Frnq.Api.Quote.QuoteModel", "Quote")
-                        .WithMany()
+                        .WithMany("Prices")
                         .HasForeignKey("ProviderId", "Symbol")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("DSaladin.Frnq.Api.Quote.QuoteModel", null)
-                        .WithMany("Prices")
-                        .HasForeignKey("QuoteModelProviderId", "QuoteModelSymbol");
 
                     b.Navigation("Quote");
                 });

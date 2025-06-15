@@ -14,13 +14,9 @@ public class DatabaseContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<QuoteModel>()
-            .HasMany(q => q.Prices)
-            .WithOne(qp => qp.Quote);
-
         modelBuilder.Entity<QuotePrice>()
             .HasOne(qp => qp.Quote)
-            .WithMany()
+            .WithMany(q => q.Prices)
             .HasForeignKey(qp => new { qp.ProviderId, qp.Symbol });
 
         modelBuilder.Entity<InvestmentModel>()

@@ -19,8 +19,11 @@ public class QuoteController(IFinanceProvider financeProvider, DatabaseProvider 
     [HttpGet("historical")]
     public async Task<IActionResult> GetHistoricalPrices([FromQuery] string symbol, [ModelBinder(BinderType = typeof(FlexibleDateTimeBinder))] DateTime from, [ModelBinder(BinderType = typeof(FlexibleDateTimeBinder))] DateTime to)
     {
-        QuoteModel? quote = await databaseProvider.GetQuoteAsync(symbol);
+        QuoteModel? quote = await databaseProvider.GetQuoteAsync(financeProvider.InternalId, symbol);
         List<QuotePrice> dbPrices = [];
+
+        if (quote is null)
+            await databaseProvider.AddOrUpdateQuoteAsync(await financeProvider.GetQuoteAsync(symbol));
 
         if (quote is not null)
             dbPrices = (await databaseProvider.GetHistoricalPricesAsync(symbol, from.AddDays(-1), to.AddDays(1))).ToList();

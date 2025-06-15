@@ -26,19 +26,16 @@ public class InvestmentsController(InvestmentManagement investmentManagement) : 
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateInvestment([FromBody] InvestmentModel investment)
+    public async Task<IActionResult> CreateInvestment([FromBody] InvestmentRequest investment)
     {
         await investmentManagement.CreateInvestmentAsync(investment);
         return Created();
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateInvestment(int id, [FromBody] InvestmentModel investment)
+    public async Task<IActionResult> UpdateInvestment(int id, [FromBody] InvestmentRequest investment)
     {
-        if (investment.Id != id)
-            return BadRequest("Investment ID mismatch.");
-
-        InvestmentModel updatedInvestment = await investmentManagement.UpdateInvestmentAsync(investment);
+        InvestmentModel updatedInvestment = await investmentManagement.UpdateInvestmentAsync(id, investment);
         return Ok(updatedInvestment);
     }
 

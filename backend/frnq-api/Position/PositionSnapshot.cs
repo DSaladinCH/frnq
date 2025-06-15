@@ -11,13 +11,13 @@ public class PositionSnapshot
     public string Currency { get; set; } = string.Empty;
 
     /// <summary>
-    /// The amount of the asset held in the position.
+    /// The amount of the asset held in the position at the time of the snapshot.
     /// </summary>
     public decimal Amount { get; set; }
     /// <summary>
-    /// The price per unit of the asset at the time of the snapshot.
+    /// The total amount invested in the position, which is the sum of the amount multiplied by the price per unit and any fees incurred.
     /// </summary>
-    public decimal PricePerUnit { get; set; }
+    public decimal Invested { get; set; }
     /// <summary>
     /// The market value of the position at the time of the snapshot
     /// </summary>
@@ -28,17 +28,18 @@ public class PositionSnapshot
     public decimal TotalFees { get; set; }
 
     /// <summary>
-    /// Calculates the total amount invested in the position, which is the sum of the amount multiplied by the price per unit and any fees incurred.
-    /// </summary>
-    public decimal Invested => Amount * PricePerUnit + TotalFees;
-    /// <summary>
     /// Calculates the total value of the position, which is the market value multiplied by the amount held in the position.
     /// </summary>
     public decimal TotalValue => MarketPricePerUnit * Amount;
-    /// <summary>
-    /// Calculates the gain or loss of the position, which is the difference between the market value and the invested amount.
-    /// </summary>
-    public decimal GainLoss => TotalValue - Invested;
 
-    public virtual QuoteModel Quote { get; set; } = null!;
+
+    /// <summary>
+    /// The unrealized gain for the current position at the snapshot date.
+    /// </summary>
+    public decimal UnrealizedGain { get; set; }
+    /// <summary>
+    /// The total realized gain for this symbol up to the snapshot date (all time).
+    /// </summary>
+    public decimal RealizedGain { get; set; }
+    public decimal TotalGain => UnrealizedGain + RealizedGain;
 }

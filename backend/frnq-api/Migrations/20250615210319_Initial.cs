@@ -39,6 +39,7 @@ namespace DSaladin.Frnq.Api.Migrations
                     ProviderId = table.Column<string>(type: "text", nullable: false),
                     QuoteSymbol = table.Column<string>(type: "text", nullable: false),
                     Date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Type = table.Column<int>(type: "integer", nullable: false),
                     Amount = table.Column<decimal>(type: "numeric", nullable: false),
                     PricePerUnit = table.Column<decimal>(type: "numeric", nullable: false),
                     TotalFees = table.Column<decimal>(type: "numeric", nullable: false)
@@ -65,9 +66,7 @@ namespace DSaladin.Frnq.Api.Migrations
                     Close = table.Column<decimal>(type: "numeric", nullable: false),
                     Low = table.Column<decimal>(type: "numeric", nullable: false),
                     High = table.Column<decimal>(type: "numeric", nullable: false),
-                    AdjustedClose = table.Column<decimal>(type: "numeric", nullable: true),
-                    QuoteModelProviderId = table.Column<string>(type: "text", nullable: true),
-                    QuoteModelSymbol = table.Column<string>(type: "text", nullable: true)
+                    AdjustedClose = table.Column<decimal>(type: "numeric", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -78,22 +77,12 @@ namespace DSaladin.Frnq.Api.Migrations
                         principalTable: "quote",
                         principalColumns: new[] { "ProviderId", "Symbol" },
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_quote_price_quote_QuoteModelProviderId_QuoteModelSymbol",
-                        columns: x => new { x.QuoteModelProviderId, x.QuoteModelSymbol },
-                        principalTable: "quote",
-                        principalColumns: new[] { "ProviderId", "Symbol" });
                 });
 
             migrationBuilder.CreateIndex(
                 name: "IX_investment_ProviderId_QuoteSymbol",
                 table: "investment",
                 columns: new[] { "ProviderId", "QuoteSymbol" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_quote_price_QuoteModelProviderId_QuoteModelSymbol",
-                table: "quote_price",
-                columns: new[] { "QuoteModelProviderId", "QuoteModelSymbol" });
         }
 
         /// <inheritdoc />

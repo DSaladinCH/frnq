@@ -10,14 +10,14 @@ public class YahooFinanceProvider : IFinanceProvider
 
     public async Task<QuoteModel?> GetQuoteAsync(string symbol)
     {
-        // https://query1.finance.yahoo.com/v7/finance/quote?formatted=true&imgHeights=50&imgLabels=logoUrl&imgWidths=50&symbols=0P0001IFRI.SW&enablePrivateCompany=true&lang=en-US&region=US&crumb=CwC4KGJS1%2FR
-        UriBuilder uriBuilder = new($"https://query1.finance.yahoo.com/v7/finance/quote");
+        // https://query2.finance.yahoo.com/v1/finance/quoteType/?symbol=0P0001IFRI.SW&lang=en-US&region=US&enablePrivateCompany=true
+        UriBuilder uriBuilder = new($"https://query2.finance.yahoo.com/v1/finance/quoteType/");
         QueryBuilder queryBuilder = new()
         {
-            { "formatted", "true" },
-            { "symbols", symbol },
+            { "symbol", symbol },
             { "lang", "en-US" },
-            { "region", "US" }
+            { "region", "US" },
+            { "enablePrivateCompany", "true" }
         };
         uriBuilder.Query = queryBuilder.ToString();
         string url = uriBuilder.ToString();
@@ -27,7 +27,7 @@ public class YahooFinanceProvider : IFinanceProvider
         HttpResponseMessage response = await httpClient.GetAsync(url);
         using Stream responseStream = await response.Content.ReadAsStreamAsync();
         JsonNode? json = await JsonNode.ParseAsync(responseStream);
-        JsonNode? quoteNode = json?["quoteResponse"]?["result"]?[0];
+        JsonNode? quoteNode = json?["quoteType"]?["result"]?[0];
 
         if (quoteNode is null)
             return null;
@@ -37,7 +37,7 @@ public class YahooFinanceProvider : IFinanceProvider
             ProviderId = InternalId,
             Symbol = quoteNode["symbol"]?.ToString() ?? string.Empty,
             Name = quoteNode["longName"]?.ToString() ?? string.Empty,
-            ExchangeDisposition = quoteNode["exchangeDisp"]?.ToString() ?? string.Empty,
+            ExchangeDisposition = quoteNode["exchange"]?.ToString() ?? string.Empty,
             TypeDisposition = quoteNode["quoteType"]?.ToString() ?? string.Empty,
             Currency = quoteNode["currency"]?.ToString() ?? string.Empty
         };
