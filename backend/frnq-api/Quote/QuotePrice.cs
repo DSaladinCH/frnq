@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 
 namespace DSaladin.Frnq.Api.Quote;
@@ -16,5 +17,6 @@ public class QuotePrice
     public decimal High { get; set; }
     public decimal? AdjustedClose { get; set; }
 
+    [JsonIgnore]
     public virtual QuoteModel Quote { get; set; } = null!;
 }

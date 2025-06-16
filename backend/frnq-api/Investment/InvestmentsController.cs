@@ -1,12 +1,13 @@
 using System.Threading.Tasks;
 using DSaladin.Frnq.Api.Investment;
+using DSaladin.Frnq.Api.Quote;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DSaladin.Frnq.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class InvestmentsController(InvestmentManagement investmentManagement) : ControllerBase
+public class InvestmentsController(QuoteManagement quoteManagement, InvestmentManagement investmentManagement) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetInvestments()
@@ -28,6 +29,9 @@ public class InvestmentsController(InvestmentManagement investmentManagement) : 
     [HttpPost]
     public async Task<IActionResult> CreateInvestment([FromBody] InvestmentRequest investment)
     {
+        if (!await quoteManagement.QuoteExistsAsync(investment.ProviderId, investment.QuoteSymbol))
+            return BadRequest($"Quote with provider ID '{investment.ProviderId}' and symbol '{investment.QuoteSymbol}' does not exist.");
+
         await investmentManagement.CreateInvestmentAsync(investment);
         return Created();
     }

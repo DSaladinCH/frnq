@@ -19,6 +19,9 @@ public class InvestmentModel
 
     public InvestmentType Type { get; set; } = InvestmentType.Buy;
 
+    /// <summary>
+    /// The amount of the investment, e.g. number of shares and for dividends, this is the total amount received.
+    /// </summary>
     public decimal Amount { get; set; }
     public decimal PricePerUnit { get; set; }
     public decimal TotalFees { get; set; }
