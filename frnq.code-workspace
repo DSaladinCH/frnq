@@ -51,26 +51,14 @@
 				"program": "${workspaceFolder:frnq-api}/bin/Debug/net9.0/DSaladin.Frnq.Api.dll",
 				"args": [],
 				"cwd": "${workspaceFolder:frnq-api}",
-				"stopAtEntry": false,
-				"serverReadyAction": {
-					"action": "openExternally",
-					"pattern": "\\bNow listening on:\\s+(https?://\\S+)"
-				}
+				"stopAtEntry": false
 			},
 			{
 				"name": "Run SvelteKit",
-				"type": "node",
+				"command": "npm run dev --inspect",
 				"request": "launch",
-				"cwd": "${workspaceFolder:frontend}",
-				"runtimeExecutable": "npm",
-				"runtimeArgs": [
-					"run",
-					"dev"
-				],
-				"skipFiles": [
-					"<node_internals>/**",
-					"**/node_modules/**"
-				]
+				"type": "node-terminal",
+				"cwd": "${workspaceFolder:frontend}"
 			}
 		]
 	}
