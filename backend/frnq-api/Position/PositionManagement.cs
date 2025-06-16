@@ -55,10 +55,12 @@ public class PositionManagement(DatabaseContext databaseContext)
             for (int d = 0; d < days.Count; d++)
             {
                 DateTime day = days[d];
+
                 // Apply all investments on this day
                 while (invIndex < invs.Count && invs[invIndex].Date.Date == day)
                 {
                     InvestmentModel inv = invs[invIndex];
+
                     if (inv.Type == InvestmentType.Buy)
                     {
                         cumulativeAmount += inv.Amount;
@@ -72,21 +74,29 @@ public class PositionManagement(DatabaseContext databaseContext)
                         decimal sellProceeds = sellAmount * inv.PricePerUnit - inv.TotalFees;
                         decimal costBasis = 0;
                         decimal toSell = sellAmount;
+
                         while (toSell > 0 && lots.Count > 0)
                         {
                             (decimal Amount, decimal PricePerUnit) lot = lots.Peek();
                             decimal used = Math.Min(lot.Amount, toSell);
                             costBasis += used * lot.PricePerUnit;
+
                             if (used == lot.Amount)
                                 lots.Dequeue();
                             else
                                 lots = new Queue<(decimal, decimal)>(lots.Select(l => l == lot ? (l.Amount - used, l.PricePerUnit) : l));
                             toSell -= used;
                         }
+
                         realizedGain += sellProceeds - costBasis;
                         cumulativeAmount += inv.Amount;
                         weightedPriceSum += inv.Amount * inv.PricePerUnit;
                         totalFees += inv.TotalFees;
+                    }
+                    else if (inv.Type == InvestmentType.Dividend)
+                    {
+                        // For dividends, add the amount to realized gain only
+                        realizedGain += inv.Amount;
                     }
                     invIndex++;
                 }
@@ -95,8 +105,10 @@ public class PositionManagement(DatabaseContext databaseContext)
                 QuotePrice? price = null;
                 if (priceLookup.TryGetValue((group.Key.ProviderId, group.Key.QuoteSymbol), out var priceDict))
                     priceDict.TryGetValue(day, out price);
+
                 if (price == null && lastKnownPrice == null)
                     continue;
+
                 if (price == null)
                     price = lastKnownPrice;
                 else
@@ -106,10 +118,10 @@ public class PositionManagement(DatabaseContext databaseContext)
                 decimal marketPrice = (price?.AdjustedClose ?? price?.Close) ?? 0m;
                 decimal totalValue = marketPrice * cumulativeAmount;
                 decimal invested = 0;
+                
                 foreach (var lot in lots)
-                {
                     invested += lot.Amount * lot.PricePerUnit;
-                }
+
                 decimal unrealizedGain = totalValue - invested;
 
                 allSnapshots.Add(new PositionSnapshot

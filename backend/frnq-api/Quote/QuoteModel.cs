@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 
 namespace DSaladin.Frnq.Api.Quote;
@@ -15,5 +16,6 @@ public class QuoteModel
     public string Currency { get; set; } = string.Empty;
     public DateTime? LastUpdated { get; set; }
 
+    [JsonIgnore]
     public virtual ICollection<QuotePrice> Prices { get; set; } = [];
 }

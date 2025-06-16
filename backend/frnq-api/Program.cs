@@ -1,6 +1,7 @@
 using DSaladin.Frnq.Api;
 using DSaladin.Frnq.Api.Investment;
 using DSaladin.Frnq.Api.Position;
+using DSaladin.Frnq.Api.Quote;
 using DSaladin.Frnq.Api.Quote.Providers;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +16,7 @@ builder.Services.AddScoped<DatabaseProvider>();
 builder.Services.AddScoped<IFinanceProvider, YahooFinanceProvider>();
 builder.Services.AddScoped<InvestmentManagement>();
 builder.Services.AddScoped<PositionManagement>();
+builder.Services.AddScoped<QuoteManagement>();
 
 string connectionString = builder.Configuration.GetConnectionString("DatabaseConnection") ?? throw new InvalidOperationException("Connection string 'DatabaseConnection' not found.");
 builder.Services.AddDbContext<DatabaseContext>(options =>
