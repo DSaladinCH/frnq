@@ -1,3 +1,88 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
+/* Chart.js custom tooltip styles */
+
+.chartjs-tooltip {
+    min-width: 180px;
+    height: 110px;
+    background: #23232b;
+    border: 1.5px solid #333;
+    border-radius: 14px;
+    box-shadow: 0 8px 32px #000a;
+    color: #f3f4f6;
+    padding: 1rem 1.2rem 0.7rem 1.2rem;
+    font-family: 'Inter', Segoe UI, Arial, sans-serif;
+    font-size: 15px;
+    pointer-events: none;
+    transition: opacity 0.18s cubic-bezier(.4, 0, .2, 1);
+    opacity: 0;
+    z-index: 1000;
+    overflow-y: auto;
+}
+
+.chartjs-tooltip .tooltip-title {
+    color: #a5b4fc;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 0.7em;
+}
+
+.chartjs-tooltip .tooltip-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4em;
+}
+
+.chartjs-tooltip .tooltip-item {
+    display: flex;
+    align-items: center;
+    gap: 0.7em;
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.chartjs-tooltip .tooltip-color {
+    display: inline-block;
+    width: 1.1em;
+    height: 1.1em;
+    border-radius: 50%;
+    margin-right: 0.4em;
+    border: 2px solid #23232b;
+    box-shadow: 0 1px 4px #0006;
+    background: #888;
+}
+
+.tooltip-item-flex {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.2rem;
+}
+
+.tooltip-label {
+    min-width: 90px;
+    margin-right: 0.25rem;
+    font-family: 'Fira Mono', 'Consolas', monospace;
+    font-size: 0.98em;
+    color: #b3b3b3;
+    display: inline-block;
+}
+
+.tooltip-value {
+    font-family: 'Fira Mono', 'Consolas', monospace;
+    font-size: 1em;
+    color: #fff;
+    display: inline-block;
+    margin-left: auto;
+    text-align: right;
+}
+
+.tooltip-color {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    border: 1.5px solid #222;
+}
