@@ -40,7 +40,10 @@
 	"pnpm": {
 		"onlyBuiltDependencies": [
 			"esbuild"
-		]
+		],
+		"overrides": {
+			"cookie": "^0.7.0"
+		}
 	},
 	"dependencies": {
 		"@sveltejs/adapter-node": "^5.2.12",
