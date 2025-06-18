@@ -8,15 +8,10 @@
 	const loading = writable(true);
 	const error = writable<string | null>(null);
 
-	// Example: last 30 days
-	const to = new Date();
-	const from = new Date();
-	from.setDate(to.getDate() - 30);
-
 	onMount(async () => {
 		loading.set(true);
 		try {
-			const data = await getPositionSnapshots(from.toISOString(), to.toISOString());
+			const data = await getPositionSnapshots(null, null);
 			snapshots.set(data);
 			error.set(null);
 		} catch (e) {

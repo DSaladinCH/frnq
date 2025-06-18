@@ -242,7 +242,8 @@
 	});
 
 	// Compute current portfolio info (latest date)
-	$: groupedSnapshots = groupSnapshotsByDate(snapshots);
+	$: filteredSnapshots = filterSnapshotsByPeriod(snapshots, selectedPeriod);
+	$: groupedSnapshots = groupSnapshotsByDate(filteredSnapshots);
 	$: latest = groupedSnapshots.length ? groupedSnapshots[groupedSnapshots.length - 1] : null;
 	$: first = groupedSnapshots.length ? groupedSnapshots[0] : null;
 
@@ -262,6 +263,41 @@
 
 	// Color for profit change
 	$: profitColor = profitChange > 0 ? 'green' : profitChange < 0 ? 'red' : 'gray';
+
+	let selectedPeriod: '1w' | '1m' | '3m' | 'ytd' | 'all' = '3m';
+
+	function filterSnapshotsByPeriod(snapshots: PositionSnapshot[], period: typeof selectedPeriod): PositionSnapshot[] {
+		if (period === 'all') return snapshots;
+		const now = new Date();
+		let fromDate: Date;
+		switch (period) {
+			case '1w':
+				fromDate = new Date(now);
+				fromDate.setDate(now.getDate() - 7);
+				break;
+			case '1m':
+				fromDate = new Date(now);
+				fromDate.setMonth(now.getMonth() - 1);
+				break;
+			case '3m':
+				fromDate = new Date(now);
+				fromDate.setMonth(now.getMonth() - 3);
+				break;
+			case 'ytd':
+				fromDate = new Date(now.getFullYear(), 0, 1);
+				break;
+			default:
+				return snapshots;
+		}
+		return snapshots.filter(s => new Date(s.date) >= fromDate);
+	}
+
+	$: if (chart && groupedSnapshots) {
+		chart.data.labels = groupedSnapshots.map(s => s.date);
+		chart.data.datasets[0].data = groupedSnapshots.map(s => s.totalValue);
+		chart.data.datasets[1].data = groupedSnapshots.map(s => s.invested);
+		chart.update();
+	}
 </script>
 
 <div class="portfolio-info">
@@ -294,7 +330,15 @@
 	<canvas bind:this={canvas} style="height: 400px;"></canvas>
 </div>
 
-<div class="background-fade"></div>
+<div class="background-fade">
+	<div class="period-selector">
+		<button type="button" class:selected={selectedPeriod === '1w'} on:click={() => selectedPeriod = '1w'}>1W</button>
+		<button type="button" class:selected={selectedPeriod === '1m'} on:click={() => selectedPeriod = '1m'}>1M</button>
+		<button type="button" class:selected={selectedPeriod === '3m'} on:click={() => selectedPeriod = '3m'}>3M</button>
+		<button type="button" class:selected={selectedPeriod === 'ytd'} on:click={() => selectedPeriod = 'ytd'}>This Year</button>
+		<button type="button" class:selected={selectedPeriod === 'all'} on:click={() => selectedPeriod = 'all'}>All Time</button>
+	</div>
+</div>
 
 <!-- The tooltip element is created dynamically and appended to body -->
 
@@ -312,11 +356,8 @@
 	}
 
 	.portfolio-info {
-		/* background: #23232b;
-		border-radius: 18px;
-		box-shadow: 0 2px 16px #0006; */
-		/* padding: 1.5rem 2rem; */
 		margin: 2rem;
+		margin-bottom: 0.5rem;
 		max-width: 320px;
 		color: #fff;
 		font-size: 1.1rem;
@@ -357,10 +398,44 @@
 	}
 
 	.background-fade {
-		height: 50px;
+		height: 70px;
 		width: 100%;
 		background: linear-gradient(to bottom, rgb(42, 85, 108) 30%, transparent);
 		pointer-events: none;
-		z-index: -1;
+		z-index: 1;
+		position: relative;
+	}
+
+	.period-selector {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		gap: 0.5rem;
+		margin-top: 8px;
+		position: absolute;
+		width: 100%;
+		left: 0;
+		top: 0;
+		z-index: 1;
+		pointer-events: auto;
+	}
+
+	.period-selector button {
+		background: rgba(34, 34, 40, 0.7);
+		color: #fff;
+		border: none;
+		border-radius: 12px;
+		padding: 0.3rem 1rem;
+		font-size: 1rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background 0.2s, color 0.2s;
+		outline: none;
+	}
+
+	.period-selector button.selected,
+	.period-selector button:focus {
+		background: #10b981;
+		color: #18181b;
 	}
 </style>

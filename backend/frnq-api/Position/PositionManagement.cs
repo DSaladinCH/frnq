@@ -6,10 +6,16 @@ namespace DSaladin.Frnq.Api.Position;
 
 public class PositionManagement(DatabaseContext databaseContext)
 {
-    public async Task<IEnumerable<PositionSnapshot>> GetPositionsAsync(DateTime from, DateTime to)
+    public async Task<IEnumerable<PositionSnapshot>> GetPositionsAsync(DateTime? from, DateTime? to)
     {
-        from = DateTime.SpecifyKind(from, DateTimeKind.Utc);
-        to = DateTime.SpecifyKind(to, DateTimeKind.Utc);
+        if (from is null)
+            from = DateTime.MinValue;
+
+        if (to is null)
+            to = DateTime.UtcNow;
+
+        from = DateTime.SpecifyKind((DateTime)from, DateTimeKind.Utc);
+        to = DateTime.SpecifyKind((DateTime)to, DateTimeKind.Utc);
 
         // Get all investments up to the requested 'to' date
         List<InvestmentModel> investments = await databaseContext.Investments
@@ -32,7 +38,7 @@ public class PositionManagement(DatabaseContext databaseContext)
         if (firstInvestmentDate == null)
             return [];
 
-        List<DateTime> days = Enumerable.Range(0, (to.Date - firstInvestmentDate.Value).Days + 1)
+        List<DateTime> days = Enumerable.Range(0, (((DateTime)to).Date - firstInvestmentDate.Value).Days + 1)
             .Select(offset => firstInvestmentDate.Value.AddDays(offset))
             .ToList();
 
@@ -118,7 +124,7 @@ public class PositionManagement(DatabaseContext databaseContext)
                 decimal marketPrice = (price?.AdjustedClose ?? price?.Close) ?? 0m;
                 decimal totalValue = marketPrice * cumulativeAmount;
                 decimal invested = 0;
-                
+
                 foreach (var lot in lots)
                     invested += lot.Amount * lot.PricePerUnit;
 
@@ -140,8 +146,8 @@ public class PositionManagement(DatabaseContext databaseContext)
                 });
             }
         }
-        
+
         // Only return snapshots within the requested range
-        return allSnapshots.Where(s => s.Date >= from.Date && s.Date <= to.Date).ToList();
+        return allSnapshots.Where(s => s.Date >= ((DateTime)from).Date && s.Date <= ((DateTime)to).Date).ToList();
     }
 }

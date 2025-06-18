@@ -16,9 +16,14 @@ export interface PositionSnapshot {
   realizedGain: number;
 }
 
-export async function getPositionSnapshots(from: string, to: string): Promise<PositionSnapshot[]> {
-  const url = `${baseUrl}/api/positions?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+export async function getPositionSnapshots(from: string | null, to: string | null): Promise<PositionSnapshot[]> {
+  const params = new URLSearchParams();
+  if (from) params.append('from', from);
+  if (to) params.append('to', to);
+
+  const url = `${baseUrl}/api/positions${params.toString() ? `?${params.toString()}` : ''}`;
   const res = await fetch(url);
+  
   if (!res.ok) throw new Error('Failed to fetch position snapshots');
   return res.json();
 }
