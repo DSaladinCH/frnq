@@ -170,12 +170,12 @@
 						label: 'Total Value',
 						data: grouped.map((s) => s.totalValue),
 						borderColor: 'rgba(16,185,129,1)',
-						backgroundColor: 'rgba(16,185,129,0.15)',
+						backgroundColor: 'rgba(16,185,129,0.25)',
 						fill: true,
-						tension: 0.5,
+						tension: 0.3,
 						pointRadius: 0,
 						pointHoverRadius: 6,
-						borderWidth: 2,
+						borderWidth: -1,
 						order: 1,
 						pointBackgroundColor: 'rgba(16,185,129,1)',
 						pointBorderColor: '#222',
@@ -185,12 +185,12 @@
 						label: 'Invested',
 						data: grouped.map((s) => s.invested),
 						borderColor: 'rgba(99,102,241,1)',
-						backgroundColor: 'rgba(99,102,241,0.25)',
+						backgroundColor: 'rgba(99,102,241,0.35)',
 						fill: true,
-						tension: 0.5,
+						tension: 0.3,
 						pointRadius: 0,
 						pointHoverRadius: 6,
-						borderWidth: 3,
+						borderWidth: -1,
 						order: 2,
 						pointBackgroundColor: 'rgba(99,102,241,1)',
 						pointBorderColor: '#222',
@@ -199,7 +199,8 @@
 				]
 			},
 			options: {
-				responsive: false,
+				responsive: true,
+				maintainAspectRatio: false,
 				plugins: {
 					legend: { display: false },
 					title: { display: false },
@@ -223,10 +224,12 @@
 						display: false,
 						grid: { display: false }
 					},
+					xAxis: { display: false },
 					y: {
 						display: false,
 						grid: { display: false }
-					}
+					},
+					yAxis: { display: false }
 				}
 			}
 		});
@@ -287,11 +290,11 @@
 	{/if}
 </div>
 
-<canvas bind:this={canvas} style="height: 400px;"></canvas>
-
-<div class="background-fade">
-
+<div style="position: relative; width: 100%; height: 400px;">
+	<canvas bind:this={canvas} style="height: 400px;"></canvas>
 </div>
+
+<div class="background-fade"></div>
 
 <!-- The tooltip element is created dynamically and appended to body -->
 
@@ -356,7 +359,7 @@
 	.background-fade {
 		height: 50px;
 		width: 100%;
-		background: linear-gradient(to bottom, rgba(38, 65, 87, 1) 30%, transparent);
+		background: linear-gradient(to bottom, rgb(42, 85, 108) 30%, transparent);
 		pointer-events: none;
 		z-index: -1;
 	}

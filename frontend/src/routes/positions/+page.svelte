@@ -38,7 +38,7 @@
 		<PortfolioChart snapshots={$snapshots} />
 	{/if}
 
-	<table>
+	<!-- <table>
 		<thead>
 			<tr>
 				<th>Date</th>
@@ -63,7 +63,7 @@
 				</tr>
 			{/each}
 		</tbody>
-	</table>
+	</table> -->
 {/if}
 
 <style>
