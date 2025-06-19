@@ -21,7 +21,7 @@ public class QuoteManagement(DatabaseContext databaseContext, IFinanceProvider f
         if (quote is null)
             throw new ArgumentException($"Quote with symbol '{symbol}' not found or could not be fetched.", nameof(symbol));
 
-        dbPrices = (await databaseProvider.GetHistoricalPricesAsync(symbol, from.AddDays(-1), to.AddDays(1))).ToList();
+        dbPrices = (await databaseProvider.GetHistoricalPricesAsync(symbol, from == DateTime.MinValue ? from : from.AddDays(-1), to.AddDays(1))).ToList();
 
         if (quote!.LastUpdatedPrices < DateTime.UtcNow.AddMinutes(-1))
         {

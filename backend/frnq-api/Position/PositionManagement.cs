@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DSaladin.Frnq.Api.Position;
 
-public class PositionManagement(DatabaseContext databaseContext)
+public class PositionManagement(QuoteManagement quoteManagement, DatabaseContext databaseContext)
 {
     public async Task<IEnumerable<PositionSnapshot>> GetPositionsAsync(DateTime? from, DateTime? to)
     {
@@ -19,15 +19,33 @@ public class PositionManagement(DatabaseContext databaseContext)
 
         // Get all investments up to the requested 'to' date
         List<InvestmentModel> investments = await databaseContext.Investments
-            .Include(i => i.Quote)
             .Where(i => i.Date <= to)
             .OrderBy(i => i.Date)
             .ToListAsync();
 
+        // Get all quotes that have been invested in
+        if (investments.Count == 0)
+            return [];
+
+        HashSet<string> quoteSymbols = investments.Select(i => i.QuoteSymbol).ToHashSet();
+        HashSet<string> providerIds = investments.Select(i => i.ProviderId).ToHashSet();
+
+        // HashSet of all unique (providerId, symbol) pairs used
+        HashSet<(string ProviderId, string Symbol)> usedQuotePKs = investments
+            .Select(i => (i.ProviderId, i.QuoteSymbol))
+            .ToHashSet();
+
+        // Update historical prices with any missing data
+        foreach (var (providerId, symbol) in usedQuotePKs)
+            await quoteManagement.GetHistoricalPricesAsync(providerId, symbol, (DateTime)from, (DateTime)to);
+
         // Get all prices up to the requested 'to' date
         List<QuotePrice> prices = await databaseContext.QuotePrices
-            .Where(qp => qp.Date <= to)
-            .ToListAsync();
+        .Where(qp => providerIds.Contains(qp.ProviderId) && quoteSymbols.Contains(qp.Symbol))
+        .Where(qp => qp.Date <= to)
+        .ToListAsync();
+
+        // Update historical prices with any missing data
 
         Dictionary<(string ProviderId, string Symbol), Dictionary<DateTime, QuotePrice>> priceLookup = prices
             .GroupBy(qp => (qp.ProviderId, qp.Symbol))
