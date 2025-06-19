@@ -25,6 +25,7 @@
 			const totalValue = invested + unrealizedGain + realizedGain;
 			// Total Profit = unrealized + realized
 			const totalProfit = unrealizedGain + realizedGain;
+
 			return {
 				date,
 				invested,
@@ -34,8 +35,10 @@
 				realizedGain
 			};
 		});
+
 		// Sort by date ascending
 		result.sort((a, b) => a.date.localeCompare(b.date));
+		console.log(result);
 		return result;
 	}
 
@@ -282,20 +285,20 @@
 
 		if (chartOption === 'profitOnly') {
 			dataset0.label = 'Profit';
-			dataset0.data = groupedSnapshots.map((s) => s.totalProfit);
+			dataset0.data = groupedSnapshots.map((s) => roundValue(s.totalProfit));
 			dataset0.borderColor = 'rgba(168,85,247,1)'; // Purple for profit
 			dataset0.backgroundColor = 'rgba(168,85,247,0.25)';
 			dataset0.pointBackgroundColor = 'rgba(168,85,247,1)';
 		} else {
 			dataset0.label = 'Total Value';
-			dataset0.data = groupedSnapshots.map((s) => s.totalValue);
+			dataset0.data = groupedSnapshots.map((s) => roundValue(s.totalValue));
 			dataset0.borderColor = 'rgba(16,185,129,1)'; // Green for total value
 			dataset0.backgroundColor = 'rgba(16,185,129,0.25)';
 			dataset0.pointBackgroundColor = 'rgba(16,185,129,1)';
 		}
 
 		// Always update the invested dataset
-		dataset1.data = groupedSnapshots.map((s) => s.invested);
+		dataset1.data = groupedSnapshots.map((s) => roundValue(s.invested));
 		dataset1.borderColor = 'rgba(99,102,241,1)';
 		dataset1.backgroundColor = 'rgba(99,102,241,0.35)';
 		dataset1.pointBackgroundColor = 'rgba(99,102,241,1)';
@@ -341,6 +344,10 @@
 	// React to chartOption changes
 	$: if (chart && chartOption) {
 		updateChartData();
+	}
+
+	function roundValue(val: number) {
+		return Math.round(val * 100) / 100;
 	}
 </script>
 
