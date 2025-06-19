@@ -23,7 +23,7 @@ public class QuoteManagement(DatabaseContext databaseContext, IFinanceProvider f
 
         dbPrices = (await databaseProvider.GetHistoricalPricesAsync(symbol, from.AddDays(-1), to.AddDays(1))).ToList();
 
-        if (quote!.LastUpdatedPrices < DateTime.UtcNow)
+        if (quote!.LastUpdatedPrices < DateTime.UtcNow.AddMinutes(-1))
         {
             // Find earliest and latest in the db result
             QuotePrice? earliestDb = dbPrices.OrderBy(p => p.Date).FirstOrDefault();
