@@ -5,7 +5,8 @@
 
 .chartjs-tooltip {
     min-width: 180px;
-    height: 110px;
+    min-height: 80px;
+    max-height: 110px;
     background: #23232b;
     border: 1.5px solid #333;
     border-radius: 14px;

@@ -34,10 +34,10 @@ public class DatabaseProvider(DatabaseContext databaseContext) : IFinanceProvide
             .ToListAsync();
     }
 
-    public async Task AddOrUpdateQuoteAsync(QuoteModel? quote)
+    public async Task<QuoteModel?> AddOrUpdateQuoteAsync(QuoteModel? quote)
     {
         if (quote is null)
-            return;
+            return null;
 
         QuoteModel? existing = await databaseContext.Quotes.FindAsync(quote.ProviderId, quote.Symbol);
 
@@ -47,11 +47,17 @@ public class DatabaseProvider(DatabaseContext databaseContext) : IFinanceProvide
             databaseContext.Entry(existing).CurrentValues.SetValues(quote);
 
         await databaseContext.SaveChangesAsync();
+        return quote;
     }
 
     public async Task AddOrUpdateQuotePricesAsync(IEnumerable<QuotePrice> prices)
     {
         if (!prices.Any())
+            return;
+
+        QuoteModel? quote = await GetQuoteAsync(prices.First().ProviderId, prices.First().Symbol);
+
+        if (quote is null)
             return;
 
         foreach (QuotePrice price in prices)
@@ -63,6 +69,9 @@ public class DatabaseProvider(DatabaseContext databaseContext) : IFinanceProvide
             else
                 databaseContext.Entry(existing).CurrentValues.SetValues(price);
         }
+
+        quote.LastUpdatedPrices = DateTime.UtcNow;
+        databaseContext.Entry(quote).State = EntityState.Modified;
 
         await databaseContext.SaveChangesAsync();
     }

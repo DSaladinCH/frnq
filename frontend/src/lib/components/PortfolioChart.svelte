@@ -23,10 +23,13 @@
 			const realizedGain = snaps.reduce((sum, s) => sum + (s.realizedGain ?? 0), 0);
 			// Total Value = invested + unrealized + realized
 			const totalValue = invested + unrealizedGain + realizedGain;
+			// Total Profit = unrealized + realized
+			const totalProfit = unrealizedGain + realizedGain;
 			return {
 				date,
 				invested,
 				totalValue,
+				totalProfit,
 				unrealizedGain,
 				realizedGain
 			};
@@ -152,6 +155,13 @@
 		tooltipEl.style.padding = '1rem 1.2rem 0.7rem 1.2rem';
 		tooltipEl.style.minWidth = '180px';
 		tooltipEl.style.height = '110px'; // Fixed height
+
+		if (chartOption === 'profitOnly') {
+			tooltipEl.style.height = '80px';
+		} else {
+			tooltipEl.style.height = '110px';
+		}
+
 		tooltipEl.style.overflowY = 'auto';
 	}
 
@@ -160,39 +170,32 @@
 		if (!snapshots.length) return;
 
 		const grouped = groupSnapshotsByDate(snapshots);
-
 		chart = new Chart(canvas, {
 			type: 'line',
 			data: {
-				labels: grouped.map((s) => s.date),
+				labels: [],
 				datasets: [
 					{
 						label: 'Total Value',
-						data: grouped.map((s) => s.totalValue),
-						borderColor: 'rgba(16,185,129,1)',
-						backgroundColor: 'rgba(16,185,129,0.25)',
+						data: [],
 						fill: true,
 						tension: 0.3,
 						pointRadius: 0,
 						pointHoverRadius: 6,
 						borderWidth: -1,
 						order: 1,
-						pointBackgroundColor: 'rgba(16,185,129,1)',
 						pointBorderColor: '#222',
 						pointStyle: 'circle'
 					},
 					{
 						label: 'Invested',
-						data: grouped.map((s) => s.invested),
-						borderColor: 'rgba(99,102,241,1)',
-						backgroundColor: 'rgba(99,102,241,0.35)',
+						data: [],
 						fill: true,
 						tension: 0.3,
 						pointRadius: 0,
 						pointHoverRadius: 6,
 						borderWidth: -1,
 						order: 2,
-						pointBackgroundColor: 'rgba(99,102,241,1)',
 						pointBorderColor: '#222',
 						pointStyle: 'circle'
 					}
@@ -260,13 +263,53 @@
 			: latest && first && Math.abs(latest.invested) > 1e-6
 				? (profitChange / Math.abs(latest.invested)) * 100
 				: 0;
-
 	// Color for profit change
 	$: profitColor = profitChange > 0 ? 'green' : profitChange < 0 ? 'red' : 'gray';
 
-	let selectedPeriod: '1w' | '1m' | '3m' | 'ytd' | 'all' = '3m';
+	// Dynamic background fade color based on chartOption
+	$: fadeColor = chartOption === 'profitOnly' ? 'rgb(60, 39, 82)' : 'rgb(42, 85, 108)';
 
-	function filterSnapshotsByPeriod(snapshots: PositionSnapshot[], period: typeof selectedPeriod): PositionSnapshot[] {
+	let selectedPeriod: '1w' | '1m' | '3m' | 'ytd' | 'all' = '3m';
+	let chartOption: 'profitOnly' | 'both' = 'both';
+	function updateChartData() {
+		if (!chart || !groupedSnapshots) return;
+
+		chart.data.labels = groupedSnapshots.map((s) => s.date);
+
+		// Update first dataset based on chartOption
+		const dataset0 = chart.data.datasets[0] as any;
+		const dataset1 = chart.data.datasets[1] as any;
+
+		if (chartOption === 'profitOnly') {
+			dataset0.label = 'Profit';
+			dataset0.data = groupedSnapshots.map((s) => s.totalProfit);
+			dataset0.borderColor = 'rgba(168,85,247,1)'; // Purple for profit
+			dataset0.backgroundColor = 'rgba(168,85,247,0.25)';
+			dataset0.pointBackgroundColor = 'rgba(168,85,247,1)';
+		} else {
+			dataset0.label = 'Total Value';
+			dataset0.data = groupedSnapshots.map((s) => s.totalValue);
+			dataset0.borderColor = 'rgba(16,185,129,1)'; // Green for total value
+			dataset0.backgroundColor = 'rgba(16,185,129,0.25)';
+			dataset0.pointBackgroundColor = 'rgba(16,185,129,1)';
+		}
+
+		// Always update the invested dataset
+		dataset1.data = groupedSnapshots.map((s) => s.invested);
+		dataset1.borderColor = 'rgba(99,102,241,1)';
+		dataset1.backgroundColor = 'rgba(99,102,241,0.35)';
+		dataset1.pointBackgroundColor = 'rgba(99,102,241,1)';
+
+		// Show/hide the "Invested" line based on chartOption
+		dataset1.hidden = chartOption === 'profitOnly';
+
+		chart.update();
+	}
+
+	function filterSnapshotsByPeriod(
+		snapshots: PositionSnapshot[],
+		period: typeof selectedPeriod
+	): PositionSnapshot[] {
 		if (period === 'all') return snapshots;
 		const now = new Date();
 		let fromDate: Date;
@@ -289,39 +332,57 @@
 			default:
 				return snapshots;
 		}
-		return snapshots.filter(s => new Date(s.date) >= fromDate);
+		return snapshots.filter((s) => new Date(s.date) >= fromDate);
+	}
+	$: if (chart && groupedSnapshots) {
+		updateChartData();
 	}
 
-	$: if (chart && groupedSnapshots) {
-		chart.data.labels = groupedSnapshots.map(s => s.date);
-		chart.data.datasets[0].data = groupedSnapshots.map(s => s.totalValue);
-		chart.data.datasets[1].data = groupedSnapshots.map(s => s.invested);
-		chart.update();
+	// React to chartOption changes
+	$: if (chart && chartOption) {
+		updateChartData();
 	}
 </script>
 
-<div class="portfolio-info">
+<div
+	class="portfolio-info grid grid-cols-[1fr] grid-rows-[auto_35px] lg:grid-cols-[auto_110px] lg:grid-rows-[1fr]"
+>
 	{#if latest}
-		<div class="profit-total">
-			<!-- <span class="profit-label">Total Profit</span> -->
-			<span class="profit-value"
-				>{totalProfit.toLocaleString(undefined, { style: 'currency', currency: 'CHF' })}</span
-			>
+		<div class="portfolio-stats">
+			<div class="profit-total">
+				<span class="profit-value"
+					>{totalProfit.toLocaleString(undefined, { style: 'currency', currency: 'CHF' })}</span
+				>
+			</div>
+			<div class="profit-change-row">
+				<span class="profit-change-value" style="color: {profitColor}">
+					{profitChange >= 0 ? '+' : ''}{profitChange.toLocaleString(undefined, {
+						style: 'currency',
+						currency: 'CHF'
+					})}
+				</span>
+
+				<div class="profit-divider"></div>
+
+				<span class="profit-change-pct" style="color: {profitColor}">
+					{profitChangePct >= 0 ? '+' : ''}{profitChangePct.toFixed(2)}%
+				</span>
+			</div>
 		</div>
-		<div class="profit-change-row">
-			<!-- <span class="profit-change-label">Change in this period:</span> -->
-			<span class="profit-change-value" style="color: {profitColor}">
-				{profitChange >= 0 ? '+' : ''}{profitChange.toLocaleString(undefined, {
-					style: 'currency',
-					currency: 'CHF'
-				})}
-			</span>
 
-			<div class="profit-divider"></div>
-
-			<span class="profit-change-pct" style="color: {profitColor}">
-				{profitChangePct >= 0 ? '+' : ''}{profitChangePct.toFixed(2)}%
-			</span>
+		<div
+			class="chart-options grid w-80 grid-cols-[auto_auto] gap-2 lg:w-full lg:grid-cols-[1fr] lg:grid-rows-[auto_auto]"
+		>
+			<button
+				type="button"
+				class:selected={chartOption === 'both'}
+				on:click={() => (chartOption = 'both')}>Portfolio</button
+			>
+			<button
+				type="button"
+				class:selected={chartOption === 'profitOnly'}
+				on:click={() => (chartOption = 'profitOnly')}>Profit Only</button
+			>
 		</div>
 	{/if}
 </div>
@@ -330,13 +391,33 @@
 	<canvas bind:this={canvas} style="height: 400px;"></canvas>
 </div>
 
-<div class="background-fade">
+<div class="background-fade" style="--fade-color: {fadeColor}">
 	<div class="period-selector">
-		<button type="button" class:selected={selectedPeriod === '1w'} on:click={() => selectedPeriod = '1w'}>1W</button>
-		<button type="button" class:selected={selectedPeriod === '1m'} on:click={() => selectedPeriod = '1m'}>1M</button>
-		<button type="button" class:selected={selectedPeriod === '3m'} on:click={() => selectedPeriod = '3m'}>3M</button>
-		<button type="button" class:selected={selectedPeriod === 'ytd'} on:click={() => selectedPeriod = 'ytd'}>This Year</button>
-		<button type="button" class:selected={selectedPeriod === 'all'} on:click={() => selectedPeriod = 'all'}>All Time</button>
+		<button
+			type="button"
+			class:selected={selectedPeriod === '1w'}
+			on:click={() => (selectedPeriod = '1w')}>1W</button
+		>
+		<button
+			type="button"
+			class:selected={selectedPeriod === '1m'}
+			on:click={() => (selectedPeriod = '1m')}>1M</button
+		>
+		<button
+			type="button"
+			class:selected={selectedPeriod === '3m'}
+			on:click={() => (selectedPeriod = '3m')}>3M</button
+		>
+		<button
+			type="button"
+			class:selected={selectedPeriod === 'ytd'}
+			on:click={() => (selectedPeriod = 'ytd')}>This Year</button
+		>
+		<button
+			type="button"
+			class:selected={selectedPeriod === 'all'}
+			on:click={() => (selectedPeriod = 'all')}>All Time</button
+		>
 	</div>
 </div>
 
@@ -358,16 +439,41 @@
 	.portfolio-info {
 		margin: 2rem;
 		margin-bottom: 0.5rem;
-		max-width: 320px;
+		max-width: 400px;
 		color: #fff;
 		font-size: 1.1rem;
 		text-align: center;
 	}
 
+	.portfolio-stats {
+		display: flex;
+		flex-wrap: wrap;
+	}
+
+	.chart-options button {
+		background: rgba(88, 88, 94, 0.7);
+		color: #fff;
+		border: none;
+		border-radius: 12px;
+		padding: 0.3rem 1rem;
+		font-size: 1rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition:
+			background 0.2s,
+			color 0.2s;
+		outline: none;
+	}
+
+	.chart-options button.selected,
+	.chart-options button:focus {
+		background: #10b981;
+		color: #18181b;
+	}
+
 	.profit-total {
 		font-size: 2.1rem;
 		font-weight: 700;
-		margin-bottom: 0.5rem;
 		display: flex;
 		flex-direction: column;
 	}
@@ -398,9 +504,11 @@
 	}
 
 	.background-fade {
-		height: 70px;
+		display: flex;
+		height: 80px;
+		margin-top: -10px;
 		width: 100%;
-		background: linear-gradient(to bottom, rgb(42, 85, 108) 30%, transparent);
+		background: linear-gradient(to bottom, transparent 0px, var(--fade-color) 10px, var(--fade-color) 40%, transparent 100%);
 		pointer-events: none;
 		z-index: 1;
 		position: relative;
@@ -411,7 +519,7 @@
 		justify-content: center;
 		align-items: center;
 		gap: 0.5rem;
-		margin-top: 8px;
+		margin-top: 20px;
 		position: absolute;
 		width: 100%;
 		left: 0;
@@ -421,7 +529,7 @@
 	}
 
 	.period-selector button {
-		background: rgba(34, 34, 40, 0.7);
+		background: rgba(62, 62, 68, 0.7);
 		color: #fff;
 		border: none;
 		border-radius: 12px;
@@ -429,7 +537,9 @@
 		font-size: 1rem;
 		font-weight: 500;
 		cursor: pointer;
-		transition: background 0.2s, color 0.2s;
+		transition:
+			background 0.2s,
+			color 0.2s;
 		outline: none;
 	}
 

@@ -14,7 +14,10 @@ public class QuoteModel
     public string ExchangeDisposition { get; set; } = string.Empty;
     public string TypeDisposition { get; set; } = string.Empty;
     public string Currency { get; set; } = string.Empty;
-    public DateTime? LastUpdated { get; set; }
+    /// <summary>
+    /// The last time the quote prices were updated in the database.
+    /// </summary>
+    public DateTime LastUpdatedPrices { get; set; }
 
     [JsonIgnore]
     public virtual ICollection<QuotePrice> Prices { get; set; } = [];
