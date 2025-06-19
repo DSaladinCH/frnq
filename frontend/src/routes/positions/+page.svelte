@@ -32,45 +32,4 @@
 	{#if $snapshots.length}
 		<PortfolioChart snapshots={$snapshots} />
 	{/if}
-
-	<!-- <table>
-		<thead>
-			<tr>
-				<th>Date</th>
-				<th>Symbol</th>
-				<th>Amount</th>
-				<th>Invested</th>
-				<th>Market Price</th>
-				<th>Total Value</th>
-				<th>Unrealized Gain</th>
-			</tr>
-		</thead>
-		<tbody>
-			{#each $snapshots as snap}
-				<tr>
-					<td>{snap.date.slice(0, 10)}</td>
-					<td>{snap.quoteSymbol}</td>
-					<td>{snap.amount}</td>
-					<td>{snap.invested}</td>
-					<td>{snap.marketPricePerUnit}</td>
-					<td>{snap.totalValue}</td>
-					<td>{snap.unrealizedGain}</td>
-				</tr>
-			{/each}
-		</tbody>
-	</table> -->
 {/if}
-
-<style>
-	table {
-		border-collapse: collapse;
-		width: 100%;
-		margin-bottom: 2rem;
-	}
-	th,
-	td {
-		border: 1px solid #ccc;
-		padding: 0.5rem;
-		text-align: center;
-	}
-</style>
