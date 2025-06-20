@@ -7,6 +7,7 @@ export interface PositionSnapshot {
   quoteSymbol: string;
   date: string;
   currency: string;
+  group: string;
   amount: number;
   invested: number;
   marketPricePerUnit: number;

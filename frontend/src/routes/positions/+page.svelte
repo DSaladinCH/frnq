@@ -2,13 +2,56 @@
 	import { onMount } from 'svelte';
 	import PortfolioChart from '$lib/components/PortfolioChart.svelte';
 	import { getPositionSnapshots, type PositionSnapshot } from '$lib/services/positionService';
-	import { writable } from 'svelte/store';
+	import { derived, writable } from 'svelte/store';
 
 	const snapshots = writable<PositionSnapshot[]>([]);
 	const loading = writable(true);
 	const error = writable<string | null>(null);
 
-	import { tick } from 'svelte';
+
+// Group by group name, then by quote (providerId:quoteSymbol)
+const groupedSnapshots = derived(snapshots, ($snapshots) => {
+	const groups: Record<string, Record<string, PositionSnapshot[]>> = {};
+	const ungrouped: Record<string, PositionSnapshot[]> = {};
+	for (const snap of $snapshots) {
+		const groupName = snap.group || null;
+		const quoteKey = `${snap.providerId}:${snap.quoteSymbol}`;
+		if (groupName) {
+			if (!groups[groupName]) groups[groupName] = {};
+			if (!groups[groupName][quoteKey]) groups[groupName][quoteKey] = [];
+			groups[groupName][quoteKey].push(snap);
+		} else {
+			if (!ungrouped[quoteKey]) ungrouped[quoteKey] = [];
+			ungrouped[quoteKey].push(snap);
+		}
+	}
+	return { groups, ungrouped };
+});
+
+// Helper to sum values for a list of snapshots (only the last snapshot of each quote)
+function getSummaryFromLastSnapshots(snaps: PositionSnapshot[]) {
+	// Only use the last snapshot in the array
+	const last = snaps[snaps.length - 1];
+	return {
+		invested: last?.invested ?? 0,
+		totalValue: last?.totalValue ?? 0,
+		realized: last?.realizedGain ?? 0,
+		unrealized: last?.unrealizedGain ?? 0,
+	};
+}
+
+// Helper to sum all values in a group (sum of last snapshot of each quote)
+function getGroupSummaryLast(quotes: Record<string, PositionSnapshot[]>) {
+	const lastSnaps = Object.values(quotes)
+		.map(snaps => snaps[snaps.length - 1])
+		.filter(Boolean);
+	return {
+		invested: lastSnaps.reduce((sum, s) => sum + (s.invested ?? 0), 0),
+		totalValue: lastSnaps.reduce((sum, s) => sum + (s.totalValue ?? 0), 0),
+		realized: lastSnaps.reduce((sum, s) => sum + (s.realizedGain ?? 0), 0),
+		unrealized: lastSnaps.reduce((sum, s) => sum + (s.unrealizedGain ?? 0), 0),
+	};
+}
 
 	let showLoading = true;
 	let fadeOut = false;
@@ -30,7 +73,11 @@
 			loading.set(false);
 		}
 	});
+
 </script>
+<svelte:head>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</svelte:head>
 
 {#if showLoading}
 	<div
@@ -51,13 +98,36 @@
 {#if !$loading && !showLoading}
 	{#if $error}
 		<div class="error-screen">
-			   <div class="sad-icon" aria-hidden="true">
-				   <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-					   <circle cx="32" cy="32" r="28" stroke="#ffb3c6" stroke-width="6" fill="none"/>
-					   <line x1="20" y1="20" x2="44" y2="44" stroke="#ffb3c6" stroke-width="6" stroke-linecap="round"/>
-					   <line x1="44" y1="20" x2="20" y2="44" stroke="#ffb3c6" stroke-width="6" stroke-linecap="round"/>
-				   </svg>
-			   </div>
+			<div class="sad-icon" aria-hidden="true">
+				<svg
+					width="64"
+					height="64"
+					viewBox="0 0 64 64"
+					fill="none"
+					xmlns="http://www.w3.org/2000/svg"
+					aria-hidden="true"
+				>
+					<circle cx="32" cy="32" r="28" stroke="#ffb3c6" stroke-width="6" fill="none" />
+					<line
+						x1="20"
+						y1="20"
+						x2="44"
+						y2="44"
+						stroke="#ffb3c6"
+						stroke-width="6"
+						stroke-linecap="round"
+					/>
+					<line
+						x1="44"
+						y1="20"
+						x2="20"
+						y2="44"
+						stroke="#ffb3c6"
+						stroke-width="6"
+						stroke-linecap="round"
+					/>
+				</svg>
+			</div>
 			<h2>There was an error fetching the data</h2>
 			<!-- <p class="error-message">{$error}</p> -->
 			<button class="btn btn-error" on:click={() => location.reload()}>Reload</button>
@@ -66,6 +136,60 @@
 		<p>No data available.</p>
 	{:else if $snapshots.length}
 		<PortfolioChart snapshots={$snapshots} />
+
+<div class="quote-groups grid grid-cols-[repeat(auto-fit,_minmax(300px,_400px))] justify-center mt-4">
+	{#each Object.entries($groupedSnapshots.groups) as [groupName, quotes] (groupName)}
+		{#key groupName}
+			{#await Promise.resolve(getGroupSummaryLast(quotes)) then summary}
+				<div class="group-card">
+					<div class="group-header">
+						<span class="group-title">{groupName}</span>
+						<button class="icon-btn view-btn" title="More details" aria-label="More details">
+							<i class="fa-solid fa-circle-info fa-lg"></i>
+						</button>
+					</div>
+					<div class="group-summary">
+						<div class="invested">Invested: <span class="amount">{summary.invested.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
+						<div class="profit-row">
+							<span class="profit {summary.realized + summary.unrealized > 0 ? 'profit-positive' : summary.realized + summary.unrealized < 0 ? 'profit-negative' : ''}">
+								{(summary.realized + summary.unrealized).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+							</span>
+							<span class="profit-percent">
+								({summary.invested ? ((summary.realized + summary.unrealized) / summary.invested * 100).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '0.00'}%)
+							</span>
+						</div>
+					</div>
+				</div>
+			{/await}
+		{/key}
+	{/each}
+
+	{#each Object.entries($groupedSnapshots.ungrouped) as [quoteKey, snaps] (quoteKey)}
+		{#key quoteKey}
+			{#await Promise.resolve(getSummaryFromLastSnapshots(snaps)) then summary}
+				<div class="group-card">
+					<div class="group-header">
+						<span class="group-title">{quoteKey.split(':')[0]} / {quoteKey.split(':')[1]}</span>
+						<button class="icon-btn view-btn" title="Filter chart" aria-label="Filter chart">
+							<i class="fa-solid fa-filter fa-lg"></i>
+						</button>
+					</div>
+					<div class="group-summary">
+						<div class="invested">Invested: <span class="amount">{summary.invested.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
+						<div class="profit-row">
+							<span class="profit {summary.realized + summary.unrealized > 0 ? 'profit-positive' : summary.realized + summary.unrealized < 0 ? 'profit-negative' : ''}">
+								{(summary.realized + summary.unrealized).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+							</span>
+							<span class="profit-percent">
+								({summary.invested ? ((summary.realized + summary.unrealized) / summary.invested * 100).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '0.00'}%)
+							</span>
+						</div>
+					</div>
+				</div>
+			{/await}
+		{/key}
+	{/each}
+</div>
 	{/if}
 {/if}
 
@@ -91,7 +215,7 @@
 	.sad-icon {
 		font-size: 4rem;
 		margin-bottom: 18px;
-	   animation: shake 1.2s infinite alternate;
+		animation: shake 1.2s infinite alternate;
 	}
 
 	.error-screen h2 {
@@ -100,29 +224,29 @@
 		font-weight: 600;
 	}
 
-   @keyframes shake {
-	   0% {
-		   transform: translateX(0);
-	   }
-	   15% {
-		   transform: translateX(-2px) rotate(-2deg);
-	   }
-	   30% {
-		   transform: translateX(2px) rotate(2deg);
-	   }
-	   45% {
-		   transform: translateX(-1.5px) rotate(-1.5deg);
-	   }
-	   60% {
-		   transform: translateX(1px) rotate(1deg);
-	   }
-	   75% {
-		   transform: translateX(0);
-	   }
-	   100% {
-		   transform: translateX(0);
-	   }
-   }
+	@keyframes shake {
+		0% {
+			transform: translateX(0);
+		}
+		15% {
+			transform: translateX(-2px) rotate(-2deg);
+		}
+		30% {
+			transform: translateX(2px) rotate(2deg);
+		}
+		45% {
+			transform: translateX(-1.5px) rotate(-1.5deg);
+		}
+		60% {
+			transform: translateX(1px) rotate(1deg);
+		}
+		75% {
+			transform: translateX(0);
+		}
+		100% {
+			transform: translateX(0);
+		}
+	}
 
 	/* Fade-out effect for loading screen */
 	.loading-screen {
@@ -199,4 +323,88 @@
 			opacity: 1;
 		}
 	}
+
+   .quote-groups {
+	   gap: 1.5rem;
+   }
+   .group-card {
+	   background: #232336;
+	   border-radius: 1.1rem;
+	   box-shadow: 0 2px 12px 0 rgba(0,0,0,0.10);
+	   padding: 1.5rem 1.2rem 1.2rem 1.2rem;
+	   margin-bottom: 1.5rem;
+	   min-width: 260px;
+	   max-width: 400px;
+	   display: flex;
+	   flex-direction: column;
+	   align-items: flex-start;
+   }
+   .group-header {
+	   margin-bottom: 0.7rem;
+	   width: 100%;
+	   display: flex;
+	   align-items: center;
+	   justify-content: space-between;
+	   min-height: 2.2rem;
+   }
+   .icon-btn {
+	   background: none;
+	   border: none;
+	   padding: 0.2rem;
+	   margin-left: 0.5rem;
+	   cursor: pointer;
+	   color: #b3b3b3;
+	   border-radius: 0.3rem;
+	   transition: background 0.15s;
+	   display: flex;
+	   align-items: center;
+	   height: 2.2rem;
+   }
+
+   .icon-btn:hover, .icon-btn:focus {
+	   background: #35354a;
+	   color: #f3f3f3;
+   }
+   .group-title {
+	   font-weight: bold;
+	   font-size: 1.2rem;
+	   color: #f3f3f3;
+   }
+   .group-summary {
+	   width: 100%;
+	   display: flex;
+	   flex-direction: column;
+	   gap: 0.5rem;
+   }
+   .invested {
+	   color: #b3b3b3;
+	   font-size: 1rem;
+	   font-weight: 500;
+   }
+   .amount {
+	   font-weight: 600;
+	   color: #f3f3f3;
+   }
+   .profit-row {
+	   display: flex;
+	   align-items: center;
+	   gap: 0.5rem;
+	   font-size: 1.1rem;
+	   font-weight: 600;
+   }
+   .profit {
+	   font-size: 1.2rem;
+	   font-weight: 700;
+	   margin-right: 0.2rem;
+   }
+   .profit-positive {
+	   color: #2ecc40;
+   }
+   .profit-negative {
+	   color: #ff4d4f;
+   }
+   .profit-percent {
+	   font-size: 1rem;
+	   color: #b3b3b3;
+   }
 </style>
