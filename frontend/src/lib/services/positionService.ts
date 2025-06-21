@@ -17,7 +17,22 @@ export interface PositionSnapshot {
   realizedGain: number;
 }
 
-export async function getPositionSnapshots(from: string | null, to: string | null): Promise<PositionSnapshot[]> {
+export interface QuoteModel {
+  providerId: string;
+  symbol: string;
+  name: string;
+  exchangeDisposition: string;
+  typeDisposition: string;
+  currency: string;
+  lastUpdatedPrices: string;
+}
+
+export interface PositionsResponse {
+  snapshots: PositionSnapshot[];
+  quotes: QuoteModel[];
+}
+
+export async function getPositionSnapshots(from: string | null, to: string | null): Promise<PositionsResponse> {
   const params = new URLSearchParams();
   if (from) params.append('from', from);
   if (to) params.append('to', to);

@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import PortfolioChart from '$lib/components/PortfolioChart.svelte';
-	import { getPositionSnapshots, type PositionSnapshot } from '$lib/services/positionService';
-	import { derived, writable } from 'svelte/store';
+	import { getPositionSnapshots, type PositionSnapshot, type QuoteModel, type PositionsResponse } from '$lib/services/positionService';
+	import { derived, writable, get } from 'svelte/store';
 
 	const snapshots = writable<PositionSnapshot[]>([]);
+	const quotes = writable<QuoteModel[]>([]);
 	const loading = writable(true);
 	const error = writable<string | null>(null);
 
@@ -53,6 +54,19 @@ function getGroupSummaryLast(quotes: Record<string, PositionSnapshot[]>) {
 	};
 }
 
+// Helper to get quote by providerId and symbol
+function getQuoteByProviderAndSymbol(providerId: string, symbol: string) {
+	const $quotesArr = get(quotes);
+	return $quotesArr.find(q => q.providerId === providerId && q.symbol === symbol);
+}
+
+// Helper to get display name for a quoteKey
+function getQuoteDisplayName(quoteKey: string) {
+	const [providerId, symbol] = quoteKey.split(':');
+	const quote = getQuoteByProviderAndSymbol(providerId, symbol);
+	return quote ? quote.name : `${providerId} / ${symbol}`;
+}
+
 	let showLoading = true;
 	let fadeOut = false;
 
@@ -64,8 +78,9 @@ function getGroupSummaryLast(quotes: Record<string, PositionSnapshot[]>) {
 	onMount(async () => {
 		loading.set(true);
 		try {
-			const data = await getPositionSnapshots(null, null);
-			snapshots.set(data);
+			const data: PositionsResponse = await getPositionSnapshots(null, null);
+			snapshots.set(data.snapshots);
+			quotes.set(data.quotes);
 			error.set(null);
 		} catch (e) {
 			error.set((e as Error).message);
@@ -137,7 +152,7 @@ function getGroupSummaryLast(quotes: Record<string, PositionSnapshot[]>) {
 	{:else if $snapshots.length}
 		<PortfolioChart snapshots={$snapshots} />
 
-<div class="quote-groups grid grid-cols-[repeat(auto-fit,_minmax(300px,_400px))] justify-center mt-4">
+<div class="quote-groups grid grid-cols-[repeat(auto-fit,_minmax(300px,_450px))] justify-center mt-4">
 	{#each Object.entries($groupedSnapshots.groups) as [groupName, quotes] (groupName)}
 		{#key groupName}
 			{#await Promise.resolve(getGroupSummaryLast(quotes)) then summary}
@@ -169,7 +184,7 @@ function getGroupSummaryLast(quotes: Record<string, PositionSnapshot[]>) {
 			{#await Promise.resolve(getSummaryFromLastSnapshots(snaps)) then summary}
 				<div class="group-card">
 					<div class="group-header">
-						<span class="group-title">{quoteKey.split(':')[0]} / {quoteKey.split(':')[1]}</span>
+						<span class="group-title">{getQuoteDisplayName(quoteKey)}</span>
 						<button class="icon-btn view-btn" title="Filter chart" aria-label="Filter chart">
 							<i class="fa-solid fa-filter fa-lg"></i>
 						</button>
@@ -327,26 +342,27 @@ function getGroupSummaryLast(quotes: Record<string, PositionSnapshot[]>) {
    .quote-groups {
 	   gap: 1.5rem;
    }
+
    .group-card {
 	   background: #232336;
 	   border-radius: 1.1rem;
 	   box-shadow: 0 2px 12px 0 rgba(0,0,0,0.10);
 	   padding: 1.5rem 1.2rem 1.2rem 1.2rem;
-	   margin-bottom: 1.5rem;
-	   min-width: 260px;
-	   max-width: 400px;
+	   width: 100%;
 	   display: flex;
 	   flex-direction: column;
 	   align-items: flex-start;
    }
+
    .group-header {
-	   margin-bottom: 0.7rem;
+	   margin-bottom: 0.5rem;
 	   width: 100%;
 	   display: flex;
 	   align-items: center;
 	   justify-content: space-between;
 	   min-height: 2.2rem;
    }
+
    .icon-btn {
 	   background: none;
 	   border: none;

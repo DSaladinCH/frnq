@@ -6,7 +6,7 @@ namespace DSaladin.Frnq.Api.Position;
 
 public class PositionManagement(QuoteManagement quoteManagement, DatabaseContext databaseContext)
 {
-    public async Task<IEnumerable<PositionSnapshot>> GetPositionsAsync(DateTime? from, DateTime? to)
+    public async Task<PositionsResponse> GetPositionsAsync(DateTime? from, DateTime? to)
     {
         if (from is null)
             from = DateTime.MinValue;
@@ -21,11 +21,13 @@ public class PositionManagement(QuoteManagement quoteManagement, DatabaseContext
         List<InvestmentModel> investments = await databaseContext.Investments
             .Where(i => i.Date <= to)
             .OrderBy(i => i.Date)
+            .Include(i => i.Quote)
+            .ThenInclude(q => q.Group)
             .ToListAsync();
 
         // Get all quotes that have been invested in
         if (investments.Count == 0)
-            return [];
+            return new PositionsResponse { Snapshots = [], Quotes = [] };
 
         HashSet<string> quoteSymbols = investments.Select(i => i.QuoteSymbol).ToHashSet();
         HashSet<string> providerIds = investments.Select(i => i.ProviderId).ToHashSet();
@@ -54,7 +56,7 @@ public class PositionManagement(QuoteManagement quoteManagement, DatabaseContext
         // Find the earliest investment date
         DateTime? firstInvestmentDate = investments.Count > 0 ? investments.Min(i => i.Date.Date) : (DateTime?)null;
         if (firstInvestmentDate == null)
-            return [];
+            return new PositionsResponse { Snapshots = [], Quotes = [] };
 
         List<DateTime> days = Enumerable.Range(0, (((DateTime)to).Date - firstInvestmentDate.Value).Days + 1)
             .Select(offset => firstInvestmentDate.Value.AddDays(offset))
@@ -166,6 +168,20 @@ public class PositionManagement(QuoteManagement quoteManagement, DatabaseContext
         }
 
         // Only return snapshots within the requested range
-        return allSnapshots.Where(s => s.Date >= ((DateTime)from).Date && s.Date <= ((DateTime)to).Date).ToList();
+        var filteredSnapshots = allSnapshots.Where(s => s.Date >= ((DateTime)from).Date && s.Date <= ((DateTime)to).Date).ToList();
+
+        // Get unique quotes used in the investments
+        var uniqueQuotes = investments
+            .Select(i => i.Quote)
+            .Where(q => q != null)
+            .GroupBy(q => new { q.ProviderId, q.Symbol })
+            .Select(g => g.First())
+            .ToList();
+
+        return new PositionsResponse
+        {
+            Snapshots = filteredSnapshots,
+            Quotes = uniqueQuotes
+        };
     }
 }

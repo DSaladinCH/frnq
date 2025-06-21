@@ -10,6 +10,7 @@ public class DatabaseContext : DbContext
 
     public DbSet<QuoteModel> Quotes { get; set; } = null!;
     public DbSet<QuotePrice> QuotePrices { get; set; } = null!;
+    public DbSet<QuoteGroup> QuoteGroups { get; set; } = null!;
     public DbSet<InvestmentModel> Investments { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -18,6 +19,11 @@ public class DatabaseContext : DbContext
             .HasOne(qp => qp.Quote)
             .WithMany(q => q.Prices)
             .HasForeignKey(qp => new { qp.ProviderId, qp.Symbol });
+
+        modelBuilder.Entity<QuoteModel>()
+            .HasOne(q => q.Group)
+            .WithMany(qc => qc.Quotes)
+            .HasForeignKey(q => q.GroupId);
 
         modelBuilder.Entity<InvestmentModel>()
             .HasOne(q => q.Quote)
