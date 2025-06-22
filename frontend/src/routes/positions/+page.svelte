@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import PortfolioChart from '$lib/components/PortfolioChart.svelte';
 	import { getPositionSnapshots, type PositionSnapshot, type QuoteModel, type PositionsResponse } from '$lib/services/positionService';
 	import { derived, writable, get } from 'svelte/store';
@@ -92,7 +92,109 @@ function getQuoteDisplayName(quoteId: number) {
 		}
 	});
 
+// State for filtering (use Svelte stores for reactivity)
+const filterMode = writable<'full' | 'group' | 'quote'>('full');
+const filterGroupId = writable<string | null>(null);
+const filterQuoteId = writable<number | null>(null);
+
+// Compute filtered snapshots for the chart
+const filteredSnapshots = derived([
+  snapshots,
+  quotes,
+  groupedSnapshots,
+  filterMode,
+  filterGroupId,
+  filterQuoteId
+], ([$snapshots, $quotes, $grouped, $filterMode, $filterGroupId, $filterQuoteId]) => {
+  if ($filterMode === 'full') return $snapshots;
+  if ($filterMode === 'group' && $filterGroupId) {
+    const group = $grouped.groups[$filterGroupId];
+    if (!group) return [];
+    return Object.values(group.quotes).flat();
+  }
+  if ($filterMode === 'quote' && $filterQuoteId != null) {
+    return $snapshots.filter(s => s.quoteId === $filterQuoteId);
+  }
+  return $snapshots;
+});
+
+// UI handlers (update stores)
+function handleGroupView(groupId: string) {
+  filterMode.set('group');
+  filterGroupId.set(groupId);
+  filterQuoteId.set(null);
+  tick(); // ensure reactivity
+}
+function handleQuoteView(quoteId: number, groupId?: string) {
+  filterMode.set('quote');
+  filterQuoteId.set(quoteId);
+  filterGroupId.set(groupId ?? null);
+  tick();
+}
+function handleBackToFullView() {
+  filterMode.set('full');
+  filterGroupId.set(null);
+  filterQuoteId.set(null);
+  tick();
+}
+function handleBackToGroupView() {
+  if ($filterGroupId) {
+    filterMode.set('group');
+    filterQuoteId.set(null);
+  } else {
+    handleBackToFullView();
+  }
+  tick();
+}
+
+// Helper to get all quote cards to render based on filter
+function getQuoteCards(
+  $groupedSnapshots: {
+    groups: Record<string, { name: string; quotes: Record<number, PositionSnapshot[]> }>;
+    ungrouped: Record<number, PositionSnapshot[]>;
+  },
+  $filterMode: 'full' | 'group' | 'quote',
+  $filterGroupId: string | null,
+  $filterQuoteId: number | null
+): Array<any> {
+  if ($filterMode === 'full') {
+    return [
+      ...Object.entries($groupedSnapshots.groups).map(([groupId, { name: groupName, quotes }]) => ({
+        type: 'group',
+        groupId, groupName, quotes
+      })),
+      ...Object.entries($groupedSnapshots.ungrouped).map(([quoteKey, snaps]) => ({
+        type: 'quote', quoteKey: +quoteKey, snaps
+      }))
+    ];
+  } else if ($filterMode === 'group' && $filterGroupId) {
+    // Only show quotes of the selected group
+    const group = $groupedSnapshots.groups[$filterGroupId];
+    if (!group) return [];
+    return Object.entries(group.quotes).map(([quoteKey, snaps]) => ({
+      type: 'quote', quoteKey: +quoteKey, snaps, groupId: $filterGroupId
+    }));
+  } else if ($filterMode === 'quote' && $filterQuoteId != null) {
+    let snaps = null;
+    let groupId = $filterGroupId;
+    if (groupId && $groupedSnapshots.groups[groupId]?.quotes[$filterQuoteId]) {
+      snaps = $groupedSnapshots.groups[groupId].quotes[$filterQuoteId];
+    } else if ($groupedSnapshots.ungrouped[$filterQuoteId]) {
+      snaps = $groupedSnapshots.ungrouped[$filterQuoteId];
+      groupId = null;
+    }
+    if (snaps) {
+      return [{ type: 'quote', quoteKey: $filterQuoteId, snaps, groupId, isActiveQuote: true }];
+    }
+    return [];
+  }
+  return [];
+}
+
+// Reactive cards array for the template
+$: cards = getQuoteCards($groupedSnapshots, $filterMode, $filterGroupId, $filterQuoteId);
 </script>
+
 <svelte:head>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </svelte:head>
@@ -114,101 +216,114 @@ function getQuoteDisplayName(quoteId: number) {
 	</div>
 {/if}
 {#if !$loading && !showLoading}
-	{#if $error}
-		<div class="error-screen">
-			<div class="sad-icon" aria-hidden="true">
-				<svg
-					width="64"
-					height="64"
-					viewBox="0 0 64 64"
-					fill="none"
-					xmlns="http://www.w3.org/2000/svg"
-					aria-hidden="true"
-				>
-					<circle cx="32" cy="32" r="28" stroke="#ffb3c6" stroke-width="6" fill="none" />
-					<line
-						x1="20"
-						y1="20"
-						x2="44"
-						y2="44"
-						stroke="#ffb3c6"
-						stroke-width="6"
-						stroke-linecap="round"
-					/>
-					<line
-						x1="44"
-						y1="20"
-						x2="20"
-						y2="44"
-						stroke="#ffb3c6"
-						stroke-width="6"
-						stroke-linecap="round"
-					/>
-				</svg>
-			</div>
-			<h2>There was an error fetching the data</h2>
-			<!-- <p class="error-message">{$error}</p> -->
-			<button class="btn btn-error" on:click={() => location.reload()}>Reload</button>
-		</div>
-	{:else if $snapshots.length === 0}
-		<p>No data available.</p>
-	{:else if $snapshots.length}
-		<PortfolioChart snapshots={$snapshots} />
+  {#if $error}
+    <div class="error-screen">
+      <div class="sad-icon" aria-hidden="true">
+        <svg
+          width="64"
+          height="64"
+          viewBox="0 0 64 64"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          <circle cx="32" cy="32" r="28" stroke="#ffb3c6" stroke-width="6" fill="none" />
+          <line
+            x1="20"
+            y1="20"
+            x2="44"
+            y2="44"
+            stroke="#ffb3c6"
+            stroke-width="6"
+            stroke-linecap="round"
+          />
+          <line
+            x1="44"
+            y1="20"
+            x2="20"
+            y2="44"
+            stroke="#ffb3c6"
+            stroke-width="6"
+            stroke-linecap="round"
+          />
+        </svg>
+      </div>
+      <h2>There was an error fetching the data</h2>
+      <!-- <p class="error-message">{$error}</p> -->
+      <button class="btn btn-error" on:click={() => location.reload()}>Reload</button>
+    </div>
+  {:else if $snapshots.length === 0}
+    <p>No data available.</p>
+  {:else if $snapshots.length}
+    <PortfolioChart snapshots={$filteredSnapshots} />
 
-<div class="quote-groups grid grid-cols-[repeat(auto-fit,_minmax(300px,_450px))] justify-center mt-4">
-	{#each Object.entries($groupedSnapshots.groups) as [groupId, { name: groupName, quotes }] (groupId)}
-		{#key groupId}
-			{#await Promise.resolve(getGroupSummaryLast(quotes)) then summary}
-				<div class="group-card">
-					<div class="group-header">
-						<span class="group-title">{groupName}</span>
-						<button class="icon-btn view-btn" title="More details" aria-label="More details">
-							<i class="fa-solid fa-circle-info fa-lg"></i>
-						</button>
-					</div>
-					<div class="group-summary">
-						<div class="invested">Invested: <span class="amount">{summary.invested.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
-						<div class="profit-row">
-							<span class="profit {summary.realized + summary.unrealized > 0 ? 'profit-positive' : summary.realized + summary.unrealized < 0 ? 'profit-negative' : ''}">
-								{(summary.realized + summary.unrealized).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-							</span>
-							<span class="profit-percent">
-								({summary.invested ? ((summary.realized + summary.unrealized) / summary.invested * 100).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '0.00'}%)
-							</span>
-						</div>
-					</div>
-				</div>
-			{/await}
-		{/key}
-	{/each}
-
-	{#each Object.entries($groupedSnapshots.ungrouped) as [quoteKey, snaps] (quoteKey)}
-		{#key quoteKey}
-			{#await Promise.resolve(getSummaryFromLastSnapshots(snaps)) then summary}
-				<div class="group-card">
-					<div class="group-header">
-						<span class="group-title">{getQuoteDisplayName(+quoteKey)}</span>
-						<button class="icon-btn view-btn" title="Filter chart" aria-label="Filter chart">
-							<i class="fa-solid fa-filter fa-lg"></i>
-						</button>
-					</div>
-					<div class="group-summary">
-						<div class="invested">Invested: <span class="amount">{summary.invested.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
-						<div class="profit-row">
-							<span class="profit {summary.realized + summary.unrealized > 0 ? 'profit-positive' : summary.realized + summary.unrealized < 0 ? 'profit-negative' : ''}">
-								{(summary.realized + summary.unrealized).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-							</span>
-							<span class="profit-percent">
-								({summary.invested ? ((summary.realized + summary.unrealized) / summary.invested * 100).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '0.00'}%)
-							</span>
-						</div>
-					</div>
-				</div>
-			{/await}
-		{/key}
-	{/each}
-</div>
-	{/if}
+    <div class="quote-groups grid grid-cols-[repeat(auto-fit,_minmax(300px,_450px))] justify-center mt-4">
+      {#if $filterMode !== 'full'}
+        <!-- Back to full view card as a button for a11y -->
+        <button type="button" class="group-card back-card a11y-card-btn" on:click={handleBackToFullView} aria-label="Back to full view">
+          <div class="group-header">
+            <span class="group-title"><i class="fa-solid fa-arrow-left"></i> Back to full view</span>
+          </div>
+        </button>
+      {/if}
+      {#each cards as card (
+        card.type === 'group'
+          ? `group-${card.groupId}`
+          : card.groupId
+            ? `quote-${card.groupId}-${card.quoteKey}`
+            : `quote-${card.quoteKey}`
+      )}
+        {#if card.type === 'group' && $filterMode === 'full'}
+          {#await Promise.resolve(getGroupSummaryLast(card.quotes)) then summary}
+            <div class="group-card">
+              <div class="group-header">
+                <span class="group-title">{card.groupName}</span>
+                <button class="icon-btn view-btn" title="Show only this group" aria-label="Show only this group" on:click={() => handleGroupView(card.groupId)}>
+                  <i class="fa-solid fa-circle-info fa-lg"></i>
+                </button>
+              </div>
+              <div class="group-summary">
+                <div class="invested">Invested: <span class="amount">{summary.invested.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
+                <div class="profit-row">
+                  <span class="profit {summary.realized + summary.unrealized > 0 ? 'profit-positive' : summary.realized + summary.unrealized < 0 ? 'profit-negative' : ''}">
+                    {(summary.realized + summary.unrealized).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                  </span>
+                  <span class="profit-percent">
+                    ({summary.invested ? ((summary.realized + summary.unrealized) / summary.invested * 100).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '0.00'}%)
+                  </span>
+                </div>
+              </div>
+            </div>
+          {/await}
+        {:else if card.type === 'quote'}
+          {#await Promise.resolve(getSummaryFromLastSnapshots(card.snaps)) then summary}
+            <div class="group-card">
+              <div class="group-header">
+                <span class="group-title">{getQuoteDisplayName(card.quoteKey)}</span>
+                <button class="icon-btn view-btn"
+                  title={card.isActiveQuote ? (card.groupId ? 'Cancel quote filter' : 'Back to full view') : 'Show only this quote'}
+                  aria-label={card.isActiveQuote ? (card.groupId ? 'Cancel quote filter' : 'Back to full view') : 'Show only this quote'}
+                  on:click={() => card.isActiveQuote ? (card.groupId ? handleBackToGroupView() : handleBackToFullView()) : handleQuoteView(card.quoteKey, card.groupId)}>
+                  <i class={card.isActiveQuote ? 'fa-solid fa-xmark fa-lg' : 'fa-solid fa-filter fa-lg'}></i>
+                </button>
+              </div>
+              <div class="group-summary">
+                <div class="invested">Invested: <span class="amount">{summary.invested.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
+                <div class="profit-row">
+                  <span class="profit {summary.realized + summary.unrealized > 0 ? 'profit-positive' : summary.realized + summary.unrealized < 0 ? 'profit-negative' : ''}">
+                    {(summary.realized + summary.unrealized).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                  </span>
+                  <span class="profit-percent">
+                    ({summary.invested ? ((summary.realized + summary.unrealized) / summary.invested * 100).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '0.00'}%)
+                  </span>
+                </div>
+              </div>
+            </div>
+          {/await}
+        {/if}
+      {/each}
+    </div>
+  {/if}
 {/if}
 
 <style>
@@ -425,5 +540,29 @@ function getQuoteDisplayName(quoteId: number) {
    .profit-percent {
 	   font-size: 1rem;
 	   color: #b3b3b3;
+   }
+   .btn.btn-back {
+  background: #35354a;
+  color: #f3f3f3;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1.2rem;
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.btn.btn-back:hover, .btn.btn-back:focus {
+  background: #232336;
+}
+   .back-card.a11y-card-btn {
+     cursor: pointer;
+   }
+   .back-card.a11y-card-btn:hover, .back-card.a11y-card-btn:focus {
+     background: #35354a;
    }
 </style>
