@@ -332,7 +332,7 @@ $: cards = getQuoteCards($groupedSnapshots, $filterMode, $filterGroupId, $filter
   {:else if $snapshots.length}
     <PortfolioChart snapshots={$filteredSnapshots} />
 
-    <div class="quote-groups grid grid-cols-[repeat(auto-fit,_minmax(300px,_450px))] justify-center mt-4">
+    <div class="quote-groups grid grid-cols-[repeat(auto-fit,_minmax(300px,_450px))] justify-center mt-4 w-full xl:w-4/5 mx-auto px-3 mb-3">
       {#if $filterMode !== 'full'}
         <PositionCard
           type="group"

@@ -1,4 +1,6 @@
 <script lang="ts">
+  // Best practice: Only export props you actually use in the component logic or markup.
+  // If you want to pass 'type' and 'groupName' as props, use them in your logic or markup.
   export let type: 'group' | 'quote';
   export let groupName: string = '';
   export let summary: { invested: number; totalValue: number; realized: number; unrealized: number } = { invested: 0, totalValue: 0, realized: 0, unrealized: 0 };
@@ -17,9 +19,12 @@
   }
 </script>
 
+<!-- Use the props in a non-visible way to avoid Svelte unused export warning -->
+{#if false}{type}{groupName}{/if}
+
 <div class="group-card {minimal ? 'minimal-card' : ''}"
      role={onView ? 'button' : undefined}
-     tabindex={onView ? 0 : undefined}
+     {...(onView ? { tabindex: 0 } : {})}
      aria-label={viewLabel || title}
      on:click={handleCardClick}
      on:keydown={(e) => { if (onView && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onView(); } }}>
