@@ -29,28 +29,20 @@ public class PositionManagement(QuoteManagement quoteManagement, DatabaseContext
         if (investments.Count == 0)
             return new PositionsResponse { Snapshots = [], Quotes = [] };
 
-        HashSet<string> quoteSymbols = investments.Select(i => i.QuoteSymbol).ToHashSet();
-        HashSet<string> providerIds = investments.Select(i => i.ProviderId).ToHashSet();
-
-        // HashSet of all unique (providerId, symbol) pairs used
-        HashSet<(string ProviderId, string Symbol)> usedQuotePKs = investments
-            .Select(i => (i.ProviderId, i.QuoteSymbol))
-            .ToHashSet();
+        HashSet<int> quoteIds = investments.Select(i => i.QuoteId).ToHashSet();
 
         // Update historical prices with any missing data
-        foreach (var (providerId, symbol) in usedQuotePKs)
-            await quoteManagement.GetHistoricalPricesAsync(providerId, symbol, (DateTime)from, (DateTime)to);
+        foreach (var quoteId in quoteIds)
+            await quoteManagement.GetHistoricalPricesAsync(quoteId, (DateTime)from, (DateTime)to);
 
         // Get all prices up to the requested 'to' date
         List<QuotePrice> prices = await databaseContext.QuotePrices
-        .Where(qp => providerIds.Contains(qp.ProviderId) && quoteSymbols.Contains(qp.Symbol))
-        .Where(qp => qp.Date <= to)
-        .ToListAsync();
+            .Where(qp => quoteIds.Contains(qp.QuoteId))
+            .Where(qp => qp.Date <= to)
+            .ToListAsync();
 
-        // Update historical prices with any missing data
-
-        Dictionary<(string ProviderId, string Symbol), Dictionary<DateTime, QuotePrice>> priceLookup = prices
-            .GroupBy(qp => (qp.ProviderId, qp.Symbol))
+        Dictionary<int, Dictionary<DateTime, QuotePrice>> priceLookup = prices
+            .GroupBy(qp => qp.QuoteId)
             .ToDictionary(g => g.Key, g => g.ToDictionary(p => p.Date.Date, p => p));
 
         // Find the earliest investment date
@@ -64,7 +56,7 @@ public class PositionManagement(QuoteManagement quoteManagement, DatabaseContext
 
         List<PositionSnapshot> allSnapshots = [];
 
-        var investmentGroups = investments.GroupBy(i => (i.UserId, i.ProviderId, i.QuoteSymbol));
+        var investmentGroups = investments.GroupBy(i => (i.UserId, i.QuoteId));
 
         foreach (var group in investmentGroups)
         {
@@ -129,7 +121,7 @@ public class PositionManagement(QuoteManagement quoteManagement, DatabaseContext
 
                 // Get price for this day
                 QuotePrice? price = null;
-                if (priceLookup.TryGetValue((group.Key.ProviderId, group.Key.QuoteSymbol), out var priceDict))
+                if (priceLookup.TryGetValue(group.Key.QuoteId, out var priceDict))
                     priceDict.TryGetValue(day, out price);
 
                 if (price == null && lastKnownPrice == null)
@@ -153,8 +145,7 @@ public class PositionManagement(QuoteManagement quoteManagement, DatabaseContext
                 allSnapshots.Add(new PositionSnapshot
                 {
                     UserId = group.Key.UserId,
-                    ProviderId = group.Key.ProviderId,
-                    QuoteSymbol = group.Key.QuoteSymbol,
+                    QuoteId = group.Key.QuoteId,
                     Date = day,
                     Currency = quote.Currency,
                     Amount = cumulativeAmount,
@@ -174,7 +165,7 @@ public class PositionManagement(QuoteManagement quoteManagement, DatabaseContext
         var uniqueQuotes = investments
             .Select(i => i.Quote)
             .Where(q => q != null)
-            .GroupBy(q => new { q.ProviderId, q.Symbol })
+            .GroupBy(q => q.Id)
             .Select(g => g.First())
             .ToList();
 

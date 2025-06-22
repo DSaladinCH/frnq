@@ -13,12 +13,14 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
-builder.Services.AddScoped<YahooFinanceProvider>();
-builder.Services.AddScoped<DatabaseProvider>();
-builder.Services.AddScoped<IFinanceProvider, YahooFinanceProvider>();
 builder.Services.AddScoped<InvestmentManagement>();
 builder.Services.AddScoped<PositionManagement>();
 builder.Services.AddScoped<QuoteManagement>();
+
+builder.Services.AddScoped<DatabaseProvider>();
+builder.Services.AddScoped<YahooFinanceProvider>();
+builder.Services.AddScoped<IFinanceProvider, YahooFinanceProvider>();
+builder.Services.AddScoped<ProviderRegistry>();
 
 // Add CORS policy for development
 builder.Services.AddCors(options =>

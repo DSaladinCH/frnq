@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DSaladin.Frnq.Api.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20250615210319_Initial")]
+    [Migration("20250622154924_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -42,13 +42,8 @@ namespace DSaladin.Frnq.Api.Migrations
                     b.Property<decimal>("PricePerUnit")
                         .HasColumnType("numeric");
 
-                    b.Property<string>("ProviderId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("QuoteSymbol")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("QuoteId")
+                        .HasColumnType("integer");
 
                     b.Property<decimal>("TotalFees")
                         .HasColumnType("numeric");
@@ -62,18 +57,35 @@ namespace DSaladin.Frnq.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProviderId", "QuoteSymbol");
+                    b.HasIndex("QuoteId");
 
                     b.ToTable("investment");
                 });
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteModel", b =>
+            modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteGroup", b =>
                 {
-                    b.Property<string>("ProviderId")
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Symbol")
-                        .HasColumnType("text");
+                    b.HasKey("Id");
+
+                    b.ToTable("quote_group");
+                });
+
+            modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Currency")
                         .IsRequired()
@@ -83,10 +95,21 @@ namespace DSaladin.Frnq.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime?>("LastUpdated")
+                    b.Property<int?>("GroupId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("LastUpdatedPrices")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProviderId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Symbol")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -94,27 +117,32 @@ namespace DSaladin.Frnq.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.HasKey("ProviderId", "Symbol");
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupId");
+
+                    b.HasIndex("ProviderId", "Symbol")
+                        .IsUnique();
 
                     b.ToTable("quote");
                 });
 
             modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuotePrice", b =>
                 {
-                    b.Property<string>("ProviderId")
-                        .HasColumnType("text");
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
 
-                    b.Property<string>("Symbol")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<decimal?>("AdjustedClose")
                         .HasColumnType("numeric");
 
                     b.Property<decimal>("Close")
                         .HasColumnType("numeric");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal>("High")
                         .HasColumnType("numeric");
@@ -125,7 +153,13 @@ namespace DSaladin.Frnq.Api.Migrations
                     b.Property<decimal>("Open")
                         .HasColumnType("numeric");
 
-                    b.HasKey("ProviderId", "Symbol", "Date");
+                    b.Property<int>("QuoteId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuoteId", "Date")
+                        .IsUnique();
 
                     b.ToTable("quote_price");
                 });
@@ -134,22 +168,36 @@ namespace DSaladin.Frnq.Api.Migrations
                 {
                     b.HasOne("DSaladin.Frnq.Api.Quote.QuoteModel", "Quote")
                         .WithMany()
-                        .HasForeignKey("ProviderId", "QuoteSymbol")
+                        .HasForeignKey("QuoteId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Quote");
                 });
 
+            modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteModel", b =>
+                {
+                    b.HasOne("DSaladin.Frnq.Api.Quote.QuoteGroup", "Group")
+                        .WithMany("Quotes")
+                        .HasForeignKey("GroupId");
+
+                    b.Navigation("Group");
+                });
+
             modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuotePrice", b =>
                 {
                     b.HasOne("DSaladin.Frnq.Api.Quote.QuoteModel", "Quote")
                         .WithMany("Prices")
-                        .HasForeignKey("ProviderId", "Symbol")
+                        .HasForeignKey("QuoteId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Quote");
+                });
+
+            modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteGroup", b =>
+                {
+                    b.Navigation("Quotes");
                 });
 
             modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteModel", b =>

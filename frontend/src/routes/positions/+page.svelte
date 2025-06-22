@@ -10,17 +10,21 @@
 	const error = writable<string | null>(null);
 
 
-// Group by group name, then by quote (providerId:quoteSymbol)
-const groupedSnapshots = derived(snapshots, ($snapshots) => {
-	const groups: Record<string, Record<string, PositionSnapshot[]>> = {};
-	const ungrouped: Record<string, PositionSnapshot[]> = {};
+// Group by quote group (from quote), then by quoteId
+const groupedSnapshots = derived([snapshots, quotes], ([$snapshots, $quotes]) => {
+	const groups: Record<string, { name: string; quotes: Record<number, PositionSnapshot[]> }> = {};
+	const ungrouped: Record<number, PositionSnapshot[]> = {};
+
 	for (const snap of $snapshots) {
-		const groupName = snap.group || null;
-		const quoteKey = `${snap.providerId}:${snap.quoteSymbol}`;
-		if (groupName) {
-			if (!groups[groupName]) groups[groupName] = {};
-			if (!groups[groupName][quoteKey]) groups[groupName][quoteKey] = [];
-			groups[groupName][quoteKey].push(snap);
+		const quote = $quotes.find(q => q.id === snap.quoteId);
+		const groupId = quote?.group?.id;
+		const groupName = quote?.group?.name;
+		const quoteKey = snap.quoteId;
+
+		if (groupId && groupName) {
+			if (!groups[groupId]) groups[groupId] = { name: groupName, quotes: {} };
+			if (!groups[groupId].quotes[quoteKey]) groups[groupId].quotes[quoteKey] = [];
+			groups[groupId].quotes[quoteKey].push(snap);
 		} else {
 			if (!ungrouped[quoteKey]) ungrouped[quoteKey] = [];
 			ungrouped[quoteKey].push(snap);
@@ -42,7 +46,7 @@ function getSummaryFromLastSnapshots(snaps: PositionSnapshot[]) {
 }
 
 // Helper to sum all values in a group (sum of last snapshot of each quote)
-function getGroupSummaryLast(quotes: Record<string, PositionSnapshot[]>) {
+function getGroupSummaryLast(quotes: Record<number, PositionSnapshot[]>) {
 	const lastSnaps = Object.values(quotes)
 		.map(snaps => snaps[snaps.length - 1])
 		.filter(Boolean);
@@ -54,17 +58,16 @@ function getGroupSummaryLast(quotes: Record<string, PositionSnapshot[]>) {
 	};
 }
 
-// Helper to get quote by providerId and symbol
-function getQuoteByProviderAndSymbol(providerId: string, symbol: string) {
+// Helper to get quote by quoteId
+function getQuoteById(quoteId: number) {
 	const $quotesArr = get(quotes);
-	return $quotesArr.find(q => q.providerId === providerId && q.symbol === symbol);
+	return $quotesArr.find(q => q.id === quoteId);
 }
 
-// Helper to get display name for a quoteKey
-function getQuoteDisplayName(quoteKey: string) {
-	const [providerId, symbol] = quoteKey.split(':');
-	const quote = getQuoteByProviderAndSymbol(providerId, symbol);
-	return quote ? quote.name : `${providerId} / ${symbol}`;
+// Helper to get display name for a quoteId
+function getQuoteDisplayName(quoteId: number) {
+	const quote = getQuoteById(quoteId);
+	return quote ? quote.name : `Quote #${quoteId}`;
 }
 
 	let showLoading = true;
@@ -153,8 +156,8 @@ function getQuoteDisplayName(quoteKey: string) {
 		<PortfolioChart snapshots={$snapshots} />
 
 <div class="quote-groups grid grid-cols-[repeat(auto-fit,_minmax(300px,_450px))] justify-center mt-4">
-	{#each Object.entries($groupedSnapshots.groups) as [groupName, quotes] (groupName)}
-		{#key groupName}
+	{#each Object.entries($groupedSnapshots.groups) as [groupId, { name: groupName, quotes }] (groupId)}
+		{#key groupId}
 			{#await Promise.resolve(getGroupSummaryLast(quotes)) then summary}
 				<div class="group-card">
 					<div class="group-header">
@@ -184,7 +187,7 @@ function getQuoteDisplayName(quoteKey: string) {
 			{#await Promise.resolve(getSummaryFromLastSnapshots(snaps)) then summary}
 				<div class="group-card">
 					<div class="group-header">
-						<span class="group-title">{getQuoteDisplayName(quoteKey)}</span>
+						<span class="group-title">{getQuoteDisplayName(+quoteKey)}</span>
 						<button class="icon-btn view-btn" title="Filter chart" aria-label="Filter chart">
 							<i class="fa-solid fa-filter fa-lg"></i>
 						</button>

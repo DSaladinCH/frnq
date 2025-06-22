@@ -15,20 +15,28 @@ public class DatabaseContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<QuotePrice>()
-            .HasOne(qp => qp.Quote)
-            .WithMany(q => q.Prices)
-            .HasForeignKey(qp => new { qp.ProviderId, qp.Symbol });
-
         modelBuilder.Entity<QuoteModel>()
             .HasOne(q => q.Group)
             .WithMany(qc => qc.Quotes)
             .HasForeignKey(q => q.GroupId);
 
+        modelBuilder.Entity<QuoteModel>()
+            .HasIndex(q => new { q.ProviderId, q.Symbol })
+            .IsUnique();
+
+        modelBuilder.Entity<QuotePrice>()
+            .HasOne(qp => qp.Quote)
+            .WithMany(q => q.Prices)
+            .HasForeignKey(qp => qp.QuoteId);
+
+        modelBuilder.Entity<QuotePrice>()
+            .HasIndex(qp => new { qp.QuoteId, qp.Date })
+            .IsUnique();
+
         modelBuilder.Entity<InvestmentModel>()
             .HasOne(q => q.Quote)
             .WithMany()
-            .HasForeignKey(q => new { q.ProviderId, q.QuoteSymbol });
+            .HasForeignKey(q => q.QuoteId);
 
         base.OnModelCreating(modelBuilder);
     }

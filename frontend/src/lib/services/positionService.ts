@@ -3,8 +3,7 @@ const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
 export interface PositionSnapshot {
   userId: string;
-  providerId: string;
-  quoteSymbol: string;
+  quoteId: number;
   date: string;
   currency: string;
   group: string;
@@ -18,13 +17,20 @@ export interface PositionSnapshot {
 }
 
 export interface QuoteModel {
-  providerId: string;
-  symbol: string;
+  id: number;
   name: string;
+  symbol: string;
+  providerId: string;
   exchangeDisposition: string;
   typeDisposition: string;
   currency: string;
   lastUpdatedPrices: string;
+  group: QuoteGroup;
+}
+
+export interface QuoteGroup {
+  id: number;
+  name: string;
 }
 
 export interface PositionsResponse {

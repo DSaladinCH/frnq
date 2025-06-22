@@ -5,8 +5,7 @@ namespace DSaladin.Frnq.Api.Position;
 public class PositionSnapshot
 {
     public string UserId { get; set; } = string.Empty;
-    public string ProviderId { get; set; } = string.Empty;
-    public string QuoteSymbol { get; set; } = string.Empty;
+    public int QuoteId { get; set; } // New FK to QuoteModel
     public DateTime Date { get; set; }
     public string Currency { get; set; } = string.Empty;
 

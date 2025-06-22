@@ -1,8 +1,9 @@
+using DSaladin.Frnq.Api.Quote;
 using Microsoft.EntityFrameworkCore;
 
 namespace DSaladin.Frnq.Api.Investment;
 
-public class InvestmentManagement(DatabaseContext databaseContext)
+public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseContext databaseContext)
 {
     public async Task<IEnumerable<InvestmentModel>> GetInvestmentsAsync()
     {
@@ -17,13 +18,20 @@ public class InvestmentManagement(DatabaseContext databaseContext)
 
     public async Task<InvestmentModel> CreateInvestmentAsync(InvestmentRequest investmentRequest)
     {
-        if (investmentRequest is null)
-            throw new ArgumentNullException(nameof(investmentRequest));
+        QuoteModel? quote = await quoteManagement.GetQuoteAsync(investmentRequest);
+
+        if (quote is null)
+        {
+            await quoteManagement.GetHistoricalPricesAsync(investmentRequest.ProviderId, investmentRequest.QuoteSymbol, DateTime.MinValue, DateTime.UtcNow);
+            quote = await quoteManagement.GetQuoteAsync(investmentRequest);
+        }
+
+        if (quote is null)
+            throw new ArgumentException($"Referenced quote does not exist.");
 
         InvestmentModel investment = new InvestmentModel
         {
-            ProviderId = investmentRequest.ProviderId,
-            QuoteSymbol = investmentRequest.QuoteSymbol,
+            QuoteId = quote.Id,
             Date = DateTime.SpecifyKind(investmentRequest.Date, DateTimeKind.Utc),
             Type = investmentRequest.Type,
             Amount = investmentRequest.Amount,
@@ -43,12 +51,16 @@ public class InvestmentManagement(DatabaseContext databaseContext)
             throw new ArgumentNullException(nameof(investmentRequest));
 
         InvestmentModel? investment = await databaseContext.Investments.FindAsync(id);
-        
+
         if (investment is null)
             throw new KeyNotFoundException($"Investment with ID {id} not found.");
 
-        investment.ProviderId = investmentRequest.ProviderId;
-        investment.QuoteSymbol = investmentRequest.QuoteSymbol;
+        QuoteModel? quote = await quoteManagement.GetQuoteAsync(investmentRequest);
+
+        if (quote is null)
+            throw new ArgumentException($"Referenced quote does not exist.");
+
+        investment.QuoteId = quote.Id;
         investment.Date = DateTime.SpecifyKind(investmentRequest.Date, DateTimeKind.Utc);
         investment.Type = investmentRequest.Type;
         investment.Amount = investmentRequest.Amount;

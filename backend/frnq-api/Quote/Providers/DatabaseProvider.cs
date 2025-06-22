@@ -2,15 +2,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DSaladin.Frnq.Api.Quote.Providers;
 
-public class DatabaseProvider(DatabaseContext databaseContext) : IFinanceProvider
+public class DatabaseProvider(DatabaseContext databaseContext)
 {
     public string InternalId => "database";
     public string Name => "Database";
 
-    public async Task<QuoteModel?> GetQuoteAsync(string symbol)
+    public async Task<QuoteModel?> GetQuoteAsync(int quoteId)
     {
         return await databaseContext.Quotes
-            .FirstOrDefaultAsync(q => q.Symbol == symbol);
+            .FirstOrDefaultAsync(q => q.Id == quoteId);
     }
 
     public async Task<QuoteModel?> GetQuoteAsync(string providerId, string symbol)
@@ -26,10 +26,10 @@ public class DatabaseProvider(DatabaseContext databaseContext) : IFinanceProvide
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<QuotePrice>> GetHistoricalPricesAsync(string symbol, DateTime from, DateTime to)
+    public async Task<IEnumerable<QuotePrice>> GetHistoricalPricesAsync(int quoteId, DateTime from, DateTime to)
     {
         return await databaseContext.QuotePrices
-            .Where(qp => qp.Symbol == symbol && qp.Date >= from && qp.Date <= to)
+            .Where(qp => qp.QuoteId == quoteId && qp.Date >= from && qp.Date <= to)
             .OrderBy(qp => qp.Date)
             .ToListAsync();
     }
@@ -39,12 +39,16 @@ public class DatabaseProvider(DatabaseContext databaseContext) : IFinanceProvide
         if (quote is null)
             return null;
 
-        QuoteModel? existing = await databaseContext.Quotes.FindAsync(quote.ProviderId, quote.Symbol);
+        QuoteModel? existing = await GetQuoteAsync(quote.ProviderId, quote.Symbol);
 
-        if (existing is null)
-            await databaseContext.Quotes.AddAsync(quote);
-        else
+        if (existing is not null) {
+            quote.Id = existing.Id;
+            quote.LastUpdatedPrices = existing.LastUpdatedPrices;
+            quote.GroupId = existing.GroupId;
             databaseContext.Entry(existing).CurrentValues.SetValues(quote);
+        }
+        else
+            await databaseContext.Quotes.AddAsync(quote);
 
         await databaseContext.SaveChangesAsync();
         return quote;
@@ -55,19 +59,21 @@ public class DatabaseProvider(DatabaseContext databaseContext) : IFinanceProvide
         if (!prices.Any())
             return;
 
-        QuoteModel? quote = await GetQuoteAsync(prices.First().ProviderId, prices.First().Symbol);
+        QuoteModel? quote = await GetQuoteAsync(prices.First().QuoteId);
 
         if (quote is null)
             return;
 
         foreach (QuotePrice price in prices)
         {
-            QuotePrice? existing = await databaseContext.QuotePrices.FindAsync(price.ProviderId, price.Symbol, price.Date);
+            QuotePrice? existing = await databaseContext.QuotePrices.FirstOrDefaultAsync(p => p.QuoteId == price.QuoteId && p.Date == price.Date);
 
-            if (existing == null)
-                await databaseContext.QuotePrices.AddAsync(price);
-            else
+            if (existing is not null) {
+                price.Id = existing.Id;
                 databaseContext.Entry(existing).CurrentValues.SetValues(price);
+            }
+            else
+                await databaseContext.QuotePrices.AddAsync(price);
         }
 
         quote.LastUpdatedPrices = DateTime.UtcNow;

@@ -13,20 +13,41 @@ namespace DSaladin.Frnq.Api.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "quote_group",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_quote_group", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "quote",
                 columns: table => new
                 {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     ProviderId = table.Column<string>(type: "text", nullable: false),
                     Symbol = table.Column<string>(type: "text", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
                     ExchangeDisposition = table.Column<string>(type: "text", nullable: false),
                     TypeDisposition = table.Column<string>(type: "text", nullable: false),
                     Currency = table.Column<string>(type: "text", nullable: false),
-                    LastUpdated = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    GroupId = table.Column<int>(type: "integer", nullable: true),
+                    LastUpdatedPrices = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_quote", x => new { x.ProviderId, x.Symbol });
+                    table.PrimaryKey("PK_quote", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_quote_quote_group_GroupId",
+                        column: x => x.GroupId,
+                        principalTable: "quote_group",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -36,8 +57,7 @@ namespace DSaladin.Frnq.Api.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     UserId = table.Column<string>(type: "text", nullable: false),
-                    ProviderId = table.Column<string>(type: "text", nullable: false),
-                    QuoteSymbol = table.Column<string>(type: "text", nullable: false),
+                    QuoteId = table.Column<int>(type: "integer", nullable: false),
                     Date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Type = table.Column<int>(type: "integer", nullable: false),
                     Amount = table.Column<decimal>(type: "numeric", nullable: false),
@@ -48,10 +68,10 @@ namespace DSaladin.Frnq.Api.Migrations
                 {
                     table.PrimaryKey("PK_investment", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_investment_quote_ProviderId_QuoteSymbol",
-                        columns: x => new { x.ProviderId, x.QuoteSymbol },
+                        name: "FK_investment_quote_QuoteId",
+                        column: x => x.QuoteId,
                         principalTable: "quote",
-                        principalColumns: new[] { "ProviderId", "Symbol" },
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -59,8 +79,9 @@ namespace DSaladin.Frnq.Api.Migrations
                 name: "quote_price",
                 columns: table => new
                 {
-                    ProviderId = table.Column<string>(type: "text", nullable: false),
-                    Symbol = table.Column<string>(type: "text", nullable: false),
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    QuoteId = table.Column<int>(type: "integer", nullable: false),
                     Date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Open = table.Column<decimal>(type: "numeric", nullable: false),
                     Close = table.Column<decimal>(type: "numeric", nullable: false),
@@ -70,19 +91,36 @@ namespace DSaladin.Frnq.Api.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_quote_price", x => new { x.ProviderId, x.Symbol, x.Date });
+                    table.PrimaryKey("PK_quote_price", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_quote_price_quote_ProviderId_Symbol",
-                        columns: x => new { x.ProviderId, x.Symbol },
+                        name: "FK_quote_price_quote_QuoteId",
+                        column: x => x.QuoteId,
                         principalTable: "quote",
-                        principalColumns: new[] { "ProviderId", "Symbol" },
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_investment_ProviderId_QuoteSymbol",
+                name: "IX_investment_QuoteId",
                 table: "investment",
-                columns: new[] { "ProviderId", "QuoteSymbol" });
+                column: "QuoteId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_quote_GroupId",
+                table: "quote",
+                column: "GroupId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_quote_ProviderId_Symbol",
+                table: "quote",
+                columns: new[] { "ProviderId", "Symbol" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_quote_price_QuoteId_Date",
+                table: "quote_price",
+                columns: new[] { "QuoteId", "Date" },
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -96,6 +134,9 @@ namespace DSaladin.Frnq.Api.Migrations
 
             migrationBuilder.DropTable(
                 name: "quote");
+
+            migrationBuilder.DropTable(
+                name: "quote_group");
         }
     }
 }

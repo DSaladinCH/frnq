@@ -1,15 +1,16 @@
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
-using Microsoft.EntityFrameworkCore;
 
 namespace DSaladin.Frnq.Api.Quote;
 
 [Table("quote_price")]
-[PrimaryKey(nameof(ProviderId), nameof(Symbol), nameof(Date))]
 public class QuotePrice
 {
-    public string ProviderId { get; set; } = string.Empty;
-    public string Symbol { get; set; } = string.Empty;
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public int Id { get; set; } // Optional: add PK for quote_price if needed
+    public int QuoteId { get; set; } // FK to QuoteModel
     public DateTime Date { get; set; }
     public decimal Open { get; set; }
     public decimal Close { get; set; }

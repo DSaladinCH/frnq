@@ -92,6 +92,12 @@ public class YahooFinanceProvider : IFinanceProvider
 
     public async Task<IEnumerable<QuotePrice>> GetHistoricalPricesAsync(string symbol, DateTime from, DateTime to)
     {
+        from = DateTime.SpecifyKind(from, DateTimeKind.Utc);
+        to = DateTime.SpecifyKind(to, DateTimeKind.Utc);
+
+        if (from == DateTime.MinValue)
+            from = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
         UriBuilder uriBuilder = new($"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}");
         QueryBuilder queryBuilder = new()
         {
@@ -139,7 +145,6 @@ public class YahooFinanceProvider : IFinanceProvider
 
             result.Add(new QuotePrice
             {
-                Symbol = symbol,
                 Date = DateTimeOffset.FromUnixTimeSeconds(timestamps[i]!.GetValue<long>()).UtcDateTime,
                 Open = opens[i]!.GetValue<decimal>(),
                 Close = closes[i]!.GetValue<decimal>(),

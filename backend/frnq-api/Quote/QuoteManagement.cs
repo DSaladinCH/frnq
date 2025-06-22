@@ -1,29 +1,73 @@
+using DSaladin.Frnq.Api.Investment;
 using DSaladin.Frnq.Api.Quote.Providers;
 using Microsoft.EntityFrameworkCore;
 
 namespace DSaladin.Frnq.Api.Quote;
 
-public class QuoteManagement(DatabaseContext databaseContext, IFinanceProvider financeProvider, DatabaseProvider databaseProvider)
+public class QuoteManagement(DatabaseContext databaseContext, ProviderRegistry registry, DatabaseProvider databaseProvider)
 {
+    public async Task<QuoteModel?> GetQuoteAsync(int quoteId)
+    {
+        return await databaseContext.Quotes.FirstOrDefaultAsync(q => q.Id == quoteId);
+    }
+
+    public async Task<QuoteModel?> GetQuoteAsync(string providerId, string symbol)
+    {
+        return await databaseContext.Quotes.FirstOrDefaultAsync(q => q.ProviderId == providerId && q.Symbol == symbol);
+    }
+
+    public async Task<QuoteModel?> GetQuoteAsync(InvestmentRequest investment)
+    {
+        if (investment.QuoteId > 0)
+            return await GetQuoteAsync(investment.QuoteId);
+
+        if (!string.IsNullOrEmpty(investment.ProviderId) && !string.IsNullOrEmpty(investment.QuoteSymbol))
+            return await GetQuoteAsync(investment.ProviderId, investment.QuoteSymbol);
+
+        return null;
+    }
+
+    public async Task<bool> QuoteExistsAsync(int quoteId)
+    {
+        return await databaseContext.Quotes.AnyAsync(q => q.Id == quoteId);
+    }
+
     public async Task<bool> QuoteExistsAsync(string providerId, string symbol)
     {
         return await databaseContext.Quotes.AnyAsync(q => q.ProviderId == providerId && q.Symbol == symbol);
     }
 
+    public async Task<QuoteModel> GetOrAddQuoteAsync(string providerId, string symbol)
+    {
+        QuoteModel? quote = await databaseProvider.GetQuoteAsync(providerId, symbol);
+        if (quote is not null)
+            return quote;
+
+        IFinanceProvider? financeProvider = registry.GetProvider(providerId) ?? throw new ArgumentException($"Finance provider '{providerId}' not found.", nameof(providerId));
+        quote = await financeProvider.GetQuoteAsync(symbol) ?? throw new ArgumentException($"Quote with symbol '{symbol}' not found.", nameof(symbol));
+
+        await databaseProvider.AddOrUpdateQuoteAsync(quote);
+        return quote;
+    }
+
     public async Task<List<QuotePrice>> GetHistoricalPricesAsync(string providerId, string symbol, DateTime from, DateTime to)
     {
-        QuoteModel? quote = await databaseProvider.GetQuoteAsync(financeProvider.InternalId, symbol);
-        List<QuotePrice> dbPrices = [];
+        if (from > to)
+            throw new ArgumentException("The 'from' date cannot be later than the 'to' date.", nameof(from));
 
-        if (quote is null)
-            quote = await databaseProvider.AddOrUpdateQuoteAsync(await financeProvider.GetQuoteAsync(symbol));
+        QuoteModel quote = await GetOrAddQuoteAsync(providerId, symbol);
+        return await GetHistoricalPricesAsync(quote.Id, from, to);
+    }
 
-        if (quote is null)
-            throw new ArgumentException($"Quote with symbol '{symbol}' not found or could not be fetched.", nameof(symbol));
+    public async Task<List<QuotePrice>> GetHistoricalPricesAsync(int quoteId, DateTime from, DateTime to)
+    {
+        QuoteModel? quote = await databaseProvider.GetQuoteAsync(quoteId) ?? throw new ArgumentException($"Quote with id '{quoteId}' not found.", nameof(quoteId));
 
-        dbPrices = (await databaseProvider.GetHistoricalPricesAsync(symbol, from == DateTime.MinValue ? from : from.AddDays(-1), to.AddDays(1))).ToList();
+        List<QuotePrice> dbPrices = await databaseContext.QuotePrices
+            .Where(p => p.QuoteId == quoteId && p.Date >= from && p.Date <= to)
+            .ToListAsync();
 
-        if (quote!.LastUpdatedPrices < DateTime.UtcNow.AddMinutes(-1))
+        if (quote.LastUpdatedPrices < DateTime.UtcNow.AddMinutes(-1))
         {
             // Find earliest and latest in the db result
             QuotePrice? earliestDb = dbPrices.OrderBy(p => p.Date).FirstOrDefault();
@@ -45,12 +89,11 @@ public class QuoteManagement(DatabaseContext databaseContext, IFinanceProvider f
             dbPrices.AddRange(await GetExternalHistoricalPricesAsync(quote, fetchStart, fetchEnd));
         }
 
-        List<QuotePrice> allCombined = dbPrices
+        List<QuotePrice> allCombined = [.. dbPrices
             .GroupBy(p => p.Date)
             .Select(g => g.First())
             .Where(p => p.Date >= from && p.Date <= to)
-            .OrderBy(p => p.Date)
-            .ToList();
+            .OrderBy(p => p.Date)];
 
         return allCombined;
     }
@@ -66,13 +109,14 @@ public class QuoteManagement(DatabaseContext databaseContext, IFinanceProvider f
             if (start > end)
                 return [];
 
+            IFinanceProvider? financeProvider = registry.GetProvider(quote.ProviderId) ?? throw new ArgumentException($"Finance provider '{quote.ProviderId}' not found.", nameof(quote.ProviderId));
             IEnumerable<QuotePrice> fetched = await financeProvider.GetHistoricalPricesAsync(quote.Symbol, start, end);
 
             if (!fetched.Any())
                 return [];
 
             foreach (QuotePrice p in fetched)
-                p.ProviderId = quote?.ProviderId ?? financeProvider.InternalId;
+                p.QuoteId = quote.Id;
 
             await databaseProvider.AddOrUpdateQuotePricesAsync(fetched.ToList());
             return fetched;
