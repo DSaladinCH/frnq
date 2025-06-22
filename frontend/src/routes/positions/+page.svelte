@@ -136,18 +136,21 @@ function handleGroupView(groupId: string) {
   filterQuoteId.set(null);
   tick(); // ensure reactivity
 }
+
 function handleQuoteView(quoteId: number, groupId?: string) {
   filterMode.set('quote');
   filterQuoteId.set(quoteId);
   filterGroupId.set(groupId ?? null);
   tick();
 }
+
 function handleBackToFullView() {
   filterMode.set('full');
   filterGroupId.set(null);
   filterQuoteId.set(null);
   tick();
 }
+
 function handleBackToGroupView() {
   if ($filterGroupId) {
     filterMode.set('group');
@@ -488,110 +491,5 @@ $: cards = getQuoteCards($groupedSnapshots, $filterMode, $filterGroupId, $filter
 
    .quote-groups {
 	   gap: 1.5rem;
-   }
-
-   .group-card {
-	   background: #232336;
-	   border-radius: 1.1rem;
-	   box-shadow: 0 2px 12px 0 rgba(0,0,0,0.10);
-	   padding: 1.5rem 1.2rem 1.2rem 1.2rem;
-	   width: 100%;
-	   display: flex;
-	   flex-direction: column;
-	   align-items: flex-start;
-   }
-
-   .group-header {
-	   margin-bottom: 0.5rem;
-	   width: 100%;
-	   display: flex;
-	   align-items: center;
-	   justify-content: space-between;
-	   min-height: 2.2rem;
-   }
-
-   .icon-btn {
-	   background: none;
-	   border: none;
-	   padding: 0.2rem;
-	   margin-left: 0.5rem;
-	   cursor: pointer;
-	   color: #b3b3b3;
-	   border-radius: 0.3rem;
-	   transition: background 0.15s;
-	   display: flex;
-	   align-items: center;
-	   height: 2.2rem;
-   }
-
-   .icon-btn:hover, .icon-btn:focus {
-	   background: #35354a;
-	   color: #f3f3f3;
-   }
-   .group-title {
-	   font-weight: bold;
-	   font-size: 1.2rem;
-	   color: #f3f3f3;
-   }
-   .group-summary {
-	   width: 100%;
-	   display: flex;
-	   flex-direction: column;
-	   gap: 0.5rem;
-   }
-   .invested {
-	   color: #b3b3b3;
-	   font-size: 1rem;
-	   font-weight: 500;
-   }
-   .amount {
-	   font-weight: 600;
-	   color: #f3f3f3;
-   }
-   .profit-row {
-	   display: flex;
-	   align-items: center;
-	   gap: 0.5rem;
-	   font-size: 1.1rem;
-	   font-weight: 600;
-   }
-   .profit {
-	   font-size: 1.2rem;
-	   font-weight: 700;
-	   margin-right: 0.2rem;
-   }
-   .profit-positive {
-	   color: #2ecc40;
-   }
-   .profit-negative {
-	   color: #ff4d4f;
-   }
-   .profit-percent {
-	   font-size: 1rem;
-	   color: #b3b3b3;
-   }
-   .btn.btn-back {
-  background: #35354a;
-  color: #f3f3f3;
-  border: none;
-  border-radius: 0.5rem;
-  padding: 0.5rem 1.2rem;
-  font-size: 1rem;
-  font-weight: 500;
-  margin-bottom: 1rem;
-  cursor: pointer;
-  transition: background 0.15s;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.btn.btn-back:hover, .btn.btn-back:focus {
-  background: #232336;
-}
-   .back-card.a11y-card-btn {
-     cursor: pointer;
-   }
-   .back-card.a11y-card-btn:hover, .back-card.a11y-card-btn:focus {
-     background: #35354a;
    }
 </style>
