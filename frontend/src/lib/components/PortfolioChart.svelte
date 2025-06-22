@@ -265,6 +265,17 @@
 			: latest && first && Math.abs(latest.invested) > 1e-6
 				? (profitChange / Math.abs(latest.invested)) * 100
 				: 0;
+
+	// Display-friendly capped profitChangePct
+	$: profitChangePctDisplay =
+		(first && Math.abs(startProfit) < 1e-6 && latest && Math.abs(latest.invested) > 1e-6)
+			? (profitChange > 0 ? '+∞' : profitChange < 0 ? '-∞' : '0.00')
+			: profitChangePct > 9999
+				? '+9999'
+				: profitChangePct < -9999
+					? '-9999'
+					: (profitChangePct >= 0 ? '+' : '') + profitChangePct.toFixed(2);
+
 	// Color for profit change
 	$: profitColor = profitChange > 0 ? 'green' : profitChange < 0 ? 'red' : 'gray';
 
@@ -370,9 +381,13 @@
 
 				<div class="profit-divider"></div>
 
-				<span class="profit-change-pct" style="color: {profitColor}">
-					{profitChangePct >= 0 ? '+' : ''}{profitChangePct.toFixed(2)}%
-				</span>
+				{#if profitChangePctDisplay === '+∞' || profitChangePctDisplay === '-∞'}
+					<span class="profit-change-pct" style="color: {profitColor}" title={profitChangePct.toFixed(2) + '%'}>{profitChangePctDisplay}%</span>
+				{:else if profitChangePctDisplay === '+9999' || profitChangePctDisplay === '-9999'}
+					<span class="profit-change-pct" style="color: {profitColor}" title={profitChangePct.toFixed(2) + '%'}>{profitChangePctDisplay}%</span>
+				{:else}
+					<span class="profit-change-pct" style="color: {profitColor}">{profitChangePctDisplay}%</span>
+				{/if}
 			</div>
 		</div>
 
