@@ -99,6 +99,17 @@ const filterGroupId = writable<string | null>(null);
 const filterQuoteId = writable<number | null>(null);
 
 // Compute filtered snapshots for the chart
+function filterLeadingZeroSnapshots(snaps: PositionSnapshot[]): PositionSnapshot[] {
+  // Find the first index where at least one of the values is non-zero
+  const firstNonZeroIdx = snaps.findIndex(s =>
+    (s.invested ?? 0) !== 0 ||
+    (s.totalValue ?? 0) !== 0 ||
+    (s.realizedGain ?? 0) !== 0 ||
+    (s.unrealizedGain ?? 0) !== 0
+  );
+  return firstNonZeroIdx === -1 ? [] : snaps.slice(firstNonZeroIdx);
+}
+
 const filteredSnapshots = derived([
   snapshots,
   quotes,
@@ -107,16 +118,15 @@ const filteredSnapshots = derived([
   filterGroupId,
   filterQuoteId
 ], ([$snapshots, $quotes, $grouped, $filterMode, $filterGroupId, $filterQuoteId]) => {
-  if ($filterMode === 'full') return $snapshots;
-  if ($filterMode === 'group' && $filterGroupId) {
+  let snaps: PositionSnapshot[];
+  if ($filterMode === 'full') snaps = $snapshots;
+  else if ($filterMode === 'group' && $filterGroupId) {
     const group = $grouped.groups[$filterGroupId];
-    if (!group) return [];
-    return Object.values(group.quotes).flat();
-  }
-  if ($filterMode === 'quote' && $filterQuoteId != null) {
-    return $snapshots.filter(s => s.quoteId === $filterQuoteId);
-  }
-  return $snapshots;
+    snaps = group ? Object.values(group.quotes).flat() : [];
+  } else if ($filterMode === 'quote' && $filterQuoteId != null) {
+    snaps = $snapshots.filter(s => s.quoteId === $filterQuoteId);
+  } else snaps = $snapshots;
+  return filterLeadingZeroSnapshots(snaps);
 });
 
 // UI handlers (update stores)
