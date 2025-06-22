@@ -282,7 +282,6 @@
 	// Dynamic background fade color based on chartOption
 	$: fadeColor = chartOption === 'profitOnly' ? 'rgb(60, 39, 82)' : 'rgb(42, 85, 108)';
 
-	let selectedPeriod: '1w' | '1m' | '3m' | 'ytd' | 'all' = '3m';
 	let chartOption: 'profitOnly' | 'both' = 'both';
 	function updateChartData() {
 		if (!chart || !groupedSnapshots) return;
@@ -359,6 +358,47 @@
 	function roundValue(val: number) {
 		return Math.round(val * 100) / 100;
 	}
+
+	let isSmallScreen = false;
+
+	function handleResize() {
+		isSmallScreen = window.matchMedia('(max-width: 640px)').matches;
+	}
+
+	onMount(() => {
+		handleResize();
+		window.addEventListener('resize', handleResize);
+		return () => {
+			window.removeEventListener('resize', handleResize);
+		};
+	});
+
+	// Period type for strict typing
+	const periodOptions = [
+		{ value: '1w', label: '1 Week' },
+		{ value: '1m', label: '1 Month' },
+		{ value: '3m', label: '3 Month' },
+		{ value: 'ytd', label: 'This Year' },
+		{ value: 'all', label: 'All Time' }
+	] as const;
+	type Period = typeof periodOptions[number]['value'];
+	let selectedPeriod: Period = '3m';
+	let dropdownOpen = false;
+	function periodLabel(val: Period) {
+		return periodOptions.find(o => o.value === val)?.label || val;
+	}
+	function selectPeriod(val: Period) {
+		selectedPeriod = val;
+		dropdownOpen = false;
+	}
+	function handleDropdownKey(e: KeyboardEvent, val: Period) {
+		if (e.key === 'Enter' || e.key === ' ') {
+			selectPeriod(val);
+			e.preventDefault();
+		} else if (e.key === 'Escape') {
+			dropdownOpen = false;
+		}
+	}
 </script>
 
 <div
@@ -414,31 +454,37 @@
 
 <div class="background-fade" style="--fade-color: {fadeColor}">
 	<div class="period-selector">
-		<button
-			type="button"
-			class:selected={selectedPeriod === '1w'}
-			on:click={() => (selectedPeriod = '1w')}>1W</button
-		>
-		<button
-			type="button"
-			class:selected={selectedPeriod === '1m'}
-			on:click={() => (selectedPeriod = '1m')}>1M</button
-		>
-		<button
-			type="button"
-			class:selected={selectedPeriod === '3m'}
-			on:click={() => (selectedPeriod = '3m')}>3M</button
-		>
-		<button
-			type="button"
-			class:selected={selectedPeriod === 'ytd'}
-			on:click={() => (selectedPeriod = 'ytd')}>This Year</button
-		>
-		<button
-			type="button"
-			class:selected={selectedPeriod === 'all'}
-			on:click={() => (selectedPeriod = 'all')}>All Time</button
-		>
+		{#if isSmallScreen}
+			<div class="custom-dropdown">
+				<button type="button" class="dropdown-toggle" aria-haspopup="listbox" aria-expanded={dropdownOpen} on:click={() => dropdownOpen = !dropdownOpen} on:keydown={(e) => { if (e.key === 'ArrowDown' && dropdownOpen) { const first = document.querySelector('.dropdown-list li'); first && (first as HTMLElement).focus(); } else if (e.key === 'Escape') { dropdownOpen = false; } }} tabindex="0">
+					{periodLabel(selectedPeriod)}
+					<span class="dropdown-arrow">▼</span>
+				</button>
+				{#if dropdownOpen}
+					<ul class="dropdown-list" role="listbox">
+						{#each periodOptions as opt}
+							<li
+								role="option"
+								class:selected={selectedPeriod === opt.value}
+								aria-selected={selectedPeriod === opt.value}
+								tabindex="0"
+								on:click={() => selectPeriod(opt.value)}
+								on:keydown={(e) => handleDropdownKey(e, opt.value)}
+							>
+								{opt.label}
+							</li>
+						{/each}
+					</ul>
+				{/if}
+			</div>
+		{:else}
+			{#each periodOptions as opt}
+				<button
+					type="button"
+					class:selected={selectedPeriod === opt.value}
+					on:click={() => (selectedPeriod = opt.value)}>{opt.label}</button>
+			{/each}
+		{/if}
 	</div>
 </div>
 
@@ -568,5 +614,79 @@
 	.period-selector button:focus {
 		background: #10b981;
 		color: #18181b;
+	}
+
+	.custom-dropdown {
+		position: relative;
+		width: 140px;
+		z-index: 10;
+	}
+
+	.dropdown-toggle {
+		width: 100%;
+		background: rgba(62, 62, 68, 0.7);
+		color: #fff;
+		border: none;
+		border-radius: 12px;
+		padding: 0.3rem 1rem;
+		font-size: 1rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background 0.2s, color 0.2s;
+		outline: none;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.dropdown-toggle:focus {
+		outline: none;
+		box-shadow: none;
+	}
+
+	.dropdown-arrow {
+		margin-left: 0.5rem;
+		font-size: 0.9em;
+		color: #aaa;
+	}
+
+	.dropdown-list {
+		position: absolute;
+		top: 110%;
+		left: 0;
+		width: 100%;
+		background: #23232b;
+		border-radius: 12px;
+		box-shadow: 0 8px 32px #000c;
+		padding: 0.2rem 0;
+		margin: 0;
+		list-style: none;
+		z-index: 100;
+	}
+
+	.dropdown-list li {
+		padding: 0.5rem 1rem;
+		color: #fff;
+		cursor: pointer;
+		transition: background 0.15s, color 0.15s;
+		font-size: 1rem;
+		border: none;
+		background: none;
+	}
+
+	.dropdown-list li.selected,
+	.dropdown-list li[aria-selected="true"] {
+		background: #18181b;
+		color: #10b981;
+	}
+
+	.dropdown-list li:hover {
+		background: #2a2a33;
+		color: #10b981;
+	}
+
+	/* Hide focus border for dropdown */
+	.dropdown-list li:focus {
+		outline: none;
 	}
 </style>
