@@ -38,7 +38,6 @@
 
 		// Sort by date ascending
 		result.sort((a, b) => a.date.localeCompare(b.date));
-		console.log(result);
 		return result;
 	}
 
