@@ -408,7 +408,7 @@
 </script>
 
 <div
-	class="portfolio-info m-5 grid grid-cols-[1fr] grid-rows-[auto_35px] md:grid-cols-[auto_110px] md:grid-rows-[1fr]"
+	class="portfolio-info m-5 grid grid-cols-[1fr] grid-rows-[auto_35px] md:grid-cols-[auto_120px] md:grid-rows-[1fr]"
 >
 	{#if latest}
 		<div class="portfolio-stats">
@@ -451,13 +451,13 @@
 			class="chart-options grid hidden w-80 gap-2 md:grid md:w-full md:grid-cols-[1fr] md:grid-rows-[auto_auto]"
 		>
 			<button
-				type="button"
-				class:selected={chartOption === 'both'}
+				type="button" class="btn btn-small"
+				class:btn-selected={chartOption === 'both'}
 				on:click={() => (chartOption = 'both')}>Portfolio</button
 			>
 			<button
-				type="button"
-				class:selected={chartOption === 'profitOnly'}
+				type="button" class="btn btn-small"
+				class:btn-selected={chartOption === 'profitOnly'}
 				on:click={() => (chartOption = 'profitOnly')}>Profit Only</button
 			>
 		</div>
@@ -483,8 +483,8 @@
 		<div class="hidden sm:flex">
 			{#each periodOptions as opt}
 				<button
-					type="button"
-					class:selected={selectedPeriod === opt.value}
+					type="button" class="btn btn-small"
+					class:btn-selected={selectedPeriod === opt.value}
 					on:click={() => (selectedPeriod = opt.value)}>{opt.label}</button
 				>
 			{/each}
@@ -517,27 +517,6 @@
 	.portfolio-stats {
 		display: flex;
 		flex-wrap: wrap;
-	}
-
-	.chart-options button {
-		background: rgba(88, 88, 94, 0.7);
-		color: #fff;
-		border: none;
-		border-radius: 12px;
-		padding: 0.3rem 1rem;
-		font-size: 1rem;
-		font-weight: 500;
-		cursor: pointer;
-		transition:
-			background 0.2s,
-			color 0.2s;
-		outline: none;
-	}
-
-	.chart-options button.selected,
-	.chart-options button:focus {
-		background: #10b981;
-		color: #18181b;
 	}
 
 	.profit-total {
@@ -603,24 +582,6 @@
 	}
 
 	.period-selector button {
-		background: rgba(62, 62, 68, 0.7);
-		color: #fff;
-		border: none;
-		border-radius: 12px;
-		padding: 0.3rem 1rem;
 		margin: 0 0.1rem;
-		font-size: 1rem;
-		font-weight: 500;
-		cursor: pointer;
-		transition:
-			background 0.2s,
-			color 0.2s;
-		outline: none;
-	}
-
-	.period-selector button.selected,
-	.period-selector button:focus {
-		background: #10b981;
-		color: #18181b;
 	}
 </style>

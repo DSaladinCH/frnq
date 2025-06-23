@@ -9,17 +9,27 @@
     --btn-color: #f3f3f3;
     --btn-color-hover: #fff;
     /* Accept button */
-    --btn-accept-bg: linear-gradient(90deg, #b8f5d0 0%, #6ee7b7 100%);
+    --btn-accept-bg: #6ee7b7;
     --btn-accept-bg-hover: linear-gradient(90deg, #6ee7b7 0%, #b8f5d0 100%);
     --btn-accept-color: #123820;
     --btn-accept-color-hover: #185c3a;
     --btn-accept-shadow: 0 2px 10px #6ee7b733;
     /* Error button */
-    --btn-error-bg: linear-gradient(90deg, #ffd6d6 0%, #ff8a8a 100%);
+    --btn-error-bg: #ff8a8a;
     --btn-error-bg-hover: linear-gradient(90deg, #ff8a8a 0%, #ffd6d6 100%);
     --btn-error-color: #4a1010;
     --btn-error-color-hover: #7a2323;
     --btn-error-shadow: 0 2px 10px #ff8a8a33;
+
+    --color-background: #18181b;
+    --color-card: #26262a;
+    --color-text: #e5e5e5;
+    --color-muted: #cccccc;
+    --color-primary: #c8102e;
+    --color-secondary: #a10024;
+    --color-button: #6c6c6c;
+    --color-error: #ff4d4d;
+    --color-success: #4caf50;
 }
 
 /* Chart.js custom tooltip styles */
@@ -111,48 +121,39 @@
 
 /* --- Button Styles --- */
 .btn {
-    padding: 0.55em 1.5em;
+    --btn-bg: var(--color-button);
+    background-image: linear-gradient(to right,
+            var(--btn-bg) 0%,
+            color-mix(in srgb, var(--btn-bg), white 20%) 51%,
+            var(--btn-bg) 100%);
+    background-size: 200% auto;
+    transition: 0.5s;
+    color: var(--color-text);
+    border-radius: 10px;
+    padding: 0.5rem 1rem;
+    text-align: center;
+    /* text-transform: uppercase; */
+    display: inline-block;
+    text-decoration: none;
     border: none;
-    border-radius: 0.7em;
-    font-size: 1.05em;
-    font-family: inherit;
-    font-weight: 500;
     cursor: pointer;
-    background: var(--btn-bg);
-    color: var(--btn-color);
-    box-shadow: 0 2px 8px #0003;
-    transition: background 0.25s, color 0.18s, transform 0.18s, box-shadow 0.18s;
+}
+
+.btn.btn-small {
+    padding: 0.25rem 1rem;
 }
 
 .btn:hover {
-    background: var(--btn-bg-hover);
-    color: var(--btn-color-hover);
-    transform: translateY(-2px) scale(1.03);
-    box-shadow: 0 4px 16px #0005;
+    background-position: right center;
 }
 
 /* Accept/Submit/Okay Button */
-.btn-accept {
-    background: var(--btn-accept-bg);
-    color: var(--btn-accept-color);
-    box-shadow: var(--btn-accept-shadow);
-}
-
-.btn-accept:hover {
-    background: var(--btn-accept-bg-hover);
-    color: var(--btn-accept-color-hover);
-    filter: brightness(1.08);
+.btn.btn-selected,
+.btn.btn-success {
+    --btn-bg: var(--color-success);
 }
 
 /* Error/Cancel/Abort Button */
-.btn-error {
-    background: var(--btn-error-bg);
-    color: var(--btn-error-color);
-    box-shadow: var(--btn-error-shadow);
-}
-
-.btn-error:hover {
-    background: var(--btn-error-bg-hover);
-    color: var(--btn-error-color-hover);
-    filter: brightness(1.08);
+.btn.btn-error {
+    --btn-bg: var(--color-error);
 }
