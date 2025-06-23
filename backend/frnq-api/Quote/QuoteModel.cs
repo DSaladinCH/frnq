@@ -25,4 +25,11 @@ public class QuoteModel
     [JsonIgnore]
     public virtual ICollection<QuotePrice> Prices { get; set; } = [];
     public virtual QuoteGroup? Group { get; set; }
+
+    public static string GetSenatizedName(string name)
+    {
+        return name
+            .Replace("\"", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Trim();
+    }
 }

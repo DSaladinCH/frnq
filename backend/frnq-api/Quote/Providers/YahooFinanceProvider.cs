@@ -36,7 +36,7 @@ public class YahooFinanceProvider : IFinanceProvider
         {
             ProviderId = InternalId,
             Symbol = quoteNode["symbol"]?.ToString() ?? string.Empty,
-            Name = quoteNode["longName"]?.ToString() ?? string.Empty,
+            Name = QuoteModel.GetSenatizedName(quoteNode["longName"]?.ToString() ?? quoteNode["shortName"]?.ToString() ?? string.Empty),
             ExchangeDisposition = quoteNode["exchange"]?.ToString() ?? string.Empty,
             TypeDisposition = quoteNode["quoteType"]?.ToString() ?? string.Empty,
             Currency = quoteNode["currency"]?.ToString() ?? string.Empty
@@ -81,7 +81,7 @@ public class YahooFinanceProvider : IFinanceProvider
             {
                 ProviderId = InternalId,
                 Symbol = item["symbol"]?.ToString() ?? string.Empty,
-                Name = item["longname"]?.ToString() ?? string.Empty,
+                Name = QuoteModel.GetSenatizedName(item["longname"]?.ToString() ?? item["shortname"]?.ToString() ?? string.Empty),
                 ExchangeDisposition = item["exchDisp"]?.ToString() ?? string.Empty,
                 TypeDisposition = item["typeDisp"]?.ToString() ?? string.Empty
             });
