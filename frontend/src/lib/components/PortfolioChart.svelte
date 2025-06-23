@@ -408,7 +408,7 @@
 </script>
 
 <div
-	class="portfolio-info m-3 md:m-5 grid grid-cols-[1fr] grid-rows-[auto_35px] md:grid-cols-[auto_110px] md:grid-rows-[1fr]"
+	class="portfolio-info m-5 grid grid-cols-[1fr] grid-rows-[auto_35px] md:grid-cols-[auto_110px] md:grid-rows-[1fr]"
 >
 	{#if latest}
 		<div class="portfolio-stats">
@@ -622,83 +622,5 @@
 	.period-selector button:focus {
 		background: #10b981;
 		color: #18181b;
-	}
-
-	.custom-dropdown {
-		position: relative;
-		width: 140px;
-		z-index: 10;
-	}
-
-	.dropdown-toggle {
-		width: 100%;
-		background: rgba(62, 62, 68, 0.7);
-		color: #fff;
-		border: none;
-		border-radius: 12px;
-		padding: 0.3rem 1rem;
-		font-size: 1rem;
-		font-weight: 500;
-		cursor: pointer;
-		transition:
-			background 0.2s,
-			color 0.2s;
-		outline: none;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-	}
-
-	.dropdown-toggle:focus {
-		outline: none;
-		box-shadow: none;
-	}
-
-	.dropdown-arrow {
-		margin-left: 0.5rem;
-		font-size: 0.9em;
-		color: #aaa;
-	}
-
-	.dropdown-list {
-		position: absolute;
-		top: 110%;
-		left: 0;
-		width: 100%;
-		background: #23232b;
-		border-radius: 12px;
-		box-shadow: 0 8px 32px #000c;
-		padding: 0.2rem 0;
-		margin: 0;
-		list-style: none;
-		z-index: 100;
-	}
-
-	.dropdown-list li {
-		padding: 0.5rem 1rem;
-		color: #fff;
-		cursor: pointer;
-		transition:
-			background 0.15s,
-			color 0.15s;
-		font-size: 1rem;
-		border: none;
-		background: none;
-	}
-
-	.dropdown-list li.selected,
-	.dropdown-list li[aria-selected='true'] {
-		background: #18181b;
-		color: #10b981;
-	}
-
-	.dropdown-list li:hover {
-		background: #2a2a33;
-		color: #10b981;
-	}
-
-	/* Hide focus border for dropdown */
-	.dropdown-list li:focus {
-		outline: none;
 	}
 </style>
