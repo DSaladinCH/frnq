@@ -86,6 +86,7 @@ function handleDropdownKey(e: KeyboardEvent, val: string) {
 		margin: 0;
 		list-style: none;
 		z-index: 100;
+		text-align: left;
 	}
 	.dropdown-list li {
 		padding: 0.5rem 1rem;
