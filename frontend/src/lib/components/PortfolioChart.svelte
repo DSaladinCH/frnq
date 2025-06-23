@@ -383,35 +383,35 @@
 	] as const;
 	type Period = typeof periodOptions[number]['value'];
 	let selectedPeriod: Period = '3m';
-	let dropdownOpen = false;
+	let periodDropdownOpen = false;
 	function periodLabel(val: Period) {
 		return periodOptions.find(o => o.value === val)?.label || val;
 	}
 	function selectPeriod(val: Period) {
 		selectedPeriod = val;
-		dropdownOpen = false;
+		periodDropdownOpen = false;
 	}
 	function handleDropdownKey(e: KeyboardEvent, val: Period) {
 		if (e.key === 'Enter' || e.key === ' ') {
 			selectPeriod(val);
 			e.preventDefault();
 		} else if (e.key === 'Escape') {
-			dropdownOpen = false;
+			periodDropdownOpen = false;
 		}
 	}
 </script>
 
 <div
-	class="portfolio-info grid grid-cols-[1fr] grid-rows-[auto_35px] lg:grid-cols-[auto_110px] lg:grid-rows-[1fr]"
+	class="portfolio-info grid grid-cols-[1fr] grid-rows-[auto_35px] md:grid-cols-[auto_110px] md:grid-rows-[1fr] m-3"
 >
 	{#if latest}
 		<div class="portfolio-stats">
-			<div class="profit-total">
+			<div class="profit-total w-full">
 				<span class="profit-value"
 					>{totalProfit.toLocaleString(undefined, { style: 'currency', currency: 'CHF' })}</span
 				>
 			</div>
-			<div class="profit-change-row">
+			<div class="profit-change-row w-full">
 				<span class="profit-change-value" style="color: {profitColor}">
 					{profitChange >= 0 ? '+' : ''}{profitChange.toLocaleString(undefined, {
 						style: 'currency',
@@ -432,7 +432,7 @@
 		</div>
 
 		<div
-			class="chart-options grid w-80 grid-cols-[auto_auto] gap-2 lg:w-full lg:grid-cols-[1fr] lg:grid-rows-[auto_auto]"
+			class="chart-options grid w-80 grid-cols-[auto_auto] gap-2 md:w-full md:grid-cols-[1fr] md:grid-rows-[auto_auto]"
 		>
 			<button
 				type="button"
@@ -456,11 +456,11 @@
 	<div class="period-selector">
 		{#if isSmallScreen}
 			<div class="custom-dropdown">
-				<button type="button" class="dropdown-toggle" aria-haspopup="listbox" aria-expanded={dropdownOpen} on:click={() => dropdownOpen = !dropdownOpen} on:keydown={(e) => { if (e.key === 'ArrowDown' && dropdownOpen) { const first = document.querySelector('.dropdown-list li'); first && (first as HTMLElement).focus(); } else if (e.key === 'Escape') { dropdownOpen = false; } }} tabindex="0">
+				<button type="button" class="dropdown-toggle" aria-haspopup="listbox" aria-expanded={periodDropdownOpen} on:click={() => periodDropdownOpen = !periodDropdownOpen} on:keydown={(e) => { if (e.key === 'ArrowDown' && periodDropdownOpen) { const first = document.querySelector('.dropdown-list li'); first && (first as HTMLElement).focus(); } else if (e.key === 'Escape') { periodDropdownOpen = false; } }} tabindex="0">
 					{periodLabel(selectedPeriod)}
 					<span class="dropdown-arrow">▼</span>
 				</button>
-				{#if dropdownOpen}
+				{#if periodDropdownOpen}
 					<ul class="dropdown-list" role="listbox">
 						{#each periodOptions as opt}
 							<li
@@ -504,8 +504,6 @@
 	}
 
 	.portfolio-info {
-		margin: 2rem;
-		margin-bottom: 0.5rem;
 		max-width: 400px;
 		color: #fff;
 		font-size: 1.1rem;
