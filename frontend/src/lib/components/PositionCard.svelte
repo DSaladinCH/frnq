@@ -32,16 +32,16 @@
     <span class="group-title">{@html title}</span>
     {#if onView && !minimal}
       <span class="icon-btn view-btn" title={viewLabel} aria-label={viewLabel} tabindex="-1">
-        <i class={isActiveQuote ? 'fa-solid fa-xmark fa-lg' : 'fa-solid fa-filter fa-lg'}></i>
+        <i class={isActiveQuote ? 'fa-solid fa-xmark fa-lg' : 'fa-solid fa-chart-line fa-lg'}></i>
       </span>
     {/if}
   </div>
   {#if !minimal}
     <div class="group-summary">
-      <div class="invested">Invested: <span class="amount">{summary.invested.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
+      <div class="invested">Invested: <span class="amount">{summary.invested.toLocaleString(undefined, { style: 'currency', currency: 'CHF' })}</span></div>
       <div class="profit-row">
         <span class="profit {profitClass}">
-          {(summary.realized + summary.unrealized).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+          {(summary.realized + summary.unrealized).toLocaleString(undefined, { style: 'currency', currency: 'CHF' })}
         </span>
         <span class="profit-percent">
           ({summary.invested ? ((summary.realized + summary.unrealized) / summary.invested * 100).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '0.00'}%)
