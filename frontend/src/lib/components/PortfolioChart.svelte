@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import Chart from 'chart.js/auto';
 	import type { PositionSnapshot } from '../services/positionService';
+	import DropDown from './DropDown.svelte';
 
 	export let snapshots: PositionSnapshot[] = [];
 	let canvas: HTMLCanvasElement;
@@ -268,8 +269,12 @@
 
 	// Display-friendly capped profitChangePct
 	$: profitChangePctDisplay =
-		(first && Math.abs(startProfit) < 1e-6 && latest && Math.abs(latest.invested) > 1e-6)
-			? (profitChange > 0 ? '+∞' : profitChange < 0 ? '-∞' : '0.00')
+		first && Math.abs(startProfit) < 1e-6 && latest && Math.abs(latest.invested) > 1e-6
+			? profitChange > 0
+				? '+∞'
+				: profitChange < 0
+					? '-∞'
+					: '0.00'
 			: profitChangePct > 9999
 				? '+9999'
 				: profitChangePct < -9999
@@ -381,14 +386,14 @@
 		{ value: 'ytd', label: 'This Year' },
 		{ value: 'all', label: 'All Time' }
 	] as const;
-	type Period = typeof periodOptions[number]['value'];
+	type Period = (typeof periodOptions)[number]['value'];
 	let selectedPeriod: Period = '3m';
 	let periodDropdownOpen = false;
 	function periodLabel(val: Period) {
-		return periodOptions.find(o => o.value === val)?.label || val;
+		return periodOptions.find((o) => o.value === val)?.label || val;
 	}
-	function selectPeriod(val: Period) {
-		selectedPeriod = val;
+	function selectPeriod(val: string) {
+		selectedPeriod = val as Period;
 		periodDropdownOpen = false;
 	}
 	function handleDropdownKey(e: KeyboardEvent, val: Period) {
@@ -402,7 +407,7 @@
 </script>
 
 <div
-	class="portfolio-info grid grid-cols-[1fr] grid-rows-[auto_35px] md:grid-cols-[auto_110px] md:grid-rows-[1fr] m-3"
+	class="portfolio-info m-3 grid grid-cols-[1fr] grid-rows-[auto_35px] md:grid-cols-[auto_110px] md:grid-rows-[1fr]"
 >
 	{#if latest}
 		<div class="portfolio-stats">
@@ -422,11 +427,21 @@
 				<div class="profit-divider"></div>
 
 				{#if profitChangePctDisplay === '+∞' || profitChangePctDisplay === '-∞'}
-					<span class="profit-change-pct" style="color: {profitColor}" title={profitChangePct.toFixed(2) + '%'}>{profitChangePctDisplay}%</span>
+					<span
+						class="profit-change-pct"
+						style="color: {profitColor}"
+						title={profitChangePct.toFixed(2) + '%'}>{profitChangePctDisplay}%</span
+					>
 				{:else if profitChangePctDisplay === '+9999' || profitChangePctDisplay === '-9999'}
-					<span class="profit-change-pct" style="color: {profitColor}" title={profitChangePct.toFixed(2) + '%'}>{profitChangePctDisplay}%</span>
+					<span
+						class="profit-change-pct"
+						style="color: {profitColor}"
+						title={profitChangePct.toFixed(2) + '%'}>{profitChangePctDisplay}%</span
+					>
 				{:else}
-					<span class="profit-change-pct" style="color: {profitColor}">{profitChangePctDisplay}%</span>
+					<span class="profit-change-pct" style="color: {profitColor}"
+						>{profitChangePctDisplay}%</span
+					>
 				{/if}
 			</div>
 		</div>
@@ -454,37 +469,18 @@
 
 <div class="background-fade" style="--fade-color: {fadeColor}">
 	<div class="period-selector">
-		{#if isSmallScreen}
-			<div class="custom-dropdown">
-				<button type="button" class="dropdown-toggle" aria-haspopup="listbox" aria-expanded={periodDropdownOpen} on:click={() => periodDropdownOpen = !periodDropdownOpen} on:keydown={(e) => { if (e.key === 'ArrowDown' && periodDropdownOpen) { const first = document.querySelector('.dropdown-list li'); first && (first as HTMLElement).focus(); } else if (e.key === 'Escape') { periodDropdownOpen = false; } }} tabindex="0">
-					{periodLabel(selectedPeriod)}
-					<span class="dropdown-arrow">▼</span>
-				</button>
-				{#if periodDropdownOpen}
-					<ul class="dropdown-list" role="listbox">
-						{#each periodOptions as opt}
-							<li
-								role="option"
-								class:selected={selectedPeriod === opt.value}
-								aria-selected={selectedPeriod === opt.value}
-								tabindex="0"
-								on:click={() => selectPeriod(opt.value)}
-								on:keydown={(e) => handleDropdownKey(e, opt.value)}
-							>
-								{opt.label}
-							</li>
-						{/each}
-					</ul>
-				{/if}
-			</div>
-		{:else}
+		<div class="block sm:hidden">
+			<DropDown options={[...periodOptions]} selected={selectedPeriod} onSelect={selectPeriod} />
+		</div>
+		<div class="hidden sm:block">
 			{#each periodOptions as opt}
 				<button
 					type="button"
 					class:selected={selectedPeriod === opt.value}
-					on:click={() => (selectedPeriod = opt.value)}>{opt.label}</button>
+					on:click={() => (selectedPeriod = opt.value)}>{opt.label}</button
+				>
 			{/each}
-		{/if}
+		</div>
 	</div>
 </div>
 
@@ -573,7 +569,13 @@
 		height: 80px;
 		margin-top: -10px;
 		width: 100%;
-		background: linear-gradient(to bottom, transparent 0px, var(--fade-color) 10px, var(--fade-color) 40%, transparent 100%);
+		background: linear-gradient(
+			to bottom,
+			transparent 0px,
+			var(--fade-color) 10px,
+			var(--fade-color) 40%,
+			transparent 100%
+		);
 		pointer-events: none;
 		z-index: 1;
 		position: relative;
@@ -630,7 +632,9 @@
 		font-size: 1rem;
 		font-weight: 500;
 		cursor: pointer;
-		transition: background 0.2s, color 0.2s;
+		transition:
+			background 0.2s,
+			color 0.2s;
 		outline: none;
 		display: flex;
 		align-items: center;
@@ -666,14 +670,16 @@
 		padding: 0.5rem 1rem;
 		color: #fff;
 		cursor: pointer;
-		transition: background 0.15s, color 0.15s;
+		transition:
+			background 0.15s,
+			color 0.15s;
 		font-size: 1rem;
 		border: none;
 		background: none;
 	}
 
 	.dropdown-list li.selected,
-	.dropdown-list li[aria-selected="true"] {
+	.dropdown-list li[aria-selected='true'] {
 		background: #18181b;
 		color: #10b981;
 	}
