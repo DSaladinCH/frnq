@@ -287,7 +287,6 @@
 	// Dynamic background fade color based on chartOption
 	$: fadeColor = chartOption === 'profitOnly' ? 'rgb(60, 39, 82)' : 'rgb(42, 85, 108)';
 
-	let chartOption: 'profitOnly' | 'both' = 'both';
 	function updateChartData() {
 		if (!chart || !groupedSnapshots) return;
 
@@ -386,23 +385,25 @@
 		{ value: 'ytd', label: 'This Year' },
 		{ value: 'all', label: 'All Time' }
 	] as const;
+
 	type Period = (typeof periodOptions)[number]['value'];
 	let selectedPeriod: Period = '3m';
 	let periodDropdownOpen = false;
-	function periodLabel(val: Period) {
-		return periodOptions.find((o) => o.value === val)?.label || val;
-	}
+
 	function selectPeriod(val: string) {
 		selectedPeriod = val as Period;
 		periodDropdownOpen = false;
 	}
-	function handleDropdownKey(e: KeyboardEvent, val: Period) {
-		if (e.key === 'Enter' || e.key === ' ') {
-			selectPeriod(val);
-			e.preventDefault();
-		} else if (e.key === 'Escape') {
-			periodDropdownOpen = false;
-		}
+
+	// Chart option variables and handlers (moved here as requested)
+	const chartOptionOptions = [
+		{ value: 'both', label: 'Portfolio' },
+		{ value: 'profitOnly', label: 'Profit Only' }
+	] as const;
+	type ChartOption = (typeof chartOptionOptions)[number]['value'];
+	let chartOption: ChartOption = 'both';
+	function selectChartOption(val: string) {
+		chartOption = val as ChartOption;
 	}
 </script>
 
@@ -447,7 +448,7 @@
 		</div>
 
 		<div
-			class="chart-options grid w-80 grid-cols-[auto_auto] gap-2 md:w-full md:grid-cols-[1fr] md:grid-rows-[auto_auto]"
+			class="chart-options grid hidden w-80 gap-2 md:grid md:w-full md:grid-cols-[1fr] md:grid-rows-[auto_auto]"
 		>
 			<button
 				type="button"
@@ -459,6 +460,13 @@
 				class:selected={chartOption === 'profitOnly'}
 				on:click={() => (chartOption = 'profitOnly')}>Profit Only</button
 			>
+		</div>
+		<div class="block md:hidden">
+			<DropDown
+				options={[...chartOptionOptions]}
+				selected={chartOption}
+				onSelect={selectChartOption}
+			/>
 		</div>
 	{/if}
 </div>
@@ -472,7 +480,7 @@
 		<div class="block sm:hidden">
 			<DropDown options={[...periodOptions]} selected={selectedPeriod} onSelect={selectPeriod} />
 		</div>
-		<div class="hidden sm:block">
+		<div class="hidden sm:flex">
 			{#each periodOptions as opt}
 				<button
 					type="button"
@@ -585,7 +593,6 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		gap: 0.5rem;
 		margin-top: 20px;
 		position: absolute;
 		width: 100%;
@@ -601,6 +608,7 @@
 		border: none;
 		border-radius: 12px;
 		padding: 0.3rem 1rem;
+		margin: 0 0.1rem;
 		font-size: 1rem;
 		font-weight: 500;
 		cursor: pointer;
