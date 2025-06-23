@@ -388,11 +388,9 @@
 
 	type Period = (typeof periodOptions)[number]['value'];
 	let selectedPeriod: Period = '3m';
-	let periodDropdownOpen = false;
 
 	function selectPeriod(val: string) {
 		selectedPeriod = val as Period;
-		periodDropdownOpen = false;
 	}
 
 	// Chart option variables and handlers (moved here as requested)
@@ -400,15 +398,17 @@
 		{ value: 'both', label: 'Portfolio' },
 		{ value: 'profitOnly', label: 'Profit Only' }
 	] as const;
+
 	type ChartOption = (typeof chartOptionOptions)[number]['value'];
 	let chartOption: ChartOption = 'both';
+
 	function selectChartOption(val: string) {
 		chartOption = val as ChartOption;
 	}
 </script>
 
 <div
-	class="portfolio-info m-3 grid grid-cols-[1fr] grid-rows-[auto_35px] md:grid-cols-[auto_110px] md:grid-rows-[1fr]"
+	class="portfolio-info m-3 md:m-5 grid grid-cols-[1fr] grid-rows-[auto_35px] md:grid-cols-[auto_110px] md:grid-rows-[1fr]"
 >
 	{#if latest}
 		<div class="portfolio-stats">
