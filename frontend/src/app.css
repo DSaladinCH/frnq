@@ -23,26 +23,21 @@ body {
 /* Chart.js custom tooltip styles */
 
 .chartjs-tooltip {
-    min-width: 180px;
+    min-width: 190px;
     min-height: 80px;
-    max-height: 110px;
     background: var(--color-card);
-    border: 1.5px solid #333;
-    border-radius: 14px;
-    box-shadow: 0 8px 32px #000a;
+    border-radius: 1rem;
     color: #f3f4f6;
     padding: 1rem 1.2rem 0.7rem 1.2rem;
-    font-family: 'Inter', Segoe UI, Arial, sans-serif;
     font-size: 15px;
-    pointer-events: none;
     transition: opacity 0.18s cubic-bezier(.4, 0, .2, 1);
-    opacity: 0;
     z-index: 1000;
     overflow-y: auto;
+    position: absolute;
 }
 
 .chartjs-tooltip .tooltip-title {
-    color: #a5b4fc;
+    color: var(--color-muted);
     font-size: 13px;
     font-weight: 500;
     margin-bottom: 0.7em;

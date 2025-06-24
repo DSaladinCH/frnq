@@ -143,26 +143,15 @@
 		// Fixed top position relative to canvas
 		const fixedOffset = 40; // px below the top of the canvas
 		const top = rect.top + window.scrollY + fixedOffset;
-		tooltipEl.style.position = 'absolute';
 		tooltipEl.style.left = left + 'px';
 		tooltipEl.style.top = top + 'px';
 		tooltipEl.style.opacity = '1';
-		tooltipEl.style.font =
-			tooltip.options.bodyFont?.string || '15px Inter, Segoe UI, Arial, sans-serif';
-		tooltipEl.style.zIndex = '1000';
-		tooltipEl.style.background = 'rgba(34,34,40,0.98)';
-		tooltipEl.style.border = '1.5px solid #333'; // Subtle border for dark mode
-		tooltipEl.style.borderRadius = '16px';
-		tooltipEl.style.boxShadow = '0 8px 32px #000c';
-		tooltipEl.style.color = '#fff';
-		tooltipEl.style.padding = '1rem 1.2rem 0.7rem 1.2rem';
-		tooltipEl.style.minWidth = '180px';
-		tooltipEl.style.height = '110px'; // Fixed height
+		tooltipEl.style.height = '115px'; // Fixed height
 
 		if (chartOption === 'profitOnly') {
-			tooltipEl.style.height = '80px';
+			tooltipEl.style.height = '85px';
 		} else {
-			tooltipEl.style.height = '110px';
+			tooltipEl.style.height = '115px';
 		}
 
 		tooltipEl.style.overflowY = 'auto';
