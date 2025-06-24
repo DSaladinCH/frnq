@@ -452,12 +452,12 @@
 		>
 			<button
 				type="button" class="btn btn-small"
-				class:btn-selected={chartOption === 'both'}
+				class:btn-secondary={chartOption === 'both'}
 				on:click={() => (chartOption = 'both')}>Portfolio</button
 			>
 			<button
 				type="button" class="btn btn-small"
-				class:btn-selected={chartOption === 'profitOnly'}
+				class:btn-secondary={chartOption === 'profitOnly'}
 				on:click={() => (chartOption = 'profitOnly')}>Profit Only</button
 			>
 		</div>
@@ -484,7 +484,7 @@
 			{#each periodOptions as opt}
 				<button
 					type="button" class="btn btn-small"
-					class:btn-selected={selectedPeriod === opt.value}
+					class:btn-secondary={selectedPeriod === opt.value}
 					on:click={() => (selectedPeriod = opt.value)}>{opt.label}</button
 				>
 			{/each}
@@ -499,12 +499,6 @@
 		width: 100vw;
 		max-width: 100%;
 		display: block;
-	}
-
-	:global(body) {
-		background: #18181b;
-		color: #fff;
-		font-family: 'Inter', sans-serif;
 	}
 
 	.portfolio-info {
@@ -582,6 +576,6 @@
 	}
 
 	.period-selector button {
-		margin: 0 0.1rem;
+		margin: 0 0.15rem;
 	}
 </style>

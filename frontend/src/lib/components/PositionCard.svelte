@@ -22,7 +22,7 @@
 <!-- Use the props in a non-visible way to avoid Svelte unused export warning -->
 {#if false}{type}{groupName}{/if}
 
-<div class="group-card {minimal ? 'minimal-card' : ''}"
+<div class="card card-reactive group-card {minimal ? 'minimal-card' : ''}"
      role={onView ? 'button' : undefined}
      {...(onView ? { tabindex: 0 } : {})}
      aria-label={viewLabel || title}
@@ -52,27 +52,8 @@
 </div>
 
 <style>
-  .group-card {
-    background: #232336;
-    border-radius: 1.1rem;
-    box-shadow: 0 2px 12px 0 rgba(0,0,0,0.10);
-    padding: 1.5rem 1.2rem 1.2rem 1.2rem;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    cursor: pointer;
-    transition: background 0.15s, box-shadow 0.15s;
-    outline: none;
-  }
-  .group-card:focus, .group-card:hover {
-    background: #35354a;
-    box-shadow: 0 4px 16px 0 rgba(0,0,0,0.16);
-  }
   .minimal-card {
     /* Remove always-on hover style, just use default background */
-    background: #232336;
-    color: #f3f3f3;
     justify-content: center;
     align-items: center;
     min-height: 4.5rem;
@@ -95,7 +76,7 @@
     display: flex;
     align-items: center;
     height: 2.2rem;
-    pointer-events: none; /* icon is now just visual, not clickable */
+    pointer-events: none;
   }
   .group-title {
     font-weight: bold;

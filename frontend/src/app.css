@@ -3,33 +3,21 @@
 @plugin '@tailwindcss/typography';
 
 :root {
-    /* Button base */
-    --btn-bg: linear-gradient(90deg, #3a3a45 0%, #57576a 100%);
-    --btn-bg-hover: linear-gradient(90deg, #57576a 0%, #3a3a45 100%);
-    --btn-color: #f3f3f3;
-    --btn-color-hover: #fff;
-    /* Accept button */
-    --btn-accept-bg: #6ee7b7;
-    --btn-accept-bg-hover: linear-gradient(90deg, #6ee7b7 0%, #b8f5d0 100%);
-    --btn-accept-color: #123820;
-    --btn-accept-color-hover: #185c3a;
-    --btn-accept-shadow: 0 2px 10px #6ee7b733;
-    /* Error button */
-    --btn-error-bg: #ff8a8a;
-    --btn-error-bg-hover: linear-gradient(90deg, #ff8a8a 0%, #ffd6d6 100%);
-    --btn-error-color: #4a1010;
-    --btn-error-color-hover: #7a2323;
-    --btn-error-shadow: 0 2px 10px #ff8a8a33;
-
     --color-background: #18181b;
-    --color-card: #26262a;
+    --color-card: #2a2a41;
     --color-text: #e5e5e5;
     --color-muted: #cccccc;
-    --color-primary: #c8102e;
-    --color-secondary: #a10024;
+    --color-primary: #950000;
+    --color-secondary: #df2a2a;
     --color-button: #6c6c6c;
     --color-error: #ff4d4d;
     --color-success: #4caf50;
+}
+
+body {
+    color: var(--color-text);
+    background-color: var(--color-background);
+    font-family: 'Roboto', sans-serif;
 }
 
 /* Chart.js custom tooltip styles */
@@ -38,7 +26,7 @@
     min-width: 180px;
     min-height: 80px;
     max-height: 110px;
-    background: #23232b;
+    background: var(--color-card);
     border: 1.5px solid #333;
     border-radius: 14px;
     box-shadow: 0 8px 32px #000a;
@@ -119,12 +107,37 @@
     border: 1.5px solid #222;
 }
 
+/* --- Card Styles --- */
+.card {
+    background-image: linear-gradient(to right,
+            var(--color-card) 0%,
+            color-mix(in srgb, var(--color-card), white 5%) 51%,
+            var(--color-card) 100%);
+    background-size: 200% auto;
+    transition: 0.5s;
+    border-radius: 1.1rem;
+    padding: 1.5rem 1.2rem 1.2rem 1.2rem;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    outline: none;
+}
+
+.card.card-reactive {
+    cursor: pointer;
+}
+
+.card.card-reactive:hover {
+    background-position: right center;
+}
+
 /* --- Button Styles --- */
 .btn {
     --btn-bg: var(--color-button);
     background-image: linear-gradient(to right,
             var(--btn-bg) 0%,
-            color-mix(in srgb, var(--btn-bg), white 20%) 51%,
+            color-mix(in srgb, var(--btn-bg), white 15%) 51%,
             var(--btn-bg) 100%);
     background-size: 200% auto;
     transition: 0.5s;
@@ -143,6 +156,11 @@
     padding: 0.25rem 1rem;
 }
 
+.btn.btn-big {
+    padding: 0.9rem 2.25rem;
+    font-size: 1.2rem;
+}
+
 .btn:hover {
     background-position: right center;
 }
@@ -156,4 +174,14 @@
 /* Error/Cancel/Abort Button */
 .btn.btn-error {
     --btn-bg: var(--color-error);
+}
+
+/* Primary Button */
+.btn.btn-primary {
+    --btn-bg: var(--color-primary);
+}
+
+/* Secondary Button */
+.btn.btn-secondary {
+    --btn-bg: var(--color-secondary);
 }

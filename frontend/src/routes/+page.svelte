@@ -299,15 +299,6 @@
 	}
 </script>
 
-<svelte:head>
-	<link
-		rel="stylesheet"
-		href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-		crossorigin="anonymous"
-		referrerpolicy="no-referrer"
-	/>
-</svelte:head>
-
 {#if showLoading}
 	<div
 		class="loading-screen"
@@ -359,7 +350,7 @@
 			</div>
 			<h2>There was an error fetching the data</h2>
 			<!-- <p class="error-message">{$error}</p> -->
-			<button class="btn btn-error" on:click={() => location.reload()}>Reload</button>
+			<button class="btn btn-big btn-error" on:click={() => location.reload()}>Reload</button>
 		</div>
 	{:else if $snapshots.length === 0}
 		<p>No data available.</p>
@@ -518,7 +509,7 @@
 	.bouncing-dots .dot {
 		width: 16px;
 		height: 16px;
-		background: linear-gradient(135deg, #8e44ad 60%, #3498db 100%);
+		background: linear-gradient(135deg, var(--color-primary) 60%, var(--color-secondary) 100%);
 		border-radius: 50%;
 		animation: bounce 1.2s infinite ease-in-out;
 	}
@@ -597,11 +588,22 @@
 		justify-content: flex-start;
 		cursor: pointer;
 	}
-	.fab-main {
-		box-shadow: 0 4px 16px 0 rgba(80, 80, 120, 0.18);
-		will-change: transform;
-		cursor: pointer;
-	}
+   .fab-main {
+	   box-shadow: 0 4px 16px 0 rgba(80, 80, 120, 0.18);
+	   will-change: transform;
+	   cursor: pointer;
+	   background-image: linear-gradient(to right,
+		   var(--color-primary) 0%,
+		   color-mix(in srgb, var(--color-primary), var(--color-secondary) 50%) 51%,
+		   var(--color-primary) 100%
+	   );
+	   background-size: 200% auto;
+	   transition: background-position 0.5s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s;
+   }
+
+   .fab-main:hover {
+	   background-position: right center;
+   }
 	.fab-main:active {
 		scale: 0.95;
 	}
