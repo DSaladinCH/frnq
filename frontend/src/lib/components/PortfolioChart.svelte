@@ -376,10 +376,15 @@
 	] as const;
 
 	type Period = (typeof periodOptions)[number]['value'];
+	const PERIOD_STORAGE_KEY = 'portfolioChart.selectedPeriod';
 	let selectedPeriod: Period = '3m';
 
 	function selectPeriod(val: string) {
 		selectedPeriod = val as Period;
+		// Save to localStorage
+		try {
+			localStorage.setItem(PERIOD_STORAGE_KEY, selectedPeriod);
+		} catch {}
 	}
 
 	// Chart option variables and handlers (moved here as requested)
@@ -389,11 +394,36 @@
 	] as const;
 
 	type ChartOption = (typeof chartOptionOptions)[number]['value'];
+	const CHART_OPTION_STORAGE_KEY = 'portfolioChart.chartOption';
 	let chartOption: ChartOption = 'both';
 
 	function selectChartOption(val: string) {
 		chartOption = val as ChartOption;
+		// Save to localStorage
+		try {
+			localStorage.setItem(CHART_OPTION_STORAGE_KEY, chartOption);
+		} catch {}
 	}
+
+	// On mount, restore from localStorage if available
+	onMount(() => {
+		// ...existing code...
+		// Restore chartOption
+		try {
+			const storedChartOption = localStorage.getItem(CHART_OPTION_STORAGE_KEY);
+			if (storedChartOption && chartOptionOptions.some((opt) => opt.value === storedChartOption)) {
+				chartOption = storedChartOption as ChartOption;
+			}
+		} catch {}
+		// Restore selectedPeriod
+		try {
+			const storedPeriod = localStorage.getItem(PERIOD_STORAGE_KEY);
+			if (storedPeriod && periodOptions.some((opt) => opt.value === storedPeriod)) {
+				selectedPeriod = storedPeriod as Period;
+			}
+		} catch {}
+		// ...existing code...
+	});
 </script>
 
 <div
@@ -440,14 +470,16 @@
 			class="chart-options grid hidden w-80 gap-2 md:grid md:w-full md:grid-cols-[1fr] md:grid-rows-[auto_auto]"
 		>
 			<button
-				type="button" class="btn btn-small"
+				type="button"
+				class="btn btn-small"
 				class:btn-secondary={chartOption === 'both'}
-				on:click={() => (chartOption = 'both')}>Portfolio</button
+				on:click={() => selectChartOption('both')}>Portfolio</button
 			>
 			<button
-				type="button" class="btn btn-small"
+				type="button"
+				class="btn btn-small"
 				class:btn-secondary={chartOption === 'profitOnly'}
-				on:click={() => (chartOption = 'profitOnly')}>Profit Only</button
+				on:click={() => selectChartOption('profitOnly')}>Profit Only</button
 			>
 		</div>
 		<div class="block md:hidden">
@@ -472,9 +504,10 @@
 		<div class="hidden sm:flex">
 			{#each periodOptions as opt}
 				<button
-					type="button" class="btn btn-small"
+					type="button"
+					class="btn btn-small"
 					class:btn-secondary={selectedPeriod === opt.value}
-					on:click={() => (selectedPeriod = opt.value)}>{opt.label}</button
+					on:click={() => selectPeriod(opt.value)}>{opt.label}</button
 				>
 			{/each}
 		</div>
