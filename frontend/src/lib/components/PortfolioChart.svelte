@@ -352,20 +352,6 @@
 		return Math.round(val * 100) / 100;
 	}
 
-	let isSmallScreen = false;
-
-	function handleResize() {
-		isSmallScreen = window.matchMedia('(max-width: 640px)').matches;
-	}
-
-	onMount(() => {
-		handleResize();
-		window.addEventListener('resize', handleResize);
-		return () => {
-			window.removeEventListener('resize', handleResize);
-		};
-	});
-
 	// Period type for strict typing
 	const periodOptions = [
 		{ value: '1w', label: '1 Week' },
@@ -407,7 +393,6 @@
 
 	// On mount, restore from localStorage if available
 	onMount(() => {
-		// ...existing code...
 		// Restore chartOption
 		try {
 			const storedChartOption = localStorage.getItem(CHART_OPTION_STORAGE_KEY);
@@ -422,7 +407,6 @@
 				selectedPeriod = storedPeriod as Period;
 			}
 		} catch {}
-		// ...existing code...
 	});
 </script>
 
