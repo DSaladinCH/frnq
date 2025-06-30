@@ -67,7 +67,11 @@ public class QuoteManagement(DatabaseContext databaseContext, ProviderRegistry r
             .Where(p => p.QuoteId == quoteId && p.Date >= from && p.Date <= to)
             .ToListAsync();
 
-        if (quote.LastUpdatedPrices < DateTime.UtcNow.AddMinutes(-1))
+#if DEBUG
+        if (quote.LastUpdatedPrices < DateTime.UtcNow.AddMinutes(-60))
+#else
+if (quote.LastUpdatedPrices < DateTime.UtcNow.AddMinutes(-1))
+#endif
         {
             // Find earliest and latest in the db result
             QuotePrice? earliestDb = dbPrices.OrderBy(p => p.Date).FirstOrDefault();
