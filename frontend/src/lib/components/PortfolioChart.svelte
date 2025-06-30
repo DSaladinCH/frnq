@@ -411,16 +411,23 @@
 </script>
 
 <div
-	class="portfolio-info m-5 grid grid-cols-[1fr] grid-rows-[auto_35px] md:grid-cols-[auto_120px] md:grid-rows-[1fr]"
+	class="portfolio-info m-5 grid grid-cols-[1fr] grid-rows-[50px_auto_35px] md:grid-cols-[80px_auto_120px] md:grid-rows-[1fr] justify-items-center
+			md:justify-items-start max-w-full md:max-w-lg"
 >
 	{#if latest}
+		<div class="portfolio-logo pr-5 block">
+			<img class="portfolio-image pb-2 block md:hidden" src="/banner.png" alt="Portfolio Logo" />
+			<img class="portfolio-image hidden md:block" src="/logo.png" alt="Portfolio Logo" />
+		</div>
+
 		<div class="portfolio-stats">
-			<div class="profit-total w-full">
-				<span class="profit-value"
+			<div class="profit-total w-full justify-center md:justify-start">
+				<span class="profit-value color-default"
 					>{totalProfit.toLocaleString(undefined, { style: 'currency', currency: 'CHF' })}</span
 				>
 			</div>
-			<div class="profit-change-row w-full">
+
+			<div class="profit-change-row w-full justify-center md:justify-start">
 				<span class="profit-change-value" style="color: {profitColor}">
 					{profitChange >= 0 ? '+' : ''}{profitChange.toLocaleString(undefined, {
 						style: 'currency',
@@ -466,7 +473,7 @@
 				on:click={() => selectChartOption('profitOnly')}>Profit Only</button
 			>
 		</div>
-		<div class="block md:hidden">
+		<div class="block md:hidden pt-2">
 			<DropDown
 				options={[...chartOptionOptions]}
 				selected={chartOption}
@@ -508,10 +515,12 @@
 	}
 
 	.portfolio-info {
-		max-width: 400px;
-		color: #fff;
 		font-size: 1.1rem;
-		text-align: center;
+	}
+
+	.portfolio-logo .portfolio-image {
+		height: 100%;
+		object-fit: contain;
 	}
 
 	.portfolio-stats {
@@ -523,7 +532,6 @@
 		font-size: 2.1rem;
 		font-weight: 700;
 		display: flex;
-		flex-direction: column;
 	}
 
 	.profit-value {
@@ -534,7 +542,6 @@
 
 	.profit-change-row {
 		display: flex;
-		justify-content: start;
 		align-items: center;
 		gap: 0.7rem;
 	}

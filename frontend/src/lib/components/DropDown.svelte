@@ -47,7 +47,7 @@ function handleDropdownKey(e: KeyboardEvent, val: string) {
 	.custom-dropdown {
 		position: relative;
 		width: 140px;
-		z-index: 10;
+		z-index: 20;
 	}
 	.dropdown-toggle {
 		width: 100%;
@@ -85,7 +85,7 @@ function handleDropdownKey(e: KeyboardEvent, val: string) {
 		padding: 0.2rem 0;
 		margin: 0;
 		list-style: none;
-		z-index: 100;
+		z-index: 20;
 		text-align: left;
 	}
 	.dropdown-list li {
@@ -100,7 +100,7 @@ function handleDropdownKey(e: KeyboardEvent, val: string) {
 	.dropdown-list li.selected,
 	.dropdown-list li[aria-selected="true"] {
 		background: #18181b;
-		color: #10b981;
+		color: var(--color-primary);
 	}
 	.dropdown-list li:hover {
 		background: #2a2a33;

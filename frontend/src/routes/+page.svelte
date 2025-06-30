@@ -294,7 +294,7 @@
 
 	// Helper to get action position: pop up from left bottom on desktop, right bottom on mobile
 	function getFabActionStyle(i: number, total: number, open: boolean) {
-		const offset = open ? (i + 1) * 55 + 25 : 0;
+		const offset = open ? (i + 1) * 50 - 30 : 0;
 		return `opacity: ${open ? 1 : 0}; pointer-events: ${open ? 'auto' : 'none'}; transform: translateY(-${offset}px) scale(${open ? 1 : 0.5}); transition: transform 0.35s cubic-bezier(0.4,0,0.2,1) ${i * 0.06}s, opacity 0.2s ${i * 0.06}s;`;
 	}
 </script>
@@ -358,7 +358,7 @@
 		<PortfolioChart snapshots={$filteredSnapshots} />
 
 		<div
-			class="quote-groups mx-auto mb-3 mt-4 grid w-full grid-cols-[repeat(auto-fit,_minmax(300px,_450px))] justify-center px-3 xl:w-4/5 gap-5"
+			class="quote-groups mx-auto mb-3 mt-4 grid w-full grid-cols-[repeat(auto-fit,_minmax(300px,_450px))] justify-center gap-5 px-3 xl:w-4/5"
 		>
 			{#if $filterMode !== 'full'}
 				<PositionCard
@@ -383,9 +383,9 @@
 		>
 			<div class="relative h-16 w-16">
 				{#each fabActions as action, i (action.label)}
+				<div class="fab-action-wrapper" style={getFabActionStyle(i, fabActions.length, fabOpen)}>
 					<button
-						class="fab-action absolute bottom-0 right-0 flex min-w-max origin-bottom-right items-center gap-2 whitespace-nowrap rounded-full bg-white px-4 py-2 text-gray-800 shadow-lg md:left-0 md:right-auto md:origin-bottom-left md:gap-3"
-						style={getFabActionStyle(i, fabActions.length, fabOpen)}
+						class="fab-action btn btn-primary absolute bottom-0 right-0 flex min-w-max origin-bottom-right items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 md:left-0 md:right-auto md:origin-bottom-left md:gap-3"
 						aria-label={action.label}
 						on:click={() => {
 							fabOpen = false;
@@ -395,6 +395,7 @@
 						<i class="{action.icon} text-lg"></i>
 						<span class="font-medium">{action.label}</span>
 					</button>
+				</div>
 				{/each}
 				<button
 					class="fab-main relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-purple-600 to-blue-500 text-2xl text-white shadow-xl transition-transform duration-300 focus:outline-none"
@@ -560,64 +561,31 @@
 	}
 
 	/* Floating Action Button styles */
-	.fab-action-enter {
-		opacity: 0;
-		transform: scale(0.7) translateY(20px);
-	}
-	.fab-action-enter-active {
-		opacity: 1;
-		transform: scale(1) translateY(0);
-		transition:
-			opacity 0.25s,
-			transform 0.25s;
-	}
-	.fab-action-leave {
-		opacity: 1;
-		transform: scale(1) translateY(0);
-	}
-	.fab-action-leave-active {
-		opacity: 0;
-		transform: scale(0.7) translateY(20px);
-		transition:
-			opacity 0.2s,
-			transform 0.2s;
-	}
-
 	.fab-action {
 		min-width: 90px;
 		justify-content: flex-start;
 		cursor: pointer;
 	}
-   .fab-main {
-	   box-shadow: 0 4px 16px 0 rgba(80, 80, 120, 0.18);
-	   will-change: transform;
-	   cursor: pointer;
-	   background-image: linear-gradient(to right,
-		   var(--color-primary) 0%,
-		   color-mix(in srgb, var(--color-primary), var(--color-secondary) 50%) 51%,
-		   var(--color-primary) 100%
-	   );
-	   background-size: 200% auto;
-	   transition: background-position 0.5s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s;
-   }
+	.fab-main {
+		box-shadow: 0 4px 16px 0 rgba(80, 80, 120, 0.18);
+		will-change: transform;
+		cursor: pointer;
+		background-image: linear-gradient(
+			to right,
+			var(--color-primary) 0%,
+			color-mix(in srgb, var(--color-primary), var(--color-secondary) 50%) 51%,
+			var(--color-primary) 100%
+		);
+		background-size: 200% auto;
+		transition:
+			background-position 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+			box-shadow 0.2s;
+	}
 
-   .fab-main:hover {
-	   background-position: right center;
-   }
+	.fab-main:hover {
+		background-position: right center;
+	}
 	.fab-main:active {
 		scale: 0.95;
-	}
-	@keyframes fab-pop {
-		0% {
-			opacity: 0;
-			transform: scale(0.7) translate(-50%, -50%);
-		}
-		100% {
-			opacity: 1;
-			transform: scale(1) translate(-50%, -50%);
-		}
-	}
-	.animate-fab-pop {
-		animation: fab-pop 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
 	}
 </style>
