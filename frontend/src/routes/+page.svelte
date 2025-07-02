@@ -8,20 +8,19 @@
 		type QuoteModel,
 		type PositionsResponse
 	} from '$lib/services/positionService';
-	import { derived, writable, get } from 'svelte/store';
 
-	const snapshots = writable<PositionSnapshot[]>([]);
-	const quotes = writable<QuoteModel[]>([]);
-	const loading = writable(true);
-	const error = writable<string | null>(null);
+	let snapshots = $state<PositionSnapshot[]>([]);
+	let quotes = $state<QuoteModel[]>([]);
+	let loading = $state(true);
+	let error = $state<string | null>(null);
 
 	// Group by quote group (from quote), then by quoteId
-	const groupedSnapshots = derived([snapshots, quotes], ([$snapshots, $quotes]) => {
+	let groupedSnapshots = $derived(() => {
 		const groups: Record<string, { name: string; quotes: Record<number, PositionSnapshot[]> }> = {};
 		const ungrouped: Record<number, PositionSnapshot[]> = {};
 
-		for (const snap of $snapshots) {
-			const quote = $quotes.find((q) => q.id === snap.quoteId);
+		for (const snap of snapshots) {
+			const quote = quotes.find((q) => q.id === snap.quoteId);
 			const groupId = quote?.group?.id;
 			const groupName = quote?.group?.name;
 			const quoteKey = snap.quoteId;
@@ -65,8 +64,7 @@
 
 	// Helper to get quote by quoteId
 	function getQuoteById(quoteId: number) {
-		const $quotesArr = get(quotes);
-		return $quotesArr.find((q) => q.id === quoteId);
+		return quotes.find((q) => q.id === quoteId);
 	}
 
 	// Helper to get display name for a quoteId
@@ -75,32 +73,34 @@
 		return quote ? quote.name : `Quote #${quoteId}`;
 	}
 
-	let showLoading = true;
-	let fadeOut = false;
+	let showLoading = $state(true);
+	let fadeOut = $state(false);
 
-	$: if (!$loading && showLoading && !fadeOut) {
-		// Start fade-out
-		fadeOut = true;
-	}
-
-	onMount(async () => {
-		loading.set(true);
-		try {
-			const data: PositionsResponse = await getPositionSnapshots(null, null);
-			snapshots.set(data.snapshots);
-			quotes.set(data.quotes);
-			error.set(null);
-		} catch (e) {
-			error.set((e as Error).message);
-		} finally {
-			loading.set(false);
+	$effect(() => {
+		if (!loading && showLoading && !fadeOut) {
+			// Start fade-out
+			fadeOut = true;
 		}
 	});
 
-	// State for filtering (use Svelte stores for reactivity)
-	const filterMode = writable<'full' | 'group' | 'quote'>('full');
-	const filterGroupId = writable<string | null>(null);
-	const filterQuoteId = writable<number | null>(null);
+	onMount(async () => {
+		loading = true;
+		try {
+			const data: PositionsResponse = await getPositionSnapshots(null, null);
+			snapshots = data.snapshots;
+			quotes = data.quotes;
+			error = null;
+		} catch (e) {
+			error = (e as Error).message;
+		} finally {
+			loading = false;
+		}
+	});
+
+	// State for filtering (use Svelte runes for reactivity)
+	let filterMode = $state<'full' | 'group' | 'quote'>('full');
+	let filterGroupId = $state<string | null>(null);
+	let filterQuoteId = $state<number | null>(null);
 
 	// Compute filtered snapshots for the chart
 	function filterLeadingZeroSnapshots(snaps: PositionSnapshot[]): PositionSnapshot[] {
@@ -115,47 +115,44 @@
 		return firstNonZeroIdx === -1 ? [] : snaps.slice(firstNonZeroIdx);
 	}
 
-	const filteredSnapshots = derived(
-		[snapshots, quotes, groupedSnapshots, filterMode, filterGroupId, filterQuoteId],
-		([$snapshots, $quotes, $grouped, $filterMode, $filterGroupId, $filterQuoteId]) => {
-			let snaps: PositionSnapshot[];
-			if ($filterMode === 'full') snaps = $snapshots;
-			else if ($filterMode === 'group' && $filterGroupId) {
-				const group = $grouped.groups[$filterGroupId];
-				snaps = group ? Object.values(group.quotes).flat() : [];
-			} else if ($filterMode === 'quote' && $filterQuoteId != null) {
-				snaps = $snapshots.filter((s) => s.quoteId === $filterQuoteId);
-			} else snaps = $snapshots;
-			return filterLeadingZeroSnapshots(snaps);
-		}
-	);
+	let filteredSnapshots = $derived(() => {
+		let snaps: PositionSnapshot[];
+		if (filterMode === 'full') snaps = snapshots;
+		else if (filterMode === 'group' && filterGroupId) {
+			const group = groupedSnapshots().groups[filterGroupId];
+			snaps = group ? Object.values(group.quotes).flat() : [];
+		} else if (filterMode === 'quote' && filterQuoteId != null) {
+			snaps = snapshots.filter((s) => s.quoteId === filterQuoteId);
+		} else snaps = snapshots;
+		return filterLeadingZeroSnapshots(snaps);
+	});
 
-	// UI handlers (update stores)
+	// UI handlers (update state)
 	function handleGroupView(groupId: string) {
-		filterMode.set('group');
-		filterGroupId.set(groupId);
-		filterQuoteId.set(null);
+		filterMode = 'group';
+		filterGroupId = groupId;
+		filterQuoteId = null;
 		tick(); // ensure reactivity
 	}
 
 	function handleQuoteView(quoteId: number, groupId?: string) {
-		filterMode.set('quote');
-		filterQuoteId.set(quoteId);
-		filterGroupId.set(groupId ?? null);
+		filterMode = 'quote';
+		filterQuoteId = quoteId;
+		filterGroupId = groupId ?? null;
 		tick();
 	}
 
 	function handleBackToFullView() {
-		filterMode.set('full');
-		filterGroupId.set(null);
-		filterQuoteId.set(null);
+		filterMode = 'full';
+		filterGroupId = null;
+		filterQuoteId = null;
 		tick();
 	}
 
 	function handleBackToGroupView() {
-		if ($filterGroupId) {
-			filterMode.set('group');
-			filterQuoteId.set(null);
+		if (filterGroupId) {
+			filterMode = 'group';
+			filterQuoteId = null;
 		} else {
 			handleBackToFullView();
 		}
@@ -179,17 +176,17 @@
 	type Card = GroupCard | QuoteCard;
 
 	function getQuoteCards(
-		$groupedSnapshots: {
+		groupedSnapshotsValue: {
 			groups: Record<string, { name: string; quotes: Record<number, PositionSnapshot[]> }>;
 			ungrouped: Record<number, PositionSnapshot[]>;
 		},
-		$filterMode: 'full' | 'group' | 'quote',
-		$filterGroupId: string | null,
-		$filterQuoteId: number | null
+		filterModeValue: 'full' | 'group' | 'quote',
+		filterGroupIdValue: string | null,
+		filterQuoteIdValue: number | null
 	): Card[] {
-		if ($filterMode === 'full') {
+		if (filterModeValue === 'full') {
 			return [
-				...Object.entries($groupedSnapshots.groups).map(
+				...Object.entries(groupedSnapshotsValue.groups).map(
 					([groupId, { name: groupName, quotes }]) => ({
 						type: 'group' as const,
 						groupId,
@@ -197,34 +194,34 @@
 						quotes
 					})
 				),
-				...Object.entries($groupedSnapshots.ungrouped).map(([quoteKey, snaps]) => ({
+				...Object.entries(groupedSnapshotsValue.ungrouped).map(([quoteKey, snaps]) => ({
 					type: 'quote' as const,
 					quoteKey: +quoteKey,
 					snaps
 				}))
 			];
-		} else if ($filterMode === 'group' && $filterGroupId) {
+		} else if (filterModeValue === 'group' && filterGroupIdValue) {
 			// Only show quotes of the selected group
-			const group = $groupedSnapshots.groups[$filterGroupId];
+			const group = groupedSnapshotsValue.groups[filterGroupIdValue];
 			if (!group) return [];
 			return Object.entries(group.quotes).map(([quoteKey, snaps]) => ({
 				type: 'quote' as const,
 				quoteKey: +quoteKey,
 				snaps,
-				groupId: $filterGroupId
+				groupId: filterGroupIdValue
 			}));
-		} else if ($filterMode === 'quote' && $filterQuoteId != null) {
+		} else if (filterModeValue === 'quote' && filterQuoteIdValue != null) {
 			let snaps = null;
-			let groupId: string | undefined = $filterGroupId ?? undefined;
-			if (groupId && $groupedSnapshots.groups[groupId]?.quotes[$filterQuoteId]) {
-				snaps = $groupedSnapshots.groups[groupId].quotes[$filterQuoteId];
-			} else if ($groupedSnapshots.ungrouped[$filterQuoteId]) {
-				snaps = $groupedSnapshots.ungrouped[$filterQuoteId];
+			let groupId: string | undefined = filterGroupIdValue ?? undefined;
+			if (groupId && groupedSnapshotsValue.groups[groupId]?.quotes[filterQuoteIdValue]) {
+				snaps = groupedSnapshotsValue.groups[groupId].quotes[filterQuoteIdValue];
+			} else if (groupedSnapshotsValue.ungrouped[filterQuoteIdValue]) {
+				snaps = groupedSnapshotsValue.ungrouped[filterQuoteIdValue];
 				groupId = undefined; // assign undefined for type compatibility
 			}
 			if (snaps) {
 				return [
-					{ type: 'quote' as const, quoteKey: $filterQuoteId, snaps, groupId, isActiveQuote: true }
+					{ type: 'quote' as const, quoteKey: filterQuoteIdValue, snaps, groupId, isActiveQuote: true }
 				];
 			}
 			return [];
@@ -283,10 +280,10 @@
 	}
 
 	// Reactive cards array for the template
-	$: cards = getQuoteCards($groupedSnapshots, $filterMode, $filterGroupId, $filterQuoteId);
+	let cards = $derived(getQuoteCards(groupedSnapshots(), filterMode, filterGroupId, filterQuoteId));
 
 	// Floating Action Button state
-	let fabOpen = false;
+	let fabOpen = $state(false);
 	const fabActions = [
 		{ icon: 'fa-solid fa-plus', label: 'Add Investment', onClick: () => alert('Add action') },
 		{ icon: 'fa-solid fa-list-ul', label: 'Show Investments', onClick: () => alert('Edit action') }
@@ -303,7 +300,7 @@
 	<div
 		class="loading-screen"
 		class:fade-out={fadeOut}
-		on:transitionend={() => {
+		ontransitionend={() => {
 			if (fadeOut) showLoading = false;
 		}}
 	>
@@ -315,8 +312,8 @@
 		<p class="fade-in pulse">Loading positions...</p>
 	</div>
 {/if}
-{#if !$loading && !showLoading}
-	{#if $error}
+{#if !loading && !showLoading}
+	{#if error}
 		<div class="error-screen">
 			<div class="sad-icon" aria-hidden="true">
 				<svg
@@ -349,18 +346,18 @@
 				</svg>
 			</div>
 			<h2>There was an error fetching the data</h2>
-			<!-- <p class="error-message">{$error}</p> -->
-			<button class="btn btn-big btn-error" on:click={() => location.reload()}>Reload</button>
+			<!-- <p class="error-message">{error}</p> -->
+			<button class="btn btn-big btn-error" onclick={() => location.reload()}>Reload</button>
 		</div>
-	{:else if $snapshots.length === 0}
+	{:else if snapshots.length === 0}
 		<p>No data available.</p>
-	{:else if $snapshots.length}
-		<PortfolioChart snapshots={$filteredSnapshots} />
+	{:else if snapshots.length}
+		<PortfolioChart snapshots={filteredSnapshots()} />
 
 		<div
 			class="quote-groups mx-auto mb-3 mt-4 grid w-full grid-cols-[repeat(auto-fit,_minmax(300px,_450px))] justify-center gap-5 px-3 xl:w-4/5"
 		>
-			{#if $filterMode !== 'full'}
+			{#if filterMode !== 'full'}
 				<PositionCard
 					type="group"
 					title="<i class='fa-solid fa-arrow-left'></i> Back to full view"
@@ -387,7 +384,7 @@
 					<button
 						class="fab-action btn btn-primary absolute bottom-0 right-0 flex min-w-max origin-bottom-right items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 md:left-0 md:right-auto md:origin-bottom-left md:gap-3"
 						aria-label={action.label}
-						on:click={() => {
+						onclick={() => {
 							fabOpen = false;
 							action.onClick();
 						}}
@@ -400,7 +397,7 @@
 				<button
 					class="fab-main relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-purple-600 to-blue-500 text-2xl text-white shadow-xl transition-transform duration-300 focus:outline-none"
 					aria-label="Open actions"
-					on:click={() => (fabOpen = !fabOpen)}
+					onclick={() => (fabOpen = !fabOpen)}
 					style="z-index:20;"
 				>
 					<span
