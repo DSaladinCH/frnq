@@ -111,6 +111,14 @@ body {
     color: var(--color-muted);
 }
 
+.bg-background {
+    background-color: var(--color-background);
+}
+
+.bg-card {
+    background-color: var(--color-card);
+}
+
 /* --- Card Styles --- */
 .card {
     background-image: linear-gradient(to right,

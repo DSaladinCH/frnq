@@ -2,12 +2,23 @@
 	import { onMount, tick } from 'svelte';
 	import PortfolioChart from '$lib/components/PortfolioChart.svelte';
 	import PositionCard from '$lib/components/PositionCard.svelte';
+	import AddInvestment from '$lib/components/AddInvestment.svelte';
+	import InvestmentList from '$lib/components/InvestmentList.svelte';
 	import {
 		getPositionSnapshots,
 		type PositionSnapshot,
 		type QuoteModel,
 		type PositionsResponse
 	} from '$lib/services/positionService';
+
+	const modalTypes = {
+		Investments: InvestmentList,
+		AddInvestment: AddInvestment
+	};
+
+	let showModal = $state(true);
+	let modalType = $state<'Investments' | 'AddInvestment'>('Investments');
+	let ModalComponent = $derived(modalTypes[modalType]);
 
 	let snapshots = $state<PositionSnapshot[]>([]);
 	let quotes = $state<QuoteModel[]>([]);
@@ -221,7 +232,13 @@
 			}
 			if (snaps) {
 				return [
-					{ type: 'quote' as const, quoteKey: filterQuoteIdValue, snaps, groupId, isActiveQuote: true }
+					{
+						type: 'quote' as const,
+						quoteKey: filterQuoteIdValue,
+						snaps,
+						groupId,
+						isActiveQuote: true
+					}
 				];
 			}
 			return [];
@@ -231,6 +248,7 @@
 
 	// Helper to get card summary and props for PositionCard
 	import type PositionCardType from '$lib/components/PositionCard.svelte';
+	import Modal from '$lib/components/Modal.svelte';
 	type PositionCardProps = {
 		type: 'group' | 'quote';
 		groupName?: string;
@@ -380,19 +398,19 @@
 		>
 			<div class="relative h-16 w-16">
 				{#each fabActions as action, i (action.label)}
-				<div class="fab-action-wrapper" style={getFabActionStyle(i, fabActions.length, fabOpen)}>
-					<button
-						class="fab-action btn btn-primary absolute bottom-0 right-0 flex min-w-max origin-bottom-right items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 md:left-0 md:right-auto md:origin-bottom-left md:gap-3"
-						aria-label={action.label}
-						onclick={() => {
-							fabOpen = false;
-							action.onClick();
-						}}
-					>
-						<i class="{action.icon} text-lg"></i>
-						<span class="font-medium">{action.label}</span>
-					</button>
-				</div>
+					<div class="fab-action-wrapper" style={getFabActionStyle(i, fabActions.length, fabOpen)}>
+						<button
+							class="fab-action btn btn-primary absolute bottom-0 right-0 flex min-w-max origin-bottom-right items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 md:left-0 md:right-auto md:origin-bottom-left md:gap-3"
+							aria-label={action.label}
+							onclick={() => {
+								fabOpen = false;
+								action.onClick();
+							}}
+						>
+							<i class="{action.icon} text-lg"></i>
+							<span class="font-medium">{action.label}</span>
+						</button>
+					</div>
 				{/each}
 				<button
 					class="fab-main relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-purple-600 to-blue-500 text-2xl text-white shadow-xl transition-transform duration-300 focus:outline-none"
@@ -421,6 +439,10 @@
 		</div>
 	{/if}
 {/if}
+
+<Modal bind:showModal>
+	<ModalComponent />
+</Modal>
 
 <style>
 	/* Error screen styles */
