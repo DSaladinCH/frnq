@@ -18,7 +18,6 @@
 
 	let showModal = $state(true);
 	let modalType = $state<'Investments' | 'AddInvestment'>('Investments');
-	let ModalComponent = $derived(modalTypes[modalType]);
 
 	let snapshots = $state<PositionSnapshot[]>([]);
 	let quotes = $state<QuoteModel[]>([]);
@@ -441,7 +440,11 @@
 {/if}
 
 <Modal bind:showModal>
-	<ModalComponent />
+	{#if modalType === 'AddInvestment'}
+        <AddInvestment />
+    {:else if modalType === 'Investments'}
+        <InvestmentList positionSnapshots={snapshots} />
+    {/if}
 </Modal>
 
 <style>
