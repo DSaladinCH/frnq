@@ -443,7 +443,7 @@
 	{#if modalType === 'AddInvestment'}
         <AddInvestment />
     {:else if modalType === 'Investments'}
-        <InvestmentList positionSnapshots={snapshots} />
+        <InvestmentList positionSnapshots={snapshots} quotes={quotes} />
     {/if}
 </Modal>
 

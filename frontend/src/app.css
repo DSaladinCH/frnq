@@ -128,12 +128,16 @@ body {
     background-size: 200% auto;
     transition: 0.5s;
     border-radius: 1.1rem;
-    padding: 1.5rem 1.2rem 1.2rem 1.2rem;
+    padding: 1.2rem;
     width: 100%;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     outline: none;
+}
+
+.card.card-slim {
+    padding: 0.8rem 1.2rem;
 }
 
 .card.card-reactive {
@@ -196,4 +200,26 @@ body {
 /* Secondary Button */
 .btn.btn-secondary {
     --btn-bg: var(--color-secondary);
+}
+
+/*******************/
+/**** ScrollBar ****/
+/*******************/
+::-webkit-scrollbar {
+    width: 8px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--color-background);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    background: var(--color-primary);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-secondary);
 }
