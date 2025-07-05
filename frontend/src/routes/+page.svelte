@@ -7,9 +7,11 @@
 	import {
 		getPositionSnapshots,
 		type PositionSnapshot,
-		type QuoteModel,
 		type PositionsResponse
 	} from '$lib/services/positionService';
+	import Modal from '$lib/components/Modal.svelte';
+	import type { QuoteModel } from '$lib/Models/QuoteModel';
+	import { getInvestments, type InvestmentModel } from '$lib/services/investmentService';
 
 	const modalTypes = {
 		Investments: InvestmentList,
@@ -21,6 +23,7 @@
 
 	let snapshots = $state<PositionSnapshot[]>([]);
 	let quotes = $state<QuoteModel[]>([]);
+	let investments = $state<InvestmentModel[]>([]);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 
@@ -99,6 +102,7 @@
 			const data: PositionsResponse = await getPositionSnapshots(null, null);
 			snapshots = data.snapshots;
 			quotes = data.quotes;
+			investments = await getInvestments();
 			error = null;
 		} catch (e) {
 			error = (e as Error).message;
@@ -246,8 +250,6 @@
 	}
 
 	// Helper to get card summary and props for PositionCard
-	import type PositionCardType from '$lib/components/PositionCard.svelte';
-	import Modal from '$lib/components/Modal.svelte';
 	type PositionCardProps = {
 		type: 'group' | 'quote';
 		groupName?: string;
@@ -443,7 +445,7 @@
 	{#if modalType === 'AddInvestment'}
         <AddInvestment />
     {:else if modalType === 'Investments'}
-        <InvestmentList positionSnapshots={snapshots} quotes={quotes} />
+        <InvestmentList investments={investments} quotes={quotes} />
     {/if}
 </Modal>
 

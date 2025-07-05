@@ -1,3 +1,5 @@
+import type { QuoteModel } from "$lib/Models/QuoteModel";
+
 // src/lib/services/positionService.ts
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -14,23 +16,6 @@ export interface PositionSnapshot {
   totalValue: number;
   unrealizedGain: number;
   realizedGain: number;
-}
-
-export interface QuoteModel {
-  id: number;
-  name: string;
-  symbol: string;
-  providerId: string;
-  exchangeDisposition: string;
-  typeDisposition: string;
-  currency: string;
-  lastUpdatedPrices: string;
-  group: QuoteGroup;
-}
-
-export interface QuoteGroup {
-  id: number;
-  name: string;
 }
 
 export interface PositionsResponse {

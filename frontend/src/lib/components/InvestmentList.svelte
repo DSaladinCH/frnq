@@ -1,15 +1,20 @@
 <script lang="ts">
-	import type { PositionSnapshot, QuoteModel } from '$lib/services/positionService';
+	import type { QuoteModel } from '$lib/Models/QuoteModel';
+	import type { InvestmentModel } from '$lib/services/investmentService';
 
-	let { positionSnapshots, quotes }: { positionSnapshots: PositionSnapshot[], quotes: QuoteModel[] } = $props();
+	let { investments, quotes }: { investments: InvestmentModel[], quotes: QuoteModel[] } = $props();
+
+    function getQuoteName(investment: InvestmentModel): string | undefined {
+        return quotes.find(quote => quote.id === investment.quoteId)?.name;
+    }
 </script>
 
 <h1>Investment List</h1>
 
-<div class="positions-list grid gap-2">
-    {#each positionSnapshots as snapshot}
-        <div class="position-item card card-slim card-reactive">
-            <h2>{snapshot.amount}</h2>
+<div class="investments-list grid gap-2">
+    {#each investments as investment}
+        <div class="investment-item card card-slim card-reactive">
+            <h2>{getQuoteName(investment)}</h2>
         </div>
     {/each}
 </div>
