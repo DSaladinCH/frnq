@@ -18,8 +18,14 @@
 		AddInvestment: AddInvestment
 	};
 
-	let showModal = $state(true);
+	let showModal = $state(false);
 	let modalType = $state<'Investments' | 'AddInvestment'>('Investments');
+
+	// Helper to show a modal of a given type
+	function showModalWithType(type: 'Investments' | 'AddInvestment') {
+		modalType = type;
+		showModal = true;
+	}
 
 	let snapshots = $state<PositionSnapshot[]>([]);
 	let quotes = $state<QuoteModel[]>([]);
@@ -305,7 +311,7 @@
 	let fabOpen = $state(false);
 	const fabActions = [
 		{ icon: 'fa-solid fa-plus', label: 'Add Investment', onClick: () => alert('Add action') },
-		{ icon: 'fa-solid fa-list-ul', label: 'Show Investments', onClick: () => alert('Edit action') }
+		{ icon: 'fa-solid fa-list-ul', label: 'Show Investments', onClick: () => showModalWithType('Investments') }
 	];
 
 	// Helper to get action position: pop up from left bottom on desktop, right bottom on mobile
@@ -443,10 +449,10 @@
 
 <Modal bind:showModal>
 	{#if modalType === 'AddInvestment'}
-        <AddInvestment />
-    {:else if modalType === 'Investments'}
-        <InvestmentList investments={investments} quotes={quotes} />
-    {/if}
+		<AddInvestment />
+	{:else if modalType === 'Investments'}
+		<InvestmentList {investments} {quotes} />
+	{/if}
 </Modal>
 
 <style>
