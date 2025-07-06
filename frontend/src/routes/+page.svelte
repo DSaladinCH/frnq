@@ -13,19 +13,24 @@
 	import type { QuoteModel } from '$lib/Models/QuoteModel';
 	import { getInvestments, type InvestmentModel } from '$lib/services/investmentService';
 
-	const modalTypes = {
-		Investments: InvestmentList,
-		AddInvestment: AddInvestment
-	};
 
-	let showModal = $state(false);
-	let modalType = $state<'Investments' | 'AddInvestment'>('Investments');
+// Modal stack for push/pop navigation
+let modalStack = $state<Array<'Investments' | 'AddInvestment'>>([]);
 
-	// Helper to show a modal of a given type
-	function showModalWithType(type: 'Investments' | 'AddInvestment') {
-		modalType = type;
-		showModal = true;
+function pushModal(type: 'Investments' | 'AddInvestment') {
+	modalStack = [...modalStack, type];
+}
+
+function popModal() {
+	if (modalStack.length > 0) {
+		modalStack = modalStack.slice(0, -1);
 	}
+}
+
+// Helper to show a modal of a given type (push)
+function showModalWithType(type: 'Investments' | 'AddInvestment') {
+	pushModal(type);
+}
 
 	let snapshots = $state<PositionSnapshot[]>([]);
 	let quotes = $state<QuoteModel[]>([]);
@@ -310,7 +315,7 @@
 	// Floating Action Button state
 	let fabOpen = $state(false);
 	const fabActions = [
-		{ icon: 'fa-solid fa-plus', label: 'Add Investment', onClick: () => alert('Add action') },
+		{ icon: 'fa-solid fa-plus', label: 'Add Investment', onClick: () => showModalWithType('AddInvestment') },
 		{ icon: 'fa-solid fa-list-ul', label: 'Show Investments', onClick: () => showModalWithType('Investments') }
 	];
 
@@ -447,11 +452,15 @@
 	{/if}
 {/if}
 
-<Modal bind:showModal>
-	{#if modalType === 'AddInvestment'}
-		<AddInvestment />
-	{:else if modalType === 'Investments'}
-		<InvestmentList {investments} {quotes} />
+
+
+<Modal showModal={modalStack.length > 0} popModal={popModal}>
+	{#if modalStack.length > 0}
+		{#if modalStack[modalStack.length - 1] === 'AddInvestment'}
+			<AddInvestment />
+		{:else if modalStack[modalStack.length - 1] === 'Investments'}
+			<InvestmentList investments={investments} quotes={quotes} pushModal={pushModal} />
+		{/if}
 	{/if}
 </Modal>
 

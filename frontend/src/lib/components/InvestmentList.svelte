@@ -2,15 +2,17 @@
 	import type { QuoteModel } from '$lib/Models/QuoteModel';
 	import { InvestmentType, type InvestmentModel } from '$lib/services/investmentService';
 
+	export let investments: InvestmentModel[] = [];
+	export let quotes: QuoteModel[] = [];
+	export let pushModal: (type: 'Investments' | 'AddInvestment') => void;
+
 	const locale = navigator.languages?.[0] || navigator.language || 'en-US';
-	let { investments, quotes }: { investments: InvestmentModel[]; quotes: QuoteModel[] } = $props();
 
 	function getQuoteName(investment: InvestmentModel): string | undefined {
 		return quotes.find((quote) => quote.id === investment.quoteId)?.name;
 	}
 
 	function formatDate(date: string): string {
-		$inspect(locale);
 		return new Date(date).toLocaleDateString(locale, {
 			day: '2-digit',
 			month: '2-digit',
@@ -34,11 +36,20 @@
 				return InvestmentType[investment.type];
 		}
 	}
+
+	// Handler to open AddInvestment modal
+	function handleAddInvestment() {
+		pushModal('AddInvestment');
+	}
 </script>
 
-<h1 class="title">Investment List</h1>
+<h1 class="title">Investments</h1>
 
-<div class="investments-list grid gap-2">
+<div class="mb-3 flex gap-2">
+	<button class="btn btn-primary" on:click={handleAddInvestment}>Add Investment</button>
+</div>
+
+<div class="investments-list grid gap-2 overflow-y-auto py-1 pr-1">
 	{#each investments as investment}
 		<div class="investment-item card card-slim card-reactive">
 			<div class="grid w-full grid-rows-[auto_1fr] md:grid-rows-[1fr_1fr]">

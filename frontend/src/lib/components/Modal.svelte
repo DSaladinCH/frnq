@@ -1,27 +1,32 @@
-<script>
-	let { showModal = $bindable(), children } = $props();
+<script lang="ts">
+	let {
+		showModal = $bindable(),
+		children,
+		popModal
+	}: { showModal: Boolean; children: any; popModal: () => void } = $props();
 
-	let dialog = $state(); // HTMLDialogElement
+	let dialog: any = $state();
 
 	$effect(() => {
 		if (showModal) dialog.showModal();
+		else dialog.close();
 	});
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
 <dialog
-	class="bg-background color-default w-full lg:w-3/4 2xl:w-1/2"
+	class="flex bg-background color-default w-full lg:w-3/4 2xl:w-1/2"
 	bind:this={dialog}
-	onclose={() => (showModal = false)}
+	onclose={() => popModal()}
 	onclick={(e) => {
-		if (e.target === dialog) dialog.close();
+		if (e.target === dialog) popModal();
 	}}
 >
-	<div class="relative">
+	<div class="relative flex flex-1 flex-col overflow-hidden">
 		{@render children?.()}
 
 		<div class="absolute right-0 top-0">
-			<button class="btn btn-primary" onclick={() => dialog.close()}>Close</button>
+			<button class="btn btn-primary" onclick={() => popModal()}>Close</button>
 		</div>
 	</div>
 </dialog>
