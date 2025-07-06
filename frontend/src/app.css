@@ -4,6 +4,7 @@
 
 :root {
     --color-background: #18181b;
+    --color-background-backdrop: #28282ed7;
     --color-card: #2a2a41;
     --color-text: #e5e5e5;
     --color-muted: #cccccc;

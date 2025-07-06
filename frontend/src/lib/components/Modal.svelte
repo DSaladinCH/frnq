@@ -10,38 +10,34 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
 <dialog
-    class="w-full md:w-3/4 lg:w-1/2 bg-background color-default"
+	class="bg-background color-default w-full lg:w-3/4 2xl:w-1/2"
 	bind:this={dialog}
 	onclose={() => (showModal = false)}
 	onclick={(e) => {
 		if (e.target === dialog) dialog.close();
 	}}
 >
-	<div>
+	<div class="relative">
 		{@render children?.()}
-	</div>
 
-    <div class="absolute top-0 right-0 p-4">
-        <button class="btn btn-primary" onclick={() => dialog.close()}>Close</button>
-    </div>
+		<div class="absolute right-0 top-0">
+			<button class="btn btn-primary" onclick={() => dialog.close()}>Close</button>
+		</div>
+	</div>
 </dialog>
 
 <style>
 	dialog {
-		border-radius: 0.2em;
+		border-radius: 1rem;
 		border: none;
-		padding: 0;
-        margin: auto auto;
-        min-height: 200px;
-        max-height: 80vh;
+		padding: 1.5rem;
+		margin: auto auto;
+		min-height: 200px;
+		max-height: 80vh;
 	}
 
 	dialog::backdrop {
-		background: rgba(0, 0, 0, 0.3);
-	}
-
-	dialog > div {
-		padding: 1em;
+		background-color: var(--color-background-backdrop);
 	}
 
 	dialog[open] {
