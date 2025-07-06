@@ -64,17 +64,17 @@
 						<h2>{formatDate(investment.date)}</h2>
 					</div>
 				</div>
-				<div class="grid grid-cols-[1fr_1fr] sm:grid-cols-[1fr_1fr_1fr] md:grid-cols-[repeat(3,_160px)_1fr] color-muted">
+				<div class="grid grid-cols-[repeat(auto-fit,_minmax(160px,_1fr))] md:grid-cols-[repeat(3,_160px)_1fr] color-muted">
 					<div class="color-muted sm:hidden">
 						<h2>{formatDate(investment.date)}</h2>
 					</div>
-					<div class="text-right sm:text-left">
+					<div>
 						<span>Market: {formatNumber(investment.pricePerUnit)}</span>
 					</div>
 					<div>
 						<span>Amount: {formatNumber(investment.amount)}</span>
 					</div>
-					<div class="text-right sm:text-left">
+					<div>
 						<span>Fees: {formatNumber(investment.totalFees)}</span>
 					</div>
 					<div class="md:text-right color-default">
