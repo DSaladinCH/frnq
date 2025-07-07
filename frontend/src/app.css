@@ -2,6 +2,12 @@
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
 
+@theme {
+    --breakpoint-xs: 30rem;
+    --breakpoint-2xl: 100rem;
+    --breakpoint-3xl: 120rem;
+}
+
 :root {
     --color-background: #18181b;
     --color-background-backdrop: #28282ed7;
@@ -122,18 +128,17 @@ body {
 
 /* --- Card Styles --- */
 .card {
+    --bg-card-color: var(--color-card);
+    --white-ratio: 5%;
     background-image: linear-gradient(to right,
-            var(--color-card) 0%,
-            color-mix(in srgb, var(--color-card), white 5%) 51%,
-            var(--color-card) 100%);
+            var(--bg-card-color) 0%,
+            color-mix(in srgb, var(--bg-card-color), white var(--white-ratio)) 51%,
+            var(--bg-card-color) 100%);
     background-size: 200% auto;
     transition: 0.5s;
     border-radius: 1.1rem;
     padding: 1.2rem;
     width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
     outline: none;
 }
 
@@ -147,6 +152,11 @@ body {
 
 .card.card-reactive:hover {
     background-position: right center;
+}
+
+.card.selected {
+    --white-ratio: 15%;
+    --bg-card-color: var(--color-secondary);
 }
 
 /* --- Button Styles --- */
@@ -182,6 +192,14 @@ body {
     background-position: right center;
 }
 
+.btn-fake {
+    background: none;
+    color: unset;
+    border: none;
+    cursor: pointer;
+    outline: none;
+}
+
 /* Accept/Submit/Okay Button */
 .btn.btn-selected,
 .btn.btn-success {
@@ -202,6 +220,43 @@ body {
 .btn.btn-secondary {
     --btn-bg: var(--color-secondary);
 }
+
+/*****************/
+/**** TextBox ****/
+/*****************/
+.textbox,
+.textbox:-webkit-autofill {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    border-width: 1px;
+    border-radius: 0.25em;
+    border-style: solid;
+    min-height: 30px;
+    max-height: 50px;
+    padding-left: 10px;
+    padding-right: 10px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    outline: 0;
+    background-color: var(--color-card);
+    border-color: var(--color-button);
+    color: var(--color-text);
+}
+
+    .textbox:hover {
+        border-color: var(--color-primary) !important;
+    }
+
+    .textbox:focus,
+    .textbox:-webkit-autofill:focus {
+        box-shadow: none !important;
+        border-color: var(--color-secondary) !important;
+    }
+
+    .textbox:invalid {
+        border-color: var(--color-error) !important;
+    }
 
 /*******************/
 /**** ScrollBar ****/

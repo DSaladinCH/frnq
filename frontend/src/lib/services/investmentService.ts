@@ -20,7 +20,7 @@ export enum InvestmentType {
 export async function getInvestments(): Promise<InvestmentModel[]> {
   const url = `${baseUrl}/api/investments`;
   const res = await fetch(url);
-  
+
   if (!res.ok) throw new Error('Failed to fetch investments');
   return res.json();
 }

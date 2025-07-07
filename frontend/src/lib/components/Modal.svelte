@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { onMount, setContext } from 'svelte';
+
 	let {
 		showModal = $bindable(),
 		children,
@@ -11,16 +13,28 @@
 		if (showModal) dialog.showModal();
 		else dialog.close();
 	});
+
+	onMount(() => {
+		dialog.addEventListener('click', (e: MouseEvent) => {
+			const rect = dialog.getBoundingClientRect();
+			const clickedOutside =
+				e.clientX < rect.left ||
+				e.clientX > rect.right ||
+				e.clientY < rect.top ||
+				e.clientY > rect.bottom;
+
+			if (clickedOutside) {
+				dialog.close();
+			}
+		});
+	});
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
 <dialog
-	class="flex bg-background color-default w-full lg:w-3/4 2xl:w-1/2"
+	class="{showModal ? 'flex' : 'hidden'} bg-background color-default w-full lg:w-3/4 2xl:w-1/2"
 	bind:this={dialog}
 	onclose={() => popModal()}
-	onclick={(e) => {
-		if (e.target === dialog) popModal();
-	}}
 >
 	<div class="relative flex flex-1 flex-col overflow-hidden">
 		{@render children?.()}
