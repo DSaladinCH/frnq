@@ -13,7 +13,6 @@ public class PositionsController(PositionManagement positionManagement) : Contro
         [ModelBinder(BinderType = typeof(FlexibleDateTimeBinder))] DateTime? from,
         [ModelBinder(BinderType = typeof(FlexibleDateTimeBinder))] DateTime? to)
     {
-        var result = await positionManagement.GetPositionsAsync(from, to);
-        return Ok(result);
+        return Ok(await positionManagement.GetPositionsAsync(from, to));
     }
 }

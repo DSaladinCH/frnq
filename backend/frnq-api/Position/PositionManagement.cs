@@ -4,15 +4,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DSaladin.Frnq.Api.Position;
 
-public class PositionManagement(QuoteManagement quoteManagement, DatabaseContext databaseContext)
+public class PositionManagement(DatabaseContext databaseContext, IServiceProvider serviceProvider)
 {
     public async Task<PositionsResponse> GetPositionsAsync(DateTime? from, DateTime? to)
     {
-        if (from is null)
-            from = DateTime.MinValue;
-
-        if (to is null)
-            to = DateTime.UtcNow;
+        from ??= DateTime.MinValue;
+        to ??= DateTime.UtcNow;
 
         from = DateTime.SpecifyKind((DateTime)from, DateTimeKind.Utc);
         to = DateTime.SpecifyKind((DateTime)to, DateTimeKind.Utc);
@@ -30,34 +27,39 @@ public class PositionManagement(QuoteManagement quoteManagement, DatabaseContext
             return new PositionsResponse { Snapshots = [], Quotes = [] };
 
         HashSet<int> quoteIds = investments.Select(i => i.QuoteId).ToHashSet();
-
+        
         // Update historical prices with any missing data
-        foreach (var quoteId in quoteIds)
-            await quoteManagement.GetHistoricalPricesAsync(quoteId, (DateTime)from, (DateTime)to);
+        await Parallel.ForEachAsync(quoteIds, new ParallelOptions() { MaxDegreeOfParallelism = 2 }, async (quoteId, ct) =>
+        {
+            // Create a new scope for each parallel operation
+            using IServiceScope scope = serviceProvider.CreateScope();
+            QuoteManagement scopedQuoteManagement = scope.ServiceProvider.GetRequiredService<QuoteManagement>();
+
+            await scopedQuoteManagement.GetHistoricalPricesAsync(quoteId, (DateTime)from, (DateTime)to);
+        });
 
         // Get all prices up to the requested 'to' date
         List<QuotePrice> prices = await databaseContext.QuotePrices
             .Where(qp => quoteIds.Contains(qp.QuoteId))
             .Where(qp => qp.Date <= to)
             .ToListAsync();
-
+        
         Dictionary<int, Dictionary<DateTime, QuotePrice>> priceLookup = prices
             .GroupBy(qp => qp.QuoteId)
             .ToDictionary(g => g.Key, g => g.ToDictionary(p => p.Date.Date, p => p));
-
+        
         // Find the earliest investment date
         DateTime? firstInvestmentDate = investments.Count > 0 ? investments.Min(i => i.Date.Date) : (DateTime?)null;
+
         if (firstInvestmentDate == null)
             return new PositionsResponse { Snapshots = [], Quotes = [] };
 
-        List<DateTime> days = Enumerable.Range(0, (((DateTime)to).Date - firstInvestmentDate.Value).Days + 1)
-            .Select(offset => firstInvestmentDate.Value.AddDays(offset))
-            .ToList();
-
+        List<DateTime> days = [.. Enumerable.Range(0, (((DateTime)to).Date
+            - firstInvestmentDate.Value).Days + 1).Select(offset => firstInvestmentDate.Value.AddDays(offset))];
+        
         List<PositionSnapshot> allSnapshots = [];
-
-        var investmentGroups = investments.GroupBy(i => (i.UserId, i.QuoteId));
-
+        IEnumerable<IGrouping<(string UserId, int QuoteId), InvestmentModel>> investmentGroups = investments.GroupBy(i => (i.UserId, i.QuoteId));
+        
         foreach (var group in investmentGroups)
         {
             decimal cumulativeAmount = 0;
@@ -159,16 +161,15 @@ public class PositionManagement(QuoteManagement quoteManagement, DatabaseContext
         }
 
         // Only return snapshots within the requested range
-        var filteredSnapshots = allSnapshots.Where(s => s.Date >= ((DateTime)from).Date && s.Date <= ((DateTime)to).Date).ToList();
+        List<PositionSnapshot> filteredSnapshots = allSnapshots.Where(s => s.Date >= ((DateTime)from).Date && s.Date <= ((DateTime)to).Date).ToList();
 
         // Get unique quotes used in the investments
-        var uniqueQuotes = investments
+        List<QuoteModel> uniqueQuotes = [.. investments
             .Select(i => i.Quote)
             .Where(q => q != null)
             .GroupBy(q => q.Id)
-            .Select(g => g.First())
-            .ToList();
-
+            .Select(g => g.First())];
+        
         return new PositionsResponse
         {
             Snapshots = filteredSnapshots,

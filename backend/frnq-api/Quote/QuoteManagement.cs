@@ -62,15 +62,15 @@ public class QuoteManagement(DatabaseContext databaseContext, ProviderRegistry r
     public async Task<List<QuotePrice>> GetHistoricalPricesAsync(int quoteId, DateTime from, DateTime to)
     {
         QuoteModel? quote = await databaseProvider.GetQuoteAsync(quoteId) ?? throw new ArgumentException($"Quote with id '{quoteId}' not found.", nameof(quoteId));
-
+        
         List<QuotePrice> dbPrices = await databaseContext.QuotePrices
             .Where(p => p.QuoteId == quoteId && p.Date >= from && p.Date <= to)
             .ToListAsync();
-
+        
 #if DEBUG
         if (quote.LastUpdatedPrices < DateTime.UtcNow.AddMinutes(-60))
 #else
-if (quote.LastUpdatedPrices < DateTime.UtcNow.AddMinutes(-1))
+        if (quote.LastUpdatedPrices < DateTime.UtcNow.AddMinutes(-1))
 #endif
         {
             // Find earliest and latest in the db result
@@ -121,7 +121,7 @@ if (quote.LastUpdatedPrices < DateTime.UtcNow.AddMinutes(-1))
 
             foreach (QuotePrice p in fetched)
                 p.QuoteId = quote.Id;
-
+            
             await databaseProvider.AddOrUpdateQuotePricesAsync(fetched.ToList());
             return fetched;
         }

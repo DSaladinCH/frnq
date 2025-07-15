@@ -41,7 +41,8 @@ public class DatabaseProvider(DatabaseContext databaseContext)
 
         QuoteModel? existing = await GetQuoteAsync(quote.ProviderId, quote.Symbol);
 
-        if (existing is not null) {
+        if (existing is not null)
+        {
             quote.Id = existing.Id;
             quote.LastUpdatedPrices = existing.LastUpdatedPrices;
             quote.GroupId = existing.GroupId;
@@ -64,17 +65,25 @@ public class DatabaseProvider(DatabaseContext databaseContext)
         if (quote is null)
             return;
 
+        List<QuotePrice> existingPrices = await databaseContext.QuotePrices
+            .Where(p => p.QuoteId == quote.Id && prices.Select(x => x.Date).Contains(p.Date))
+            .ToListAsync();
+
+        Dictionary<DateTime, QuotePrice> existingMap = existingPrices.ToDictionary(p => p.Date);
+        List<QuotePrice> newPrices = [];
+
         foreach (QuotePrice price in prices)
         {
-            QuotePrice? existing = await databaseContext.QuotePrices.FirstOrDefaultAsync(p => p.QuoteId == price.QuoteId && p.Date == price.Date);
-
-            if (existing is not null) {
+            if (existingMap.TryGetValue(price.Date, out var existing)) {
                 price.Id = existing.Id;
                 databaseContext.Entry(existing).CurrentValues.SetValues(price);
             }
             else
-                await databaseContext.QuotePrices.AddAsync(price);
+                newPrices.Add(price);
         }
+
+        if (newPrices.Count > 0)
+            await databaseContext.QuotePrices.AddRangeAsync(newPrices);
 
         quote.LastUpdatedPrices = DateTime.UtcNow;
         databaseContext.Entry(quote).State = EntityState.Modified;
