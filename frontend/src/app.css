@@ -19,6 +19,8 @@
     --color-button: #6c6c6c;
     --color-error: #ff4d4d;
     --color-success: #4caf50;
+
+    color-scheme: dark;
 }
 
 body {
