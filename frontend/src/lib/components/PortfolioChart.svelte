@@ -411,15 +411,10 @@
 </script>
 
 <div
-	class="portfolio-info m-5 grid grid-cols-[1fr] grid-rows-[50px_auto_35px] md:grid-cols-[80px_auto_120px] md:grid-rows-[1fr] justify-items-center
-			md:justify-items-start max-w-full md:max-w-lg"
+	class="portfolio-info m-5 grid grid-cols-[1fr] grid-rows-[auto_35px] md:grid-cols-[auto_120px] md:grid-rows-[1fr] justify-items-center
+			md:justify-items-start max-w-full md:max-w-md"
 >
 	{#if latest}
-		<div class="portfolio-logo pr-5 block">
-			<img class="portfolio-image pb-2 block md:hidden" src="/banner.png" alt="Portfolio Logo" />
-			<img class="portfolio-image hidden md:block" src="/logo.png" alt="Portfolio Logo" />
-		</div>
-
 		<div class="portfolio-stats">
 			<div class="profit-total w-full justify-center md:justify-start">
 				<span class="profit-value color-default"
