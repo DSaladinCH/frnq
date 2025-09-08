@@ -8,6 +8,7 @@
 	// Reactive values that track the store
 	let investments = $state(dataStore.investments);
 	let quotes = $state(dataStore.quotes);
+	let showInvestmentDialog = $state(false);
 
 	// Subscribe to store changes
 	$effect(() => {
@@ -59,7 +60,14 @@
 		}
 	}
 
-	function onInvestmentDialogClose() {}
+	function openInvestmentDialog(investment: InvestmentModel) {
+		currentInvestment = investment;
+		showInvestmentDialog = true;
+	}
+
+	function onInvestmentDialogClose() {
+		showInvestmentDialog = false;
+	}
 </script>
 
 <div class="p-8">
@@ -71,7 +79,7 @@
 
 	<div class="investments-list grid gap-2 overflow-y-auto py-1 pr-1">
 		{#each investments as investment}
-			<button class="text-left" onclick={() => (currentInvestment = investment)}>
+			<button class="text-left" onclick={() => openInvestmentDialog(investment)}>
 				<div class="investment-item card card-slim card-reactive">
 					<div class="grid w-full grid-rows-[auto_1fr] md:grid-rows-[1fr_1fr]">
 						<div class="grid grid-cols-[60px_1fr_auto] items-center">
@@ -115,7 +123,7 @@
 	</div>
 </div>
 
-<Modal showModal={false} popModal={() => onInvestmentDialogClose()}>
+<Modal showModal={showInvestmentDialog} popModal={() => onInvestmentDialogClose()}>
 	<AddInvestment investment={currentInvestment} />
 </Modal>
 

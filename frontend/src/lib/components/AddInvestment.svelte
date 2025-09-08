@@ -45,16 +45,16 @@
 <h1 class="title">New Investment</h1>
 
 <div class="overflow-y-auto pr-1">
-	<div class="grid grid-cols-2 gap-3">
-		<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+	<div class="grid md:grid-cols-2 gap-3">
+		<div class="grid xs:grid-cols-2 gap-3 sm:grid-cols-3">
 			{#each investmentTypes as type}
 				<button class="btn-fake" onclick={() => selectType(type.type)}>
 					<div
-						class="investment-type card card-reactive flex h-[90px] flex-col items-center justify-center"
+						class="investment-type card card-reactive flex h-15 xs:h-22 xs:flex-col gap-4 xs:gap-2 items-center justify-center"
 						class:selected={investment.type === type.type}
 					>
 						<i class="{type.faIcon} xs:text-[1.75rem] text-[1.5rem]"></i>
-						<span class="xs:text-[1.25rem] pt-2 text-[1.125rem] font-bold"
+						<span class="xs:text-[1.25rem] text-[1.125rem] font-bold"
 							>{InvestmentType[type.type]}</span
 						>
 					</div>
