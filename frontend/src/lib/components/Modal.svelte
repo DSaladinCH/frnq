@@ -32,7 +32,7 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
 <dialog
-	class="{showModal ? 'flex' : 'hidden'} bg-background color-default w-full lg:w-3/4 2xl:w-1/2"
+	class="{showModal ? 'flex' : 'hidden'} bg-background color-default w-full max-xs:max-w-full lg:w-3/4 2xl:w-1/2 p-6 my-auto mx-0 xs:m-auto"
 	bind:this={dialog}
 	onclose={() => popModal()}
 >
@@ -49,8 +49,6 @@
 	dialog {
 		border-radius: 1rem;
 		border: none;
-		padding: 1.5rem;
-		margin: auto auto;
 		min-height: 200px;
 		max-height: 80vh;
 	}

@@ -24,3 +24,17 @@ export async function getInvestments(): Promise<InvestmentModel[]> {
   if (!res.ok) throw new Error('Failed to fetch investments');
   return res.json();
 }
+
+export async function addInvestment(investment: InvestmentModel): Promise<InvestmentModel> {
+  const url = `${baseUrl}/api/investments`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(investment),
+  });
+
+  if (!res.ok) throw new Error('Failed to add investment');
+  return res.json();
+}

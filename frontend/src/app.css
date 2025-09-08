@@ -9,13 +9,14 @@
 }
 
 :root {
-    --color-background: #18181b;
+    --color-background: #121213;
     --color-background-backdrop: #28282ed7;
     --color-card: #2a2a41;
     --color-text: #e5e5e5;
     --color-muted: #cccccc;
-    --color-primary: #ca261a;
-    --color-secondary: #e54438;
+    --color-primary: #e02c1f;
+    --color-secondary: #cd3c32;
+    --color-accent: #ca261a;
     --color-button: #6c6c6c;
     --color-error: #ff4d4d;
     --color-success: #4caf50;
@@ -27,6 +28,7 @@ body {
     color: var(--color-text);
     background-color: var(--color-background);
     font-family: 'Roboto', sans-serif;
+    min-height: 100vh;
 }
 
 /* Chart.js custom tooltip styles */
@@ -164,9 +166,10 @@ body {
 /* --- Button Styles --- */
 .btn {
     --btn-bg: var(--color-button);
+    --white-ratio: 15%;
     background-image: linear-gradient(to right,
             var(--btn-bg) 0%,
-            color-mix(in srgb, var(--btn-bg), white 15%) 51%,
+            color-mix(in srgb, var(--btn-bg), white var(--white-ratio)) 51%,
             var(--btn-bg) 100%);
     background-size: 200% auto;
     transition: background-position 0.5s;
