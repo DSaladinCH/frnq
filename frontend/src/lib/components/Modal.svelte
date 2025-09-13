@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, setContext } from 'svelte';
+	import { onMount } from 'svelte';
 
 	let {
 		showModal = $bindable(),
@@ -14,18 +14,28 @@
 		else dialog.close();
 	});
 
+	let mouseDownOutside = false;
 	onMount(() => {
-		dialog.addEventListener('click', (e: MouseEvent) => {
+		dialog.addEventListener('mousedown', (e: MouseEvent) => {
 			const rect = dialog.getBoundingClientRect();
-			const clickedOutside =
+			mouseDownOutside =
 				e.clientX < rect.left ||
 				e.clientX > rect.right ||
 				e.clientY < rect.top ||
 				e.clientY > rect.bottom;
-
-			if (clickedOutside) {
+		});
+		
+		dialog.addEventListener('mouseup', (e: MouseEvent) => {
+			const rect = dialog.getBoundingClientRect();
+			const mouseUpOutside =
+				e.clientX < rect.left ||
+				e.clientX > rect.right ||
+				e.clientY < rect.top ||
+				e.clientY > rect.bottom;
+			if (mouseDownOutside && mouseUpOutside) {
 				dialog.close();
 			}
+			mouseDownOutside = false;
 		});
 	});
 </script>

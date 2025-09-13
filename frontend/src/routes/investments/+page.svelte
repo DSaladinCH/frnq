@@ -1,11 +1,12 @@
 <script lang="ts">
 	import AddInvestment from '$lib/components/AddInvestment.svelte';
+	import Button from '$lib/components/Button.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import type { QuoteModel } from '$lib/Models/QuoteModel';
 	import {
 		InvestmentType,
-		updateInvestment,
-		type InvestmentModel
+		type InvestmentModel,
+		createDefaultInvestment
 	} from '$lib/services/investmentService';
 	import { dataStore } from '$lib/stores/dataStore';
 
@@ -23,16 +24,7 @@
 		return unsubscribe;
 	});
 
-	let currentInvestment = $state<InvestmentModel>({
-		id: 0,
-		quoteId: 0,
-		type: InvestmentType.Dividend,
-		date: new Date().toISOString(),
-		pricePerUnit: 0,
-		amount: 0,
-		totalFees: 0
-	});
-
+	let currentInvestment = $state<InvestmentModel>(createDefaultInvestment());
 	const locale = navigator.languages?.[0] || navigator.language || 'en-US';
 
 	function getQuoteName(investment: InvestmentModel): string | undefined {
@@ -64,6 +56,11 @@
 		}
 	}
 
+	function newInvestment() {
+		currentInvestment = createDefaultInvestment();
+		showInvestmentDialog = true;
+	}
+
 	function openInvestmentDialog(investment: InvestmentModel) {
 		currentInvestment = investment;
 		showInvestmentDialog = true;
@@ -81,7 +78,13 @@
 		}
 
 		try {
-			await updateInvestment(investment);
+			if (investment.id === 0) {
+				await dataStore.addInvestment(investment);
+			}
+			else {
+				await dataStore.updateInvestment(investment);
+			}
+			
 			onInvestmentDialogClose();
 		} catch (error) {
 			alert('Error saving investment: ' + error);
@@ -94,7 +97,7 @@
 	<h1 class="title mb-4 text-3xl font-bold">Investments</h1>
 
 	<div class="mb-3 flex gap-2">
-		<button class="btn btn-primary">Add Investment</button>
+		<Button onclick={newInvestment} text="Add Investment" icon="fa fa-plus" textSize="text-md" />
 	</div>
 
 	<div class="investments-list grid gap-2 overflow-y-auto py-1 pr-1">

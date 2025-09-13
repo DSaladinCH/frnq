@@ -5,15 +5,20 @@
 		type InvestmentModel
 	} from '$lib/services/investmentService';
 	import { ColorStyle } from '$lib/types/ColorStyle';
+	import type { QuoteModel } from '$lib/Models/QuoteModel';
 	import Button from './Button.svelte';
+	import SearchableDropDown from './SearchableDropDown.svelte';
 
 	type InvestmentTypeIcon = { type: InvestmentType; faIcon: string };
 	let isLoading = $state(false);
+	let selectedQuote: QuoteModel | null = $state(null);
 
 	let {
 		investment = $bindable({
 			id: 0,
 			quoteId: 0,
+			providerId: undefined,
+			quoteSymbol: undefined,
 			type: InvestmentType.Buy,
 			pricePerUnit: 0,
 			amount: 0,
@@ -53,8 +58,6 @@
 		investment.pricePerUnit * investment.amount + investment.totalFees
 	);
 
-	$inspect(isLoading);
-
 	const investmentTypes: InvestmentTypeIcon[] = [
 		{ type: InvestmentType.Buy, faIcon: 'fa-solid fa-plus-circle' },
 		{ type: InvestmentType.Sell, faIcon: 'fa-solid fa-minus-circle' },
@@ -65,14 +68,56 @@
 		investment.type = type;
 	}
 
+	function handleQuoteSelect(quote: QuoteModel | null) {
+		console.log('Quote selected:', quote);
+		selectedQuote = quote;
+		if (quote) {
+			// Check if the quote exists in database (has a valid ID > 0)
+			if (quote.id > 0) {
+				investment.quoteId = quote.id;
+				investment.providerId = undefined;
+				investment.quoteSymbol = undefined;
+				console.log('Set investment.quoteId to:', quote.id);
+			} else {
+				// Quote doesn't exist in database yet, use providerId and symbol
+				investment.quoteId = 0;
+				investment.providerId = quote.providerId;
+				investment.quoteSymbol = quote.symbol;
+				console.log('Set investment.providerId to:', quote.providerId, 'and symbol to:', quote.symbol);
+			}
+		} else {
+			investment.quoteId = 0;
+			investment.providerId = undefined;
+			investment.quoteSymbol = undefined;
+			console.log('Cleared investment quote fields');
+		}
+	}
+
+	// Debug: Watch for changes to investment quote fields
+	$effect(() => {
+		console.log('Investment quote fields changed:', {
+			quoteId: investment.quoteId,
+			providerId: investment.providerId,
+			quoteSymbol: investment.quoteSymbol
+		});
+	});
+
 	function formatCurrency(value: number): string {
 		return value.toLocaleString(undefined, { style: 'currency', currency: 'CHF' });
 	}
 
 	async function saveChanges() {
+		console.log('Saving investment:', investment);
+		console.log('Selected quote:', selectedQuote);
+		console.log('Investment quoteId:', investment.quoteId);
+		console.log('Investment providerId:', investment.providerId);
+		console.log('Investment quoteSymbol:', investment.quoteSymbol);
+
 		// Validate inputs
-		if (investment.pricePerUnit <= 0 || investment.amount <= 0 || !investment.date) {
-			alert('Please fill in all required fields with valid values.');
+		const hasValidQuote = investment.quoteId > 0 || (investment.providerId && investment.quoteSymbol);
+		
+		if (investment.pricePerUnit <= 0 || investment.amount <= 0 || !investment.date || !hasValidQuote) {
+			alert('Please fill in all required fields with valid values and select a quote.');
 			return;
 		}
 
@@ -104,7 +149,17 @@
 
 		<div></div>
 	</div>
-	<div></div>
+
+	<div>
+		<label for="quote-search" class="text-[1.125rem] font-bold mb-2 block">Quote</label>
+		<SearchableDropDown 
+			bind:selectedQuote={selectedQuote}
+			onSelect={handleQuoteSelect}
+			placeholder="Search for a quote (e.g., Apple, AAPL)..."
+		/>
+	</div>
+
+
 	<div class="xs:grid-cols-2 xs:gap-3 my-4 grid grid-cols-1 gap-1 sm:grid-cols-3">
 		<div class="flex flex-col">
 			<span class="text-[1.125rem] font-bold">Market</span>
@@ -165,8 +220,8 @@
 
 	<div class="grid pt-2">
 		<Button
-			icon="fa-solid fa-floppy-disk"
-			text="Save Changes"
+			icon={investment.id === 0 ? "fa-solid fa-plus" : "fa-solid fa-floppy-disk"}
+			text={investment.id === 0 ? 'Create Investment' : 'Save Changes'}
 			style={ColorStyle.Success}
 			{isLoading}
 			onclick={() => saveChanges()}

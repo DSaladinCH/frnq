@@ -33,8 +33,12 @@
 
 	$effect(() => {
 		if (!loading && showLoading && !fadeOut) {
-			// Start fade-out
+			// Start fade-out when loading completes
 			fadeOut = true;
+		} else if (loading && !showLoading) {
+			// Reset loading screen when loading starts again
+			showLoading = true;
+			fadeOut = false;
 		}
 	});
 

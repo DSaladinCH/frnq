@@ -83,10 +83,18 @@ export class DataStore {
 
 	// Method to add new investment and refresh data
 	async addInvestment(investment: Omit<InvestmentModel, 'id'>) {
-		// This would be implemented when you have the API endpoint
-		// After adding, refresh the data
+		const { addInvestment: addInvestmentAPI } = await import('$lib/services/investmentService');
+		await addInvestmentAPI(investment as any); // Cast needed due to id being 0 vs omitted
 		await this.refreshData();
 	}
+
+	// Method to update investment and refresh data  
+	async updateInvestment(investment: InvestmentModel) {
+		const { updateInvestment: updateInvestmentAPI } = await import('$lib/services/investmentService');
+		await updateInvestmentAPI(investment);
+		await this.refreshData();
+	}
+
 }
 
 // Export a singleton instance
