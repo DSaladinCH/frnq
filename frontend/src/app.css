@@ -24,6 +24,10 @@
     color-scheme: dark;
 }
 
+.color-default {
+    color: var(--color-text);
+}
+
 .bg-background-backdrop {
     background-color: var(--color-background-backdrop);
 }

@@ -2,7 +2,11 @@
 	import AddInvestment from '$lib/components/AddInvestment.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import type { QuoteModel } from '$lib/Models/QuoteModel';
-	import { InvestmentType, type InvestmentModel } from '$lib/services/investmentService';
+	import {
+		InvestmentType,
+		updateInvestment,
+		type InvestmentModel
+	} from '$lib/services/investmentService';
 	import { dataStore } from '$lib/stores/dataStore';
 
 	// Reactive values that track the store
@@ -68,6 +72,22 @@
 	function onInvestmentDialogClose() {
 		showInvestmentDialog = false;
 	}
+
+	async function saveInvestment(investment: InvestmentModel) {
+		// Validate inputs
+		if (investment.pricePerUnit <= 0 || investment.amount <= 0 || !investment.date) {
+			alert('Please fill in all required fields with valid values.');
+			return;
+		}
+
+		try {
+			await updateInvestment(investment);
+			onInvestmentDialogClose();
+		} catch (error) {
+			alert('Error saving investment: ' + error);
+			console.error('Error saving investment:', error);
+		}
+	}
 </script>
 
 <div class="p-8">
@@ -81,7 +101,14 @@
 		{#each investments as investment}
 			<button class="text-left" onclick={() => openInvestmentDialog(investment)}>
 				<div class="investment-item card card-slim card-reactive">
-					<div class="grid w-full grid-rows-[auto_1fr] md:grid-rows-[1fr_1fr]">
+					<div class="grid w-full md:hidden">
+						<div>
+							<div class="investment-type">
+								{getInvestmentType(investment)}
+							</div>
+						</div>
+					</div>
+					<div class="grid w-full grid-rows-[auto_1fr] max-md:hidden md:grid-rows-[1fr_1fr]">
 						<div class="grid grid-cols-[60px_1fr_auto] items-center">
 							<div class="investment-type">
 								{getInvestmentType(investment)}
@@ -123,8 +150,8 @@
 	</div>
 </div>
 
-<Modal showModal={showInvestmentDialog} popModal={() => onInvestmentDialogClose()}>
-	<AddInvestment investment={currentInvestment} />
+<Modal showModal={showInvestmentDialog} onClose={onInvestmentDialogClose}>
+	<AddInvestment bind:investment={currentInvestment} {saveInvestment} />
 </Modal>
 
 <style>

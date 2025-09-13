@@ -1,7 +1,14 @@
 <script lang="ts">
-	import { InvestmentType, type InvestmentModel } from '$lib/services/investmentService';
+	import {
+		InvestmentType,
+		updateInvestment,
+		type InvestmentModel
+	} from '$lib/services/investmentService';
+	import { ColorStyle } from '$lib/types/ColorStyle';
+	import Button from './Button.svelte';
 
 	type InvestmentTypeIcon = { type: InvestmentType; faIcon: string };
+	let isLoading = $state(false);
 
 	let {
 		investment = $bindable({
@@ -12,8 +19,29 @@
 			amount: 0,
 			totalFees: 0,
 			date: getLocalDateTimeString(new Date())
-		})
-	}: { investment?: InvestmentModel } = $props();
+		}),
+		saveInvestment
+	}: { investment?: InvestmentModel; saveInvestment: (investment: InvestmentModel) => Promise<void> } = $props();
+
+	// Helper to normalize date string for datetime-local input
+	function normalizeDateForInput(dateStr: string): string {
+		if (!dateStr) return '';
+		// Remove timezone (Z or +00:00) and seconds if present
+		// Accepts: 2025-05-14T00:00:00Z or 2025-05-14T00:00:00+00:00
+		let match = dateStr.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/);
+		if (match) return match[1];
+		// If already correct format, return as is
+		if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(dateStr)) return dateStr;
+		return '';
+	}
+
+	// Derived value for input (Svelte runes mode)
+	let dateInputValue = $derived(normalizeDateForInput(investment.date));
+
+	function onDateInput(e: Event) {
+		const val = (e.target as HTMLInputElement).value;
+		investment.date = val;
+	}
 
 	function getLocalDateTimeString(date: Date): string {
 		// Returns YYYY-MM-DDTHH:MM
@@ -25,7 +53,7 @@
 		investment.pricePerUnit * investment.amount + investment.totalFees
 	);
 
-	$inspect(investment.date);
+	$inspect(isLoading);
 
 	const investmentTypes: InvestmentTypeIcon[] = [
 		{ type: InvestmentType.Buy, faIcon: 'fa-solid fa-plus-circle' },
@@ -40,17 +68,29 @@
 	function formatCurrency(value: number): string {
 		return value.toLocaleString(undefined, { style: 'currency', currency: 'CHF' });
 	}
+
+	async function saveChanges() {
+		// Validate inputs
+		if (investment.pricePerUnit <= 0 || investment.amount <= 0 || !investment.date) {
+			alert('Please fill in all required fields with valid values.');
+			return;
+		}
+
+		isLoading = true;
+		await saveInvestment(investment);
+		isLoading = false;
+	}
 </script>
 
 <h1 class="title">New Investment</h1>
 
 <div class="overflow-y-auto pr-1">
-	<div class="grid md:grid-cols-2 gap-3">
-		<div class="grid xs:grid-cols-2 gap-3 sm:grid-cols-3">
+	<div class="grid gap-3 md:grid-cols-2">
+		<div class="xs:grid-cols-2 grid gap-3 sm:grid-cols-3">
 			{#each investmentTypes as type}
 				<button class="btn-fake" onclick={() => selectType(type.type)}>
 					<div
-						class="investment-type card card-reactive flex h-15 xs:h-22 xs:flex-col gap-4 xs:gap-2 items-center justify-center"
+						class="investment-type card card-reactive h-15 xs:h-22 xs:flex-col xs:gap-2 flex items-center justify-center gap-4"
 						class:selected={investment.type === type.type}
 					>
 						<i class="{type.faIcon} xs:text-[1.75rem] text-[1.5rem]"></i>
@@ -101,7 +141,13 @@
 		</div>
 		<div class="flex flex-col">
 			<span class="text-[1.125rem] font-bold">Date</span>
-			<input class="textbox" type="datetime-local" required bind:value={investment.date} />
+			<input
+				class="textbox"
+				type="datetime-local"
+				required
+				value={dateInputValue}
+				oninput={onDateInput}
+			/>
 		</div>
 		<!-- Empty placeholder -->
 		<div class="xs:max-sm:hidden"></div>
@@ -115,6 +161,16 @@
 				{/if}
 			</span>
 		</div>
+	</div>
+
+	<div class="grid pt-2">
+		<Button
+			icon="fa-solid fa-floppy-disk"
+			text="Save Changes"
+			style={ColorStyle.Success}
+			{isLoading}
+			onclick={() => saveChanges()}
+		/>
 	</div>
 </div>
 

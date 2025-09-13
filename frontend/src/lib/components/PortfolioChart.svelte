@@ -513,11 +513,6 @@
 		font-size: 1.1rem;
 	}
 
-	.portfolio-logo .portfolio-image {
-		height: 100%;
-		object-fit: contain;
-	}
-
 	.portfolio-stats {
 		display: flex;
 		flex-wrap: wrap;

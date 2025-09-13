@@ -4,8 +4,8 @@
 	let {
 		showModal = $bindable(),
 		children,
-		popModal
-	}: { showModal: Boolean; children: any; popModal: () => void } = $props();
+		onClose
+	}: { showModal: Boolean; children: any; onClose: () => void } = $props();
 
 	let dialog: any = $state();
 
@@ -34,13 +34,13 @@
 <dialog
 	class="{showModal ? 'flex' : 'hidden'} bg-background color-default w-full max-xs:max-w-full lg:w-3/4 2xl:w-1/2 p-6 my-auto mx-0 xs:m-auto"
 	bind:this={dialog}
-	onclose={() => popModal()}
+	onclose={onClose}
 >
 	<div class="relative flex flex-1 flex-col overflow-hidden">
 		{@render children?.()}
 
 		<div class="absolute right-0 top-0">
-			<button class="btn btn-primary" onclick={() => popModal()}>Close</button>
+			<button class="btn btn-primary" onclick={onClose}>Close</button>
 		</div>
 	</div>
 </dialog>
