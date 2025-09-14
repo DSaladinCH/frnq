@@ -75,6 +75,8 @@ export async function addInvestment(investment: InvestmentModel): Promise<void> 
 export async function updateInvestment(investment: InvestmentModel): Promise<InvestmentModel> {
     const startTime = Date.now();
 
+	investment.quoteId = 0; // ensure quoteId is not sent in the payload
+
 	const url = `${baseUrl}/api/investments/${investment.id}`;
 	const res = await fetch(url, {
 		method: 'PUT',

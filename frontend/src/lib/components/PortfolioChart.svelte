@@ -4,10 +4,33 @@
 	import type { PositionSnapshot } from '../services/positionService';
 	import DropDown from './DropDown.svelte';
 
-	export let snapshots: PositionSnapshot[] = [];
+	let { snapshots }: { snapshots: PositionSnapshot[] } = $props();
 	let canvas: HTMLCanvasElement;
 	let chart: Chart;
 	let tooltipEl: HTMLDivElement;
+
+	// Period type for strict typing
+	const periodOptions = [
+		{ value: '1w', label: '1 Week' },
+		{ value: '1m', label: '1 Month' },
+		{ value: '3m', label: '3 Month' },
+		{ value: 'ytd', label: 'This Year' },
+		{ value: 'all', label: 'All Time' }
+	] as const;
+
+	type Period = (typeof periodOptions)[number]['value'];
+	const PERIOD_STORAGE_KEY = 'portfolioChart.selectedPeriod';
+	let selectedPeriod: Period = $state('3m');
+
+	// Chart option variables and handlers
+	const chartOptionOptions = [
+		{ value: 'both', label: 'Portfolio' },
+		{ value: 'profitOnly', label: 'Profit Only' }
+	] as const;
+
+	type ChartOption = (typeof chartOptionOptions)[number]['value'];
+	const CHART_OPTION_STORAGE_KEY = 'portfolioChart.chartOption';
+	let chartOption = $state<ChartOption>('both');
 
 	// Group snapshots by date and aggregate values
 	function groupSnapshotsByDate(snapshots: PositionSnapshot[]) {
@@ -104,18 +127,13 @@
 				}
 				// Split label and value for alignment
 				let label = dataPoints[i]?.dataset?.label || '';
-				let value = bodyLines[i][0];
-				// Remove label and following ' :' from value if present
-				if (typeof value === 'string' && label && value.startsWith(label + ' :')) {
-					value = value.slice((label + ' :').length).trim();
-				} else if (typeof value === 'string' && label && value.startsWith(label + ':')) {
-					value = value.slice((label + ':').length).trim();
-				}
-				// Format as number with 2 decimals if possible
-				const num = parseFloat(value.replace(/[^0-9eE.,\-+]/g, '').replace(',', '.'));
+				let value = dataPoints[i]?.raw;
+
+				const num = parseFloat(value);
 				if (!isNaN(num)) {
 					value = num.toFixed(2);
 				}
+				
 				innerHtml += `<div class="tooltip-item-flex"><span class="tooltip-color" style="background:${color}"></span><span class="tooltip-label">${label}: </span><span class="tooltip-value">${value}</span></div>`;
 			}
 			innerHtml += '</div>';
@@ -237,27 +255,30 @@
 	});
 
 	// Compute current portfolio info (latest date)
-	$: filteredSnapshots = filterSnapshotsByPeriod(snapshots, selectedPeriod);
-	$: groupedSnapshots = groupSnapshotsByDate(filteredSnapshots);
-	$: latest = groupedSnapshots.length ? groupedSnapshots[groupedSnapshots.length - 1] : null;
-	$: first = groupedSnapshots.length ? groupedSnapshots[0] : null;
+	let filteredSnapshots = $derived(filterSnapshotsByPeriod(snapshots, selectedPeriod));
+	let groupedSnapshots = $derived(groupSnapshotsByDate(filteredSnapshots));
+	let latest = $derived(
+		groupedSnapshots.length ? groupedSnapshots[groupedSnapshots.length - 1] : null
+	);
+	let first = $derived(groupedSnapshots.length ? groupedSnapshots[0] : null);
 
 	// Total profit (realized + unrealized)
-	$: totalProfit = latest ? latest.realizedGain + latest.unrealizedGain : 0;
+	let totalProfit = $derived(latest ? latest.realizedGain + latest.unrealizedGain : 0);
 	// Profit at start
-	$: startProfit = first ? first.realizedGain + first.unrealizedGain : 0;
+	let startProfit = $derived(first ? first.realizedGain + first.unrealizedGain : 0);
 	// Profit change in this period
-	$: profitChange = latest && first ? totalProfit - startProfit : 0;
+	let profitChange = $derived(latest && first ? totalProfit - startProfit : 0);
 	// Profit change %
-	$: profitChangePct =
+	let profitChangePct = $derived(
 		latest && first && Math.abs(startProfit) > 1e-6
 			? (profitChange / Math.abs(startProfit)) * 100
 			: latest && first && Math.abs(latest.invested) > 1e-6
 				? (profitChange / Math.abs(latest.invested)) * 100
-				: 0;
+				: 0
+	);
 
 	// Display-friendly capped profitChangePct
-	$: profitChangePctDisplay =
+	let profitChangePctDisplay = $derived(
 		first && Math.abs(startProfit) < 1e-6 && latest && Math.abs(latest.invested) > 1e-6
 			? profitChange > 0
 				? '+∞'
@@ -268,13 +289,14 @@
 				? '+9999'
 				: profitChangePct < -9999
 					? '-9999'
-					: (profitChangePct >= 0 ? '+' : '') + profitChangePct.toFixed(2);
+					: (profitChangePct >= 0 ? '+' : '') + profitChangePct.toFixed(2)
+	);
 
 	// Color for profit change
-	$: profitColor = profitChange > 0 ? 'green' : profitChange < 0 ? 'red' : 'gray';
+	let profitColor = $derived(profitChange > 0 ? 'green' : profitChange < 0 ? 'red' : 'gray');
 
 	// Dynamic background fade color based on chartOption
-	$: fadeColor = chartOption === 'profitOnly' ? 'rgb(60, 39, 82)' : 'rgb(42, 85, 108)';
+	let fadeColor = $derived(chartOption === 'profitOnly' ? 'rgb(60, 39, 82)' : 'rgb(42, 85, 108)');
 
 	function updateChartData() {
 		if (!chart || !groupedSnapshots) return;
@@ -339,31 +361,20 @@
 		}
 		return snapshots.filter((s) => new Date(s.date) >= fromDate);
 	}
-	$: if (chart && groupedSnapshots) {
-		updateChartData();
-	}
 
-	// React to chartOption changes
-	$: if (chart && chartOption) {
-		updateChartData();
-	}
+	$effect(() => {
+		if (chart && groupedSnapshots) {
+			updateChartData();
+		}
+
+		if (chart && chartOption) {
+			updateChartData();
+		}
+	});
 
 	function roundValue(val: number) {
 		return Math.round(val * 100) / 100;
 	}
-
-	// Period type for strict typing
-	const periodOptions = [
-		{ value: '1w', label: '1 Week' },
-		{ value: '1m', label: '1 Month' },
-		{ value: '3m', label: '3 Month' },
-		{ value: 'ytd', label: 'This Year' },
-		{ value: 'all', label: 'All Time' }
-	] as const;
-
-	type Period = (typeof periodOptions)[number]['value'];
-	const PERIOD_STORAGE_KEY = 'portfolioChart.selectedPeriod';
-	let selectedPeriod: Period = '3m';
 
 	function selectPeriod(val: string) {
 		selectedPeriod = val as Period;
@@ -372,16 +383,6 @@
 			localStorage.setItem(PERIOD_STORAGE_KEY, selectedPeriod);
 		} catch {}
 	}
-
-	// Chart option variables and handlers (moved here as requested)
-	const chartOptionOptions = [
-		{ value: 'both', label: 'Portfolio' },
-		{ value: 'profitOnly', label: 'Profit Only' }
-	] as const;
-
-	type ChartOption = (typeof chartOptionOptions)[number]['value'];
-	const CHART_OPTION_STORAGE_KEY = 'portfolioChart.chartOption';
-	let chartOption: ChartOption = 'both';
 
 	function selectChartOption(val: string) {
 		chartOption = val as ChartOption;
@@ -411,8 +412,8 @@
 </script>
 
 <div
-	class="portfolio-info m-5 grid grid-cols-[1fr] grid-rows-[auto_35px] md:grid-cols-[auto_120px] md:grid-rows-[1fr] justify-items-center
-			md:justify-items-start max-w-full md:max-w-md"
+	class="portfolio-info m-5 grid max-w-full grid-cols-[1fr] grid-rows-[auto_35px] justify-items-center md:max-w-md
+			md:grid-cols-[auto_120px] md:grid-rows-[1fr] md:justify-items-start"
 >
 	{#if latest}
 		<div class="portfolio-stats">
@@ -453,22 +454,22 @@
 		</div>
 
 		<div
-			class="chart-options grid hidden w-80 gap-2 md:grid md:w-full md:grid-cols-[1fr] md:grid-rows-[auto_auto]"
+			class="chart-options w-80 gap-2 hidden md:grid md:w-full md:grid-cols-[1fr] md:grid-rows-[auto_auto]"
 		>
 			<button
 				type="button"
 				class="btn btn-small"
 				class:btn-secondary={chartOption === 'both'}
-				on:click={() => selectChartOption('both')}>Portfolio</button
+				onclick={() => selectChartOption('both')}>Portfolio</button
 			>
 			<button
 				type="button"
 				class="btn btn-small"
 				class:btn-secondary={chartOption === 'profitOnly'}
-				on:click={() => selectChartOption('profitOnly')}>Profit Only</button
+				onclick={() => selectChartOption('profitOnly')}>Profit Only</button
 			>
 		</div>
-		<div class="block md:hidden pt-2">
+		<div class="block pt-2 md:hidden">
 			<DropDown
 				options={[...chartOptionOptions]}
 				selected={chartOption}
@@ -493,7 +494,7 @@
 					type="button"
 					class="btn btn-small"
 					class:btn-secondary={selectedPeriod === opt.value}
-					on:click={() => selectPeriod(opt.value)}>{opt.label}</button
+					onclick={() => selectPeriod(opt.value)}>{opt.label}</button
 				>
 			{/each}
 		</div>

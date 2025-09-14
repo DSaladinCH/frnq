@@ -24,10 +24,12 @@
 	let dropdownElement: HTMLDivElement;
 	let inputElement: HTMLInputElement;
 
-	// Initialize search term with selected quote name
+	// Initialize search term with selected quote name only when selectedQuote changes
 	$effect(() => {
-		if (selectedQuote && searchTerm !== selectedQuote.name) {
+		if (selectedQuote) {
 			searchTerm = selectedQuote.name;
+		} else {
+			searchTerm = '';
 		}
 	});
 
@@ -42,6 +44,7 @@
 		isLoading = true;
 		try {
 			const results = await searchQuotes(query, providerId);
+			console.log('SearchableDropDown: search results', results);
 			searchResults = results;
 			isOpen = results.length > 0;
 		} catch (error) {
@@ -58,6 +61,12 @@
 		const target = e.target as HTMLInputElement;
 		searchTerm = target.value;
 
+		// Clear selection if user is typing something different
+		if (selectedQuote && searchTerm !== selectedQuote.name) {
+			selectedQuote = null;
+			onSelect(null);
+		}
+
 		// Clear existing timeout
 		if (searchTimeout) {
 			clearTimeout(searchTimeout);
@@ -65,8 +74,9 @@
 
 		// Set new timeout for debounced search
 		searchTimeout = setTimeout(() => {
+			console.log('SearchableDropDown: performing search for', searchTerm);
 			performSearch(searchTerm);
-		}, 300); // 300ms delay
+		}, 500); // 500ms delay
 	}
 
 	// Handle quote selection
@@ -147,13 +157,13 @@
 
 <svelte:window onclick={handleClickOutside} />
 
-<div class="searchable-dropdown" bind:this={dropdownElement}>
-	<div class="input-container">
+<div class="relative w-full z-20" bind:this={dropdownElement}>
+	<div class="relative flex items-center">
 		<input
 			bind:this={inputElement}
 			id="quote-search"
 			type="text"
-			class="textbox dropdown-input"
+			class="textbox w-full pr-12"
 			bind:value={searchTerm}
 			{placeholder}
 			oninput={handleInput}
@@ -161,20 +171,30 @@
 			onfocus={handleFocus}
 			autocomplete="off"
 		/>
-		
+
 		<!-- Loading spinner -->
 		{#if isLoading}
 			<div class="loading-spinner">
-				<i class="fa-solid fa-spinner fa-spin"></i>
+				<svg
+					class="fa-spin col-1 row-1 mx-auto h-5 w-5 text-white"
+					xmlns="http://www.w3.org/2000/svg"
+					fill="none"
+					viewBox="0 0 24 24"
+				>
+					<circle class="opacity-50" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+					></circle>
+					<path class="opacity-100" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+					></path>
+				</svg>
 			</div>
 		{/if}
-		
+
 		<!-- Clear button -->
 		{#if selectedQuote}
-			<button 
-				type="button" 
-				class="clear-button" 
-				onclick={clearSelection} 
+			<button
+				type="button"
+				class="clear-button"
+				onclick={clearSelection}
 				title="Clear selection"
 				aria-label="Clear selection"
 			>
@@ -185,26 +205,30 @@
 
 	<!-- Dropdown list -->
 	{#if isOpen && searchResults.length > 0}
-		<div class="dropdown-list">
+		<div class="dropdown-list absolute top-full left-0 right-0 bg-card border-1 border-solid border-button rounded-sm max-h-50 overflow-y-auto z-100">
 			{#each searchResults as quote}
 				<button
 					type="button"
-					class="dropdown-item"
-					class:selected={selectedQuote?.id === quote.id}
+					class="dropdown-item xs:gap-0 gap-1 leading-none w-full py-2 px-4 text-left bg-none border-0 cursor-pointer transition-colors duration-150 flex flex-col"
+					class:selected={selectedQuote?.symbol === quote.symbol}
 					onclick={() => selectQuote(quote)}
 					onkeydown={(e) => handleItemKeydown(e, quote)}
 					tabindex="0"
 				>
-					<div class="quote-main">
-						<span class="quote-name">{quote.name}</span>
-						<span class="quote-symbol">({quote.symbol})</span>
+					<div class="flex font-semibold">
+						<span class="line-clamp-2 flex-1 overflow-ellipsis text-base">{quote.name}</span>
 					</div>
-					<div class="quote-details">
+
+					<div class="color-muted flex items-center gap-2 text-xs">
+						<span>{quote.symbol}</span>
 						{#if quote.exchangeDisposition}
-							<span class="quote-exchange">{quote.exchangeDisposition}</span>
+							<span>•</span>
+							<span >{quote.exchangeDisposition}</span>
 						{/if}
+
 						{#if quote.typeDisposition}
-							<span class="quote-type">{quote.typeDisposition}</span>
+							<span>•</span>
+							<span>{quote.typeDisposition}</span>
 						{/if}
 					</div>
 				</button>
@@ -248,7 +272,9 @@
 		cursor: pointer;
 		padding: 0.25rem;
 		border-radius: 50%;
-		transition: color 0.2s, background-color 0.2s;
+		transition:
+			color 0.2s,
+			background-color 0.2s;
 	}
 
 	.clear-button:hover {
@@ -256,87 +282,14 @@
 		background-color: rgba(255, 255, 255, 0.1);
 	}
 
-	.dropdown-list {
-		position: absolute;
-		top: 100%;
-		left: 0;
-		right: 0;
-		background-color: var(--color-card);
-		border: 1px solid var(--color-button);
-		border-radius: 0.25rem;
-		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-		max-height: 200px;
-		overflow-y: auto;
-		z-index: 1000;
-		margin-top: 0.125rem;
-	}
-
-	.dropdown-item {
-		width: 100%;
-		padding: 0.75rem 1rem;
-		background: none;
-		border: none;
-		color: var(--color-text);
-		cursor: pointer;
-		text-align: left;
-		transition: background-color 0.15s;
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-	}
-
 	.dropdown-item:hover,
 	.dropdown-item:focus {
-		background-color: var(--color-primary);
+		background-color: var(--color-secondary);
 		outline: none;
 	}
 
 	.dropdown-item.selected {
 		background-color: var(--color-secondary);
-	}
-
-	.quote-main {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		font-weight: 500;
-	}
-
-	.quote-name {
-		flex: 1;
-		font-size: 0.95rem;
-	}
-
-	.quote-symbol {
-		font-family: 'Fira Mono', 'Consolas', monospace;
-		font-size: 0.85rem;
-		color: var(--color-muted);
-	}
-
-	.quote-details {
-		display: flex;
-		gap: 0.75rem;
-		font-size: 0.8rem;
-		color: var(--color-muted);
-	}
-
-	.quote-exchange,
-	.quote-type {
-		font-family: 'Fira Mono', 'Consolas', monospace;
-	}
-
-	/* Scrollbar styling for dropdown */
-	.dropdown-list::-webkit-scrollbar {
-		width: 6px;
-	}
-
-	.dropdown-list::-webkit-scrollbar-track {
-		background: transparent;
-	}
-
-	.dropdown-list::-webkit-scrollbar-thumb {
-		background: var(--color-button);
-		border-radius: 3px;
 	}
 
 	.dropdown-list::-webkit-scrollbar-thumb:hover {

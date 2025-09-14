@@ -28,6 +28,22 @@
     color: var(--color-text);
 }
 
+.color-muted {
+    color: var(--color-muted);
+}
+
+.bg-background {
+    background-color: var(--color-background);
+}
+
+.bg-card {
+    background-color: var(--color-card);
+}
+
+.border-button {
+    border-color: var(--color-button);
+}
+
 .bg-background-backdrop {
     background-color: var(--color-background-backdrop);
 }
@@ -42,7 +58,7 @@ body {
 /* Chart.js custom tooltip styles */
 
 .chartjs-tooltip {
-    min-width: 190px;
+    min-width: 210px;
     min-height: 80px;
     background: var(--color-card);
     border-radius: 1rem;
@@ -119,23 +135,6 @@ body {
     border-radius: 50%;
     margin-right: 0.5rem;
     border: 1.5px solid #222;
-}
-
-/* --- Colors --- */
-.color-default {
-    color: var(--color-text);
-}
-
-.color-muted {
-    color: var(--color-muted);
-}
-
-.bg-background {
-    background-color: var(--color-background);
-}
-
-.bg-card {
-    background-color: var(--color-card);
 }
 
 /* --- Card Styles --- */

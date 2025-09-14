@@ -1,5 +1,5 @@
 <script lang="ts">
-	import AddInvestment from '$lib/components/AddInvestment.svelte';
+	import InvestmentForm from '$lib/components/InvestmentForm.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import type { QuoteModel } from '$lib/Models/QuoteModel';
@@ -25,6 +25,7 @@
 	});
 
 	let currentInvestment = $state<InvestmentModel>(createDefaultInvestment());
+	let currentQuote = $state<QuoteModel | null>(null);
 	const locale = navigator.languages?.[0] || navigator.language || 'en-US';
 
 	function getQuoteName(investment: InvestmentModel): string | undefined {
@@ -58,11 +59,13 @@
 
 	function newInvestment() {
 		currentInvestment = createDefaultInvestment();
+		currentQuote = null;
 		showInvestmentDialog = true;
 	}
 
 	function openInvestmentDialog(investment: InvestmentModel) {
-		currentInvestment = investment;
+		currentInvestment = { ...investment };
+		currentQuote = quotes.find(q => q.id === investment.quoteId) || null;
 		showInvestmentDialog = true;
 	}
 
@@ -154,7 +157,7 @@
 </div>
 
 <Modal showModal={showInvestmentDialog} onClose={onInvestmentDialogClose}>
-	<AddInvestment bind:investment={currentInvestment} {saveInvestment} />
+	<InvestmentForm bind:investment={currentInvestment} bind:quote={currentQuote} {saveInvestment} />
 </Modal>
 
 <style>

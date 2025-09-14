@@ -17,7 +17,11 @@ public class QuoteController(QuoteManagement quoteManagement, ProviderRegistry r
         if (financeProvider is null)
             return BadRequest($"Provider with ID '{providerId}' not found.");
 
-        return Ok(await financeProvider.SearchAsync(query));
+        IEnumerable<QuoteModel> results = await financeProvider.SearchAsync(query);
+
+        // Remove duplicates based on Symbol, keeping the first occurrence
+        results = results.GroupBy(q => q.Symbol).Select(g => g.First());
+        return Ok(results);
     }
 
     // GET: api/quote/historical?symbol=AAPL&from=2024-01-01&to=2024-01-10

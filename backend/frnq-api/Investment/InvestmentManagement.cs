@@ -58,6 +58,12 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
         QuoteModel? quote = await quoteManagement.GetQuoteAsync(investmentRequest);
 
         if (quote is null)
+        {
+            await quoteManagement.GetHistoricalPricesAsync(investmentRequest.ProviderId, investmentRequest.QuoteSymbol, DateTime.MinValue, DateTime.UtcNow);
+            quote = await quoteManagement.GetQuoteAsync(investmentRequest);
+        }
+
+        if (quote is null)
             throw new ArgumentException($"Referenced quote does not exist.");
 
         investment.QuoteId = quote.Id;

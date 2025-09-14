@@ -25,8 +25,18 @@
 			totalFees: 0,
 			date: getLocalDateTimeString(new Date())
 		}),
+		quote = $bindable(null),
 		saveInvestment
-	}: { investment?: InvestmentModel; saveInvestment: (investment: InvestmentModel) => Promise<void> } = $props();
+	}: { 
+		investment?: InvestmentModel; 
+		quote?: QuoteModel | null;
+		saveInvestment: (investment: InvestmentModel) => Promise<void> 
+	} = $props();
+
+	// Sync selectedQuote with the quote prop
+	$effect(() => {
+		selectedQuote = quote;
+	});
 
 	// Helper to normalize date string for datetime-local input
 	function normalizeDateForInput(dateStr: string): string {
@@ -68,39 +78,29 @@
 		investment.type = type;
 	}
 
-	function handleQuoteSelect(quote: QuoteModel | null) {
-		console.log('Quote selected:', quote);
-		selectedQuote = quote;
-		if (quote) {
+	function handleQuoteSelect(selectedQuote: QuoteModel | null) {
+		console.log('Quote selected:', selectedQuote);
+		quote = selectedQuote;
+		if (selectedQuote) {
 			// Check if the quote exists in database (has a valid ID > 0)
-			if (quote.id > 0) {
-				investment.quoteId = quote.id;
+			if (selectedQuote.id > 0) {
+				investment.quoteId = selectedQuote.id;
 				investment.providerId = undefined;
 				investment.quoteSymbol = undefined;
-				console.log('Set investment.quoteId to:', quote.id);
+				console.log('Set investment.quoteId to:', selectedQuote.id);
 			} else {
 				// Quote doesn't exist in database yet, use providerId and symbol
 				investment.quoteId = 0;
-				investment.providerId = quote.providerId;
-				investment.quoteSymbol = quote.symbol;
-				console.log('Set investment.providerId to:', quote.providerId, 'and symbol to:', quote.symbol);
+				investment.providerId = selectedQuote.providerId;
+				investment.quoteSymbol = selectedQuote.symbol;
+				console.log('Set investment.providerId to:', selectedQuote.providerId, 'and symbol to:', selectedQuote.symbol);
 			}
 		} else {
 			investment.quoteId = 0;
 			investment.providerId = undefined;
 			investment.quoteSymbol = undefined;
-			console.log('Cleared investment quote fields');
 		}
 	}
-
-	// Debug: Watch for changes to investment quote fields
-	$effect(() => {
-		console.log('Investment quote fields changed:', {
-			quoteId: investment.quoteId,
-			providerId: investment.providerId,
-			quoteSymbol: investment.quoteSymbol
-		});
-	});
 
 	function formatCurrency(value: number): string {
 		return value.toLocaleString(undefined, { style: 'currency', currency: 'CHF' });
@@ -129,7 +129,7 @@
 
 <h1 class="title">New Investment</h1>
 
-<div class="overflow-y-auto pr-1">
+<div class="overflow-y-auto pr-1 grid gap-4">
 	<div class="grid gap-3 md:grid-cols-2">
 		<div class="xs:grid-cols-2 grid gap-3 sm:grid-cols-3">
 			{#each investmentTypes as type}
@@ -160,7 +160,7 @@
 	</div>
 
 
-	<div class="xs:grid-cols-2 xs:gap-3 my-4 grid grid-cols-1 gap-1 sm:grid-cols-3">
+	<div class="xs:grid-cols-2 xs:gap-3 grid grid-cols-1 gap-1 sm:grid-cols-3">
 		<div class="flex flex-col">
 			<span class="text-[1.125rem] font-bold">Market</span>
 			<input
@@ -218,7 +218,7 @@
 		</div>
 	</div>
 
-	<div class="grid pt-2">
+	<div class="grid">
 		<Button
 			icon={investment.id === 0 ? "fa-solid fa-plus" : "fa-solid fa-floppy-disk"}
 			text={investment.id === 0 ? 'Create Investment' : 'Save Changes'}
