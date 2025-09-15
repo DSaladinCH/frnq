@@ -95,6 +95,11 @@ export class DataStore {
 		await this.refreshData();
 	}
 
+	async deleteInvestment(investmentId: number) {
+		const { deleteInvestment: deleteInvestmentAPI } = await import('$lib/services/investmentService');
+		await deleteInvestmentAPI(investmentId);
+		await this.refreshData();
+	}
 }
 
 // Export a singleton instance

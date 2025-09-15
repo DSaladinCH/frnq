@@ -1,12 +1,15 @@
 <script lang="ts">
 	import { InvestmentType, type InvestmentModel } from '$lib/services/investmentService';
 	import type { QuoteModel } from '$lib/Models/QuoteModel';
+	import Button from './Button.svelte';
+	import { ColorStyle } from '$lib/types/ColorStyle';
 
 	let {
 		investment,
 		quote,
-		onclick
-	}: { investment: InvestmentModel; quote: QuoteModel; onclick: () => void } = $props();
+		onclick,
+		ondelete
+	}: { investment: InvestmentModel; quote: QuoteModel; onclick: () => void; ondelete: () => void } = $props();
 
 	const locale = navigator.languages?.[0] || navigator.language || 'en-US';
 
@@ -40,7 +43,11 @@
 
 <!-- Type, Name, Date, Market Value, Amount, Fee, Total -->
 <button class="btn-fake text-left" {onclick}>
-	<div class="card card-reactive @container grid gap-1">
+	<div class="card card-reactive relative @container grid gap-1">
+		<div class="absolute right-4 top-4">
+			<Button onclick={ondelete} icon="fa-solid fa-trash" textSize="text-sm" style={ColorStyle.Secondary} />
+		</div>
+
 		<div class="color-muted flex items-center gap-2 text-sm">
 			<span class="uppercase">{getInvestmentType(investment)}</span>
 			<span>•</span>

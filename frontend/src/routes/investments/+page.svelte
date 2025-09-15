@@ -99,6 +99,37 @@
 			console.error('Error saving investment:', error);
 		}
 	}
+
+	async function deleteInvestment(investment: InvestmentModel) {
+		onInvestmentDialogClose();
+
+		if (investment.id === 0) {
+			alert('Cannot delete an unsaved investment.');
+			return;
+		}
+
+		// TODO: Implement dialog component for confirmation
+		const confirmed = confirm(
+			`Are you sure you want to delete the investment of ${formatNumber(
+				investment.amount
+			)} units of ${getQuoteName(investment) || 'unknown quote'} on ${formatDate(
+				investment.date
+			)}? This action cannot be undone.`
+		);
+
+		if (!confirmed) {
+			return;
+		}
+
+		try {
+			await dataStore.deleteInvestment(investment.id);
+			onInvestmentDialogClose();
+		} catch (error) {
+			// TODO: Implement toast notifications
+			alert('Error deleting investment: ' + error);
+			console.error('Error deleting investment:', error);
+		}
+	}
 </script>
 
 <PageHead title="Investments" />
@@ -118,6 +149,7 @@
 				{investment}
 				quote={quotes.find((q) => q.id === investment.quoteId)!}
 				onclick={() => openInvestmentDialog(investment)}
+				ondelete={() => deleteInvestment(investment)}
 			/>
 		{/each}
 	</div>
