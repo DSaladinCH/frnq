@@ -6,6 +6,7 @@
 	import type { QuoteModel } from '$lib/Models/QuoteModel';
 	import { type InvestmentModel } from '$lib/services/investmentService';
 	import { dataStore } from '$lib/stores/dataStore';
+	import PageHead from '$lib/components/PageHead.svelte';
 
 	let error = $state<string | null>(null);
 
@@ -275,6 +276,8 @@
 	// Reactive cards array for the template
 	let cards = $derived(getQuoteCards(groupedSnapshots(), filterMode, filterGroupId, filterQuoteId));
 </script>
+
+<PageHead title="Portfolio" />
 
 {#if snapshots.length === 0}
 	<p>No data available.</p>
