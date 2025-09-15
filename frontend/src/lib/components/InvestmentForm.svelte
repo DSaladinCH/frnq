@@ -79,21 +79,19 @@
 	}
 
 	function handleQuoteSelect(selectedQuote: QuoteModel | null) {
-		console.log('Quote selected:', selectedQuote);
 		quote = selectedQuote;
+
 		if (selectedQuote) {
 			// Check if the quote exists in database (has a valid ID > 0)
 			if (selectedQuote.id > 0) {
 				investment.quoteId = selectedQuote.id;
 				investment.providerId = undefined;
 				investment.quoteSymbol = undefined;
-				console.log('Set investment.quoteId to:', selectedQuote.id);
 			} else {
 				// Quote doesn't exist in database yet, use providerId and symbol
 				investment.quoteId = 0;
 				investment.providerId = selectedQuote.providerId;
 				investment.quoteSymbol = selectedQuote.symbol;
-				console.log('Set investment.providerId to:', selectedQuote.providerId, 'and symbol to:', selectedQuote.symbol);
 			}
 		} else {
 			investment.quoteId = 0;
@@ -107,16 +105,11 @@
 	}
 
 	async function saveChanges() {
-		console.log('Saving investment:', investment);
-		console.log('Selected quote:', selectedQuote);
-		console.log('Investment quoteId:', investment.quoteId);
-		console.log('Investment providerId:', investment.providerId);
-		console.log('Investment quoteSymbol:', investment.quoteSymbol);
-
 		// Validate inputs
 		const hasValidQuote = investment.quoteId > 0 || (investment.providerId && investment.quoteSymbol);
 		
 		if (investment.pricePerUnit <= 0 || investment.amount <= 0 || !investment.date || !hasValidQuote) {
+			// TODO: Implement toast notifications
 			alert('Please fill in all required fields with valid values and select a quote.');
 			return;
 		}

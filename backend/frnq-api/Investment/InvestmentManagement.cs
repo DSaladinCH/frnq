@@ -8,7 +8,7 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
     public async Task<IEnumerable<InvestmentModel>> GetInvestmentsAsync()
     {
         // TODO: Filter investments by user ID
-        return await databaseContext.Investments.ToListAsync();
+        return await databaseContext.Investments.OrderBy(i => i.Date).ToListAsync();
     }
 
     public async Task<InvestmentModel?> GetInvestmentByIdAsync(int id)
@@ -29,7 +29,7 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
         if (quote is null)
             throw new ArgumentException($"Referenced quote does not exist.");
 
-        InvestmentModel investment = new InvestmentModel
+        InvestmentModel investment = new()
         {
             QuoteId = quote.Id,
             Date = DateTime.SpecifyKind(investmentRequest.Date, DateTimeKind.Utc),

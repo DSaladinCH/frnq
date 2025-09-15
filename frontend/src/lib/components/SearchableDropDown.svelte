@@ -44,7 +44,6 @@
 		isLoading = true;
 		try {
 			const results = await searchQuotes(query, providerId);
-			console.log('SearchableDropDown: search results', results);
 			searchResults = results;
 			isOpen = results.length > 0;
 		} catch (error) {
@@ -74,19 +73,16 @@
 
 		// Set new timeout for debounced search
 		searchTimeout = setTimeout(() => {
-			console.log('SearchableDropDown: performing search for', searchTerm);
 			performSearch(searchTerm);
 		}, 500); // 500ms delay
 	}
 
 	// Handle quote selection
 	function selectQuote(quote: QuoteModel) {
-		console.log('SearchableDropDown: selecting quote', quote);
 		selectedQuote = quote;
 		searchTerm = quote.name;
 		isOpen = false;
 		onSelect(quote);
-		console.log('SearchableDropDown: called onSelect with', quote);
 	}
 
 	// Clear selection

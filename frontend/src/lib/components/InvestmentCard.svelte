@@ -23,7 +23,9 @@
 		return new Date(date).toLocaleDateString(locale, {
 			day: '2-digit',
 			month: '2-digit',
-			year: 'numeric'
+			year: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
 		});
 	}
 
@@ -37,33 +39,39 @@
 </script>
 
 <!-- Type, Name, Date, Market Value, Amount, Fee, Total -->
-<div class="card card-reactive grid gap-1 @container">
-	<div class="flex items-center gap-2 text-sm color-muted">
-		<span class="uppercase">{getInvestmentType(investment)}</span>
-		<span>•</span>
-		<span>{formatDate(investment.date)}</span>
-		<span>•</span>
-		<span>{quote.currency}</span>
+<button class="btn-fake text-left" {onclick}>
+	<div class="card card-reactive @container grid gap-1">
+		<div class="color-muted flex items-center gap-2 text-sm">
+			<span class="uppercase">{getInvestmentType(investment)}</span>
+			<span>•</span>
+			<span>{formatDate(investment.date)}</span>
+			<span>•</span>
+			<span>{quote.currency}</span>
+		</div>
+		<div class="pb-3">
+			<span class="font-bold">{quote.name}</span>
+		</div>
+		<div class="@md:grid-cols-3 @lg:grid-cols-4 grid grid-cols-2 gap-1 text-sm">
+			<div class="grid grid-rows-2">
+				<span class="color-muted">Amount</span>
+				<span class="font-bold">{formatNumber(investment.amount)}</span>
+			</div>
+			<div class="grid grid-rows-2">
+				<span class="color-muted">Price per Unit</span>
+				<span class="font-bold">{formatCurrency(investment.pricePerUnit)}</span>
+			</div>
+			<div class="grid grid-rows-2">
+				<span class="color-muted">Total Fees</span>
+				<span class="font-bold">{formatCurrency(investment.totalFees)}</span>
+			</div>
+			<div class="grid grid-rows-2">
+				<span class="color-muted">Total</span>
+				<span class="font-bold"
+					>{formatCurrency(
+						investment.pricePerUnit * investment.amount + investment.totalFees
+					)}</span
+				>
+			</div>
+		</div>
 	</div>
-	<div class="pb-3">
-		<span class="font-bold">{quote.name}</span>
-	</div>
-	<div class="grid grid-cols-2 @md:grid-cols-3 @lg:grid-cols-4 gap-1 text-sm">
-		<div class="grid grid-rows-2">
-			<span class="color-muted">Amount</span>
-			<span class="font-bold">{formatNumber(investment.amount)}</span>
-		</div>
-		<div class="grid grid-rows-2">
-			<span class="color-muted">Price per Unit</span>
-			<span class="font-bold">{formatCurrency(investment.pricePerUnit)}</span>
-		</div>
-		<div class="grid grid-rows-2">
-			<span class="color-muted">Total Fees</span>
-			<span class="font-bold">{formatCurrency(investment.totalFees)}</span>
-		</div>
-		<div class="grid grid-rows-2">
-			<span class="color-muted">Total</span>
-			<span class="font-bold">{formatCurrency(investment.pricePerUnit * investment.amount + investment.totalFees)}</span>
-		</div>
-	</div>
-</div>
+</button>

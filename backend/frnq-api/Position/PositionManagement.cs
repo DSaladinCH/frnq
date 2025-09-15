@@ -27,7 +27,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
             return new PositionsResponse { Snapshots = [], Quotes = [] };
 
         HashSet<int> quoteIds = investments.Select(i => i.QuoteId).ToHashSet();
-        
+
         // Update historical prices with any missing data
         await Parallel.ForEachAsync(quoteIds, new ParallelOptions() { MaxDegreeOfParallelism = 2 }, async (quoteId, ct) =>
         {
@@ -43,11 +43,11 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
             .Where(qp => quoteIds.Contains(qp.QuoteId))
             .Where(qp => qp.Date <= to)
             .ToListAsync();
-        
+
         Dictionary<int, Dictionary<DateTime, QuotePrice>> priceLookup = prices
             .GroupBy(qp => qp.QuoteId)
             .ToDictionary(g => g.Key, g => g.ToDictionary(p => p.Date.Date, p => p));
-        
+
         // Find the earliest investment date
         DateTime? firstInvestmentDate = investments.Count > 0 ? investments.Min(i => i.Date.Date) : (DateTime?)null;
 
@@ -56,10 +56,10 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 
         List<DateTime> days = [.. Enumerable.Range(0, (((DateTime)to).Date
             - firstInvestmentDate.Value).Days + 1).Select(offset => firstInvestmentDate.Value.AddDays(offset))];
-        
+
         List<PositionSnapshot> allSnapshots = [];
         IEnumerable<IGrouping<(string UserId, int QuoteId), InvestmentModel>> investmentGroups = investments.GroupBy(i => (i.UserId, i.QuoteId));
-        
+
         foreach (var group in investmentGroups)
         {
             decimal cumulativeAmount = 0;
@@ -169,7 +169,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
             .Where(q => q != null)
             .GroupBy(q => q.Id)
             .Select(g => g.First())];
-        
+
         return new PositionsResponse
         {
             Snapshots = filteredSnapshots,

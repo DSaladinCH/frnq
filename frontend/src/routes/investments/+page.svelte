@@ -68,6 +68,8 @@
 	function openInvestmentDialog(investment: InvestmentModel) {
 		currentInvestment = { ...investment };
 		currentQuote = quotes.find((q) => q.id === investment.quoteId) || null;
+		currentInvestment.providerId = currentQuote!.providerId;
+		currentInvestment.quoteSymbol = currentQuote!.symbol;
 		showInvestmentDialog = true;
 	}
 
@@ -78,6 +80,7 @@
 	async function saveInvestment(investment: InvestmentModel) {
 		// Validate inputs
 		if (investment.pricePerUnit <= 0 || investment.amount <= 0 || !investment.date) {
+			// TODO: Implement toast notifications
 			alert('Please fill in all required fields with valid values.');
 			return;
 		}
@@ -91,6 +94,7 @@
 
 			onInvestmentDialogClose();
 		} catch (error) {
+			// TODO: Implement toast notifications
 			alert('Error saving investment: ' + error);
 			console.error('Error saving investment:', error);
 		}
