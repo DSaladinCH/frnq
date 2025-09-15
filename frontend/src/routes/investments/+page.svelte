@@ -9,6 +9,8 @@
 		createDefaultInvestment
 	} from '$lib/services/investmentService';
 	import { dataStore } from '$lib/stores/dataStore';
+	import InvestmentCard from '$lib/components/InvestmentCard.svelte';
+	import PageHead from '$lib/components/PageHead.svelte';
 
 	// Reactive values that track the store
 	let investments = $state(dataStore.investments);
@@ -65,7 +67,7 @@
 
 	function openInvestmentDialog(investment: InvestmentModel) {
 		currentInvestment = { ...investment };
-		currentQuote = quotes.find(q => q.id === investment.quoteId) || null;
+		currentQuote = quotes.find((q) => q.id === investment.quoteId) || null;
 		showInvestmentDialog = true;
 	}
 
@@ -83,11 +85,10 @@
 		try {
 			if (investment.id === 0) {
 				await dataStore.addInvestment(investment);
-			}
-			else {
+			} else {
 				await dataStore.updateInvestment(investment);
 			}
-			
+
 			onInvestmentDialogClose();
 		} catch (error) {
 			alert('Error saving investment: ' + error);
@@ -96,16 +97,25 @@
 	}
 </script>
 
-<div class="p-8">
+<PageHead title="Investments" />
+
+<div class="xs:p-8 p-4">
 	<h1 class="title mb-4 text-3xl font-bold">Investments</h1>
 
 	<div class="mb-3 flex gap-2">
 		<Button onclick={newInvestment} text="Add Investment" icon="fa fa-plus" textSize="text-md" />
 	</div>
 
-	<div class="investments-list grid gap-2 overflow-y-auto py-1 pr-1">
+	<div
+		class="investments-list 3xl:grid-cols-4 grid gap-2 overflow-y-auto py-1 pr-1 lg:grid-cols-2 2xl:grid-cols-3"
+	>
 		{#each investments as investment}
-			<button class="text-left" onclick={() => openInvestmentDialog(investment)}>
+			<InvestmentCard
+				{investment}
+				quote={quotes.find((q) => q.id === investment.quoteId)!}
+				onclick={() => openInvestmentDialog(investment)}
+			/>
+			<!-- <button class="text-left" onclick={() => openInvestmentDialog(investment)}>
 				<div class="investment-item card card-slim card-reactive">
 					<div class="grid w-full md:hidden">
 						<div>
@@ -151,7 +161,7 @@
 						</div>
 					</div>
 				</div>
-			</button>
+			</button> -->
 		{/each}
 	</div>
 </div>

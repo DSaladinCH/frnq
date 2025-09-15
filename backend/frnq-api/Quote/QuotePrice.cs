@@ -17,6 +17,10 @@ public class QuotePrice
     public decimal Low { get; set; }
     public decimal High { get; set; }
     public decimal? AdjustedClose { get; set; }
+    
+    [NotMapped]
+    [JsonIgnore]
+    public string Currency { get; set; } = string.Empty;
 
     [JsonIgnore]
     public virtual QuoteModel Quote { get; set; } = null!;

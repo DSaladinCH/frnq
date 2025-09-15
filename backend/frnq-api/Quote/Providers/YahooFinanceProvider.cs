@@ -123,6 +123,7 @@ public class YahooFinanceProvider : IFinanceProvider
         if (json is null)
             return [];
 
+        JsonNode? currency = json["chart"]?["result"]?[0]?["meta"]?["currency"];
         JsonArray? timestamps = json["chart"]?["result"]?[0]?["timestamp"]?.AsArray();
         JsonNode? quoteNode = json["chart"]?["result"]?[0]?["indicators"]?["quote"]?[0];
         JsonNode? adjCloseNode = json["chart"]?["result"]?[0]?["indicators"]?["adjclose"]?[0]?["adjclose"];
@@ -150,7 +151,8 @@ public class YahooFinanceProvider : IFinanceProvider
                 Close = closes[i]!.GetValue<decimal>(),
                 High = highs[i]!.GetValue<decimal>(),
                 Low = lows[i]!.GetValue<decimal>(),
-                AdjustedClose = adjCloses[i]!.GetValue<decimal>()
+                AdjustedClose = adjCloses[i]!.GetValue<decimal>(),
+                Currency = currency!.GetValue<string>()
             });
         }
 

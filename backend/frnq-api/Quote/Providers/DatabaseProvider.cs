@@ -65,26 +65,58 @@ public class DatabaseProvider(DatabaseContext databaseContext)
         if (quote is null)
             return;
 
+        // Get existing prices for the same dates (date only, ignoring time)
+        var priceDates = prices.Select(x => x.Date.Date).Distinct().ToList();
         List<QuotePrice> existingPrices = await databaseContext.QuotePrices
-            .Where(p => p.QuoteId == quote.Id && prices.Select(x => x.Date).Contains(p.Date))
+            .Where(p => p.QuoteId == quote.Id && priceDates.Contains(p.Date.Date))
             .ToListAsync();
 
-        Dictionary<DateTime, QuotePrice> existingMap = existingPrices.ToDictionary(p => p.Date);
+        // Group existing prices by date (date only) to handle multiple entries per day
+        Dictionary<DateTime, List<QuotePrice>> existingByDate = existingPrices
+            .GroupBy(p => p.Date.Date)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
         List<QuotePrice> newPrices = [];
 
         foreach (QuotePrice price in prices)
         {
-            if (existingMap.TryGetValue(price.Date, out var existing)) {
-                price.Id = existing.Id;
-                databaseContext.Entry(existing).CurrentValues.SetValues(price);
+            DateTime dateOnly = price.Date.Date;
+            
+            if (existingByDate.TryGetValue(dateOnly, out var existingForDate))
+            {
+                // Find the existing price with the latest time for this date
+                QuotePrice? latestExisting = existingForDate.OrderByDescending(p => p.Date).FirstOrDefault();
+                
+                if (latestExisting != null)
+                {
+                    // Only update if the new price has a newer time than the existing latest
+                    if (price.Date > latestExisting.Date)
+                    {
+                        // Remove all existing prices for this date and add the new one
+                        databaseContext.QuotePrices.RemoveRange(existingForDate);
+                        newPrices.Add(price);
+                    }
+                    // If new time is not newer, skip this price (don't update)
+                }
+                else
+                {
+                    // This shouldn't happen, but add as new if no existing found
+                    newPrices.Add(price);
+                }
             }
             else
+            {
+                // No existing price for this date, add as new
                 newPrices.Add(price);
+            }
         }
 
         if (newPrices.Count > 0)
             await databaseContext.QuotePrices.AddRangeAsync(newPrices);
 
+        if (string.IsNullOrEmpty(quote.Currency) && prices.First().Currency is not null)
+            quote.Currency = prices.First().Currency;
+        
         quote.LastUpdatedPrices = DateTime.UtcNow;
         databaseContext.Entry(quote).State = EntityState.Modified;
 

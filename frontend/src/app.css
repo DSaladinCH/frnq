@@ -40,6 +40,18 @@
     background-color: var(--color-card);
 }
 
+.bg-primary {
+    background-color: var(--color-primary);
+}
+
+.bg-secondary {
+    background-color: var(--color-secondary);
+}
+
+.bg-accent {
+    background-color: var(--color-accent);
+}
+
 .border-button {
     border-color: var(--color-button);
 }
