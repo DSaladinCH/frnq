@@ -115,53 +115,6 @@
 				quote={quotes.find((q) => q.id === investment.quoteId)!}
 				onclick={() => openInvestmentDialog(investment)}
 			/>
-			<!-- <button class="text-left" onclick={() => openInvestmentDialog(investment)}>
-				<div class="investment-item card card-slim card-reactive">
-					<div class="grid w-full md:hidden">
-						<div>
-							<div class="investment-type">
-								{getInvestmentType(investment)}
-							</div>
-						</div>
-					</div>
-					<div class="grid w-full grid-rows-[auto_1fr] max-md:hidden md:grid-rows-[1fr_1fr]">
-						<div class="grid grid-cols-[60px_1fr_auto] items-center">
-							<div class="investment-type">
-								{getInvestmentType(investment)}
-							</div>
-							<div>
-								<h2>{getQuoteName(investment)}</h2>
-							</div>
-							<div class="color-muted hidden sm:block">
-								<h2>{formatDate(investment.date)}</h2>
-							</div>
-						</div>
-						<div
-							class="color-muted grid grid-cols-[repeat(auto-fit,_minmax(160px,_1fr))] md:grid-cols-[repeat(3,_160px)_1fr]"
-						>
-							<div class="color-muted sm:hidden">
-								<h2>{formatDate(investment.date)}</h2>
-							</div>
-							<div>
-								<span>Market: {formatNumber(investment.pricePerUnit)}</span>
-							</div>
-							<div>
-								<span>Amount: {formatNumber(investment.amount)}</span>
-							</div>
-							<div>
-								<span>Fees: {formatNumber(investment.totalFees)}</span>
-							</div>
-							<div class="color-default md:text-right">
-								<span
-									>{formatCurrency(
-										investment.pricePerUnit * investment.amount + investment.totalFees
-									)}</span
-								>
-							</div>
-						</div>
-					</div>
-				</div>
-			</button> -->
 		{/each}
 	</div>
 </div>
@@ -169,14 +122,3 @@
 <Modal showModal={showInvestmentDialog} onClose={onInvestmentDialogClose}>
 	<InvestmentForm bind:investment={currentInvestment} bind:quote={currentQuote} {saveInvestment} />
 </Modal>
-
-<style>
-	.investment-type {
-		font-weight: bold;
-		text-transform: uppercase;
-		background-color: var(--color-secondary);
-		text-align: center;
-		border-radius: 0.35rem;
-		margin-right: 0.5rem;
-	}
-</style>
