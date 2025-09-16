@@ -3,6 +3,7 @@ namespace DSaladin.Frnq.Api;
 using Microsoft.EntityFrameworkCore;
 using DSaladin.Frnq.Api.Investment;
 using DSaladin.Frnq.Api.Quote;
+using DSaladin.Frnq.Api.Auth;
 
 public class DatabaseContext : DbContext
 {
@@ -12,6 +13,8 @@ public class DatabaseContext : DbContext
     public DbSet<QuotePrice> QuotePrices { get; set; } = null!;
     public DbSet<QuoteGroup> QuoteGroups { get; set; } = null!;
     public DbSet<InvestmentModel> Investments { get; set; } = null!;
+    public DbSet<UserModel> Users { get; set; } = null!;
+    public DbSet<RefreshTokenSession> RefreshTokenSessions { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

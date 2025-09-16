@@ -1,3 +1,5 @@
+import { fetchWithAuth } from "./authService";
+
 // Helper to create a default InvestmentModel
 export function createDefaultInvestment(): InvestmentModel {
 	return {
@@ -41,7 +43,7 @@ export async function getInvestments(): Promise<InvestmentModel[]> {
 	const startTime = Date.now();
 
 	const url = `${baseUrl}/api/investments`;
-	const res = await fetch(url);
+	const res = await fetchWithAuth(url);
 
 	// wait at least 1 second, to improve UX
 	await new Promise((resolve) => setTimeout(resolve, Math.max(0, 1000 - (Date.now() - startTime))));
@@ -57,7 +59,7 @@ export async function addInvestment(investment: InvestmentModel): Promise<void> 
 	const request: InvestmentRequest = { ...investment, providerId };
 
 	const url = `${baseUrl}/api/investments`;
-	const res = await fetch(url, {
+	const res = await fetchWithAuth(url, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'
@@ -79,7 +81,7 @@ export async function updateInvestment(investment: InvestmentModel): Promise<Inv
 	console.log('Updating investment:', investment);
 
 	const url = `${baseUrl}/api/investments/${investment.id}`;
-	const res = await fetch(url, {
+	const res = await fetchWithAuth(url, {
 		method: 'PUT',
 		headers: {
 			'Content-Type': 'application/json'
@@ -98,7 +100,7 @@ export async function deleteInvestment(investmentId: number): Promise<void> {
 	const startTime = Date.now();
 	
 	const url = `${baseUrl}/api/investments/${investmentId}`;
-	const res = await fetch(url, {
+	const res = await fetchWithAuth(url, {
 		method: 'DELETE'
 	});
 
