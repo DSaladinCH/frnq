@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { writable } from 'svelte/store';
+import { writable, derived } from 'svelte/store';
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -12,6 +12,11 @@ export const accessToken = writable<string | null>(null);
 export const expiresAt = writable<number | null>(null);
 
 let refreshTimeout: ReturnType<typeof setTimeout> | undefined;
+
+export const isLoggedIn = derived(
+	[accessToken, expiresAt],
+	([$accessToken, $expiresAt]) => !!$accessToken && !!$expiresAt && $expiresAt > Date.now()
+);
 
 /**
  * Schedule automatic refresh ~30s before expiry
@@ -42,9 +47,9 @@ function setAuth(token: string, expiryIso: string) {
  */
 export async function bootstrapAuth(fetchFn: typeof fetch) {
 	if (!browser && process.env.NODE_ENV === 'development') {
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    }
-	
+		process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+	}
+
 	const res = await fetchFn(`${baseUrl}/api/auth/refresh`, {
 		method: 'POST',
 		credentials: 'include'

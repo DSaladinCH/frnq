@@ -4,15 +4,20 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { dataStore } from '$lib/stores/dataStore';
+	import { isLoggedIn } from '$lib/services/authService';
 	import type { Snippet } from 'svelte';
 
 	let { children }: { children: Snippet } = $props();
 
 	const links = [
-		{ key: '/portfolio', icon: 'fa-solid fa-chart-line', label: 'Portfolio' },
-		{ key: '/investments', icon: 'fa-solid fa-money-bill', label: 'Investments' },
-		{ key: '/settings', icon: 'fa-solid fa-gear', label: 'Settings' }
+		{ key: '/portfolio', icon: 'fa-solid fa-chart-line', label: 'Portfolio', showWhenLoggedIn: true },
+		{ key: '/investments', icon: 'fa-solid fa-money-bill', label: 'Investments', showWhenLoggedIn: true },
+		{ key: '/settings', icon: 'fa-solid fa-gear', label: 'Settings', showWhenLoggedIn: true },
+		{ key: '/login', icon: 'fa-solid fa-sign-in-alt', label: 'Login', showWhenLoggedIn: false }
 	];
+
+	// Filter links based on login status
+	let visibleLinks = $derived(links.filter(link => link.showWhenLoggedIn === $isLoggedIn));
 
 	let showLoading = $state(true);
 	let fadeOut = $state(false);
@@ -120,7 +125,7 @@
 			</button>
 		</div>
 		<div class="flex-1 px-4 py-6">
-			{#each links as { key, icon, label }}
+			{#each visibleLinks as { key, icon, label }}
 				<button
 					type="button"
 					class="mobile-nav-item mb-2 flex w-full items-center gap-3 rounded-md px-3 py-3 text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 {currentPath ===
@@ -144,15 +149,15 @@
 		class="bg-card fixed bottom-0 left-0 top-0 hidden w-[70px] flex-col items-center justify-between p-1 md:flex"
 	>
 		<div class="flex h-full flex-col">
-			<button class="flex items-center justify-center h-12.5 w-12.5 mt-2 hover:scale-105 transition-transform hover:cursor-pointer" onclick={() => navigateTo('/portfolio')}>
+			<button class="flex items-center justify-center h-12.5 w-12.5 mt-2 hover:scale-105 transition-transform hover:cursor-pointer" onclick={() => navigateTo($isLoggedIn ? '/portfolio' : '/login')}>
 				<img class="w-10" src="/logo.png" alt="Portfolio Logo" />
 			</button>
 
-			{#each links as { key, icon, label }, i}
+			{#each visibleLinks as { key, icon, label }, i}
 				<button
 					type="button"
 					class="nav-item flex h-12.5 w-12.5 flex-col items-center justify-center text-2xl {key ===
-					'/settings'
+					'/settings' || key === '/login'
 						? 'mt-auto'
 						: 'my-1'} hover:scale-115 transition-transform hover:cursor-pointer {currentPath === key
 						? 'active'
@@ -164,7 +169,7 @@
 					<i class={icon}></i>
 					<span class="display md:hidden">{label}</span>
 				</button>
-				{#if i < links.length - 2}
+				{#if i < visibleLinks.length - 2 && key !== '/settings' && key !== '/login'}
 					<hr class="color-muted mx-auto my-1 w-4 border-t" />
 				{/if}
 			{/each}
