@@ -10,14 +10,17 @@
 	let { children }: { children: Snippet } = $props();
 
 	const links = [
-		{ key: '/portfolio', icon: 'fa-solid fa-chart-line', label: 'Portfolio', showWhenLoggedIn: true },
-		{ key: '/investments', icon: 'fa-solid fa-money-bill', label: 'Investments', showWhenLoggedIn: true },
-		{ key: '/settings', icon: 'fa-solid fa-gear', label: 'Settings', showWhenLoggedIn: true },
-		{ key: '/login', icon: 'fa-solid fa-sign-in-alt', label: 'Login', showWhenLoggedIn: false }
+		{ key: '/portfolio', icon: 'fa-solid fa-chart-line', label: 'Portfolio', showWhenLoggedIn: true, inFooter: false },
+		{ key: '/investments', icon: 'fa-solid fa-money-bill', label: 'Investments', showWhenLoggedIn: true, inFooter: false },
+		{ key: '/settings', icon: 'fa-solid fa-gear', label: 'Settings', showWhenLoggedIn: true, inFooter: true },
+		{ key: '/logout', icon: 'fa-solid fa-sign-out-alt', label: 'Logout', showWhenLoggedIn: true, inFooter: true },
+		{ key: '/login', icon: 'fa-solid fa-sign-in-alt', label: 'Login', showWhenLoggedIn: false, inFooter: true }
 	];
 
 	// Filter links based on login status
 	let visibleLinks = $derived(links.filter(link => link.showWhenLoggedIn === $isLoggedIn));
+	let mainLinks = $derived(visibleLinks.filter(link => !link.inFooter));
+	let footerLinks = $derived(visibleLinks.filter(link => link.inFooter));
 
 	let showLoading = $state(true);
 	let fadeOut = $state(false);
@@ -153,13 +156,10 @@
 				<img class="w-10" src="/logo.png" alt="Portfolio Logo" />
 			</button>
 
-			{#each visibleLinks as { key, icon, label }, i}
+			{#each mainLinks as { key, icon, label }, i}
 				<button
 					type="button"
-					class="nav-item flex h-12.5 w-12.5 flex-col items-center justify-center text-2xl {key ===
-					'/settings' || key === '/login'
-						? 'mt-auto'
-						: 'my-1'} hover:scale-115 transition-transform hover:cursor-pointer {currentPath === key
+					class="nav-item flex h-12.5 w-12.5 flex-col items-center justify-center text-2xl my-1 hover:scale-115 transition-transform hover:cursor-pointer {currentPath === key
 						? 'active'
 						: ''}"
 					aria-label={label}
@@ -169,7 +169,25 @@
 					<i class={icon}></i>
 					<span class="display md:hidden">{label}</span>
 				</button>
-				{#if i < visibleLinks.length - 2 && key !== '/settings' && key !== '/login'}
+				{#if i < mainLinks.length - 1}
+					<hr class="color-muted mx-auto my-1 w-4 border-t" />
+				{/if}
+			{/each}
+
+			{#each footerLinks as { key, icon, label }, i}
+				<button
+					type="button"
+					class="nav-item flex h-12.5 w-12.5 flex-col items-center justify-center text-2xl {i === 0 ? 'mt-auto' : 'my-1'} hover:scale-115 transition-transform hover:cursor-pointer {currentPath === key
+						? 'active'
+						: ''}"
+					aria-label={label}
+					title={label}
+					onclick={() => navigateTo(key)}
+				>
+					<i class={icon}></i>
+					<span class="display md:hidden">{label}</span>
+				</button>
+				{#if i < footerLinks.length - 1}
 					<hr class="color-muted mx-auto my-1 w-4 border-t" />
 				{/if}
 			{/each}
