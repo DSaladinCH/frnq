@@ -8,6 +8,7 @@
 		icon = 'fa-solid fa-arrow-right',
 		textSize = 'text-lg',
 		style = ColorStyle.Primary,
+		width = ContentWidth.Max,
 		disabled = false,
 		isLoading = false
 	}: {
@@ -28,6 +29,11 @@
 		[ColorStyle.Success]: 'button-success',
 		[ColorStyle.Error]: 'button-error'
 	};
+
+	let widthClass = {
+		[ContentWidth.Max]: 'w-max',
+		[ContentWidth.Full]: 'w-full'
+	};
 </script>
 
 <button
@@ -35,7 +41,7 @@
 	disabled={disabled || isLoading}
 	class="button color-default {styleClass[
 		style
-	]} inline-block cursor-pointer rounded-lg border-0 px-4 py-2 font-bold decoration-0"
+	]} inline-block cursor-pointer rounded-lg border-0 px-4 py-2 font-bold decoration-0 {widthClass[width]}"
 >
 	<div class="grid items-center justify-center {textSize}">
 		{#if isLoading}
