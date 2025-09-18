@@ -45,7 +45,6 @@ public class DatabaseProvider(DatabaseContext databaseContext)
         {
             quote.Id = existing.Id;
             quote.LastUpdatedPrices = existing.LastUpdatedPrices;
-            quote.GroupId = existing.GroupId;
             databaseContext.Entry(existing).CurrentValues.SetValues(quote);
         }
         else

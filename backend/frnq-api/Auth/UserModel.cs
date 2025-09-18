@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using DSaladin.Frnq.Api.Investment;
 using Microsoft.EntityFrameworkCore;
 
 namespace DSaladin.Frnq.Api.Auth;
@@ -20,4 +21,6 @@ public class UserModel
     public string PasswordHash { get; set; } = string.Empty;
 
     public string Firstname { get; set; } = string.Empty;
+
+    public virtual ICollection<InvestmentModel> Investments { get; set; } = [];
 }

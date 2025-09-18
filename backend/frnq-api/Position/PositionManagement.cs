@@ -1,11 +1,14 @@
+using DSaladin.Frnq.Api.Auth;
 using DSaladin.Frnq.Api.Investment;
 using DSaladin.Frnq.Api.Quote;
 using Microsoft.EntityFrameworkCore;
 
 namespace DSaladin.Frnq.Api.Position;
 
-public class PositionManagement(DatabaseContext databaseContext, IServiceProvider serviceProvider)
+public class PositionManagement(DatabaseContext databaseContext, IServiceProvider serviceProvider, AuthManagement authManagement)
 {
+    private readonly Guid userId = authManagement.GetCurrentUserId();
+
     public async Task<PositionsResponse> GetPositionsAsync(DateTime? from, DateTime? to)
     {
         from ??= DateTime.MinValue;
@@ -16,10 +19,11 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 
         // Get all investments up to the requested 'to' date
         List<InvestmentModel> investments = await databaseContext.Investments
-            .Where(i => i.Date <= to)
+            .Where(i => userId == i.UserId && i.Date <= to)
             .OrderBy(i => i.Date)
             .Include(i => i.Quote)
-            .ThenInclude(q => q.Group)
+            .ThenInclude(q => q.Mappings.Where(m => m.UserId == userId))
+                .ThenInclude(m => m.Group)
             .ToListAsync();
 
         // Get all quotes that have been invested in
@@ -58,7 +62,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
             - firstInvestmentDate.Value).Days + 1).Select(offset => firstInvestmentDate.Value.AddDays(offset))];
 
         List<PositionSnapshot> allSnapshots = [];
-        IEnumerable<IGrouping<(string UserId, int QuoteId), InvestmentModel>> investmentGroups = investments.GroupBy(i => (i.UserId, i.QuoteId));
+        IEnumerable<IGrouping<(Guid UserId, int QuoteId), InvestmentModel>> investmentGroups = investments.GroupBy(i => (i.UserId, i.QuoteId));
 
         foreach (var group in investmentGroups)
         {
@@ -146,7 +150,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 
                 allSnapshots.Add(new PositionSnapshot
                 {
-                    UserId = group.Key.UserId,
+                    UserId = group.Key.UserId.ToString(),
                     QuoteId = group.Key.QuoteId,
                     Date = day,
                     Currency = quote.Currency,
@@ -173,7 +177,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
         return new PositionsResponse
         {
             Snapshots = filteredSnapshots,
-            Quotes = uniqueQuotes
+            Quotes = [.. uniqueQuotes.Select(QuoteDto.FromModel)]
         };
     }
 }

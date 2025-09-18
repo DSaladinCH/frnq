@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DSaladin.Frnq.Api.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20250916203506_AddRefreshTokenSessions")]
-    partial class AddRefreshTokenSessions
+    [Migration("20250918194635_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -112,13 +112,14 @@ namespace DSaladin.Frnq.Api.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
                     b.HasIndex("QuoteId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("investment");
                 });
@@ -140,6 +141,39 @@ namespace DSaladin.Frnq.Api.Migrations
                     b.ToTable("quote_group");
                 });
 
+            modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteGroupMapping", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("QuoteId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("GroupId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("QuoteGroupId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("QuoteModelId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("UserId", "QuoteId");
+
+                    b.HasIndex("GroupId");
+
+                    b.HasIndex("QuoteGroupId");
+
+                    b.HasIndex("QuoteId");
+
+                    b.HasIndex("QuoteModelId");
+
+                    b.HasIndex("UserId", "QuoteId")
+                        .IsUnique();
+
+                    b.ToTable("quote_group_mapping");
+                });
+
             modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteModel", b =>
                 {
                     b.Property<int>("Id")
@@ -155,9 +189,6 @@ namespace DSaladin.Frnq.Api.Migrations
                     b.Property<string>("ExchangeDisposition")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<int?>("GroupId")
-                        .HasColumnType("integer");
 
                     b.Property<DateTime>("LastUpdatedPrices")
                         .HasColumnType("timestamp with time zone");
@@ -179,8 +210,6 @@ namespace DSaladin.Frnq.Api.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("GroupId");
 
                     b.HasIndex("ProviderId", "Symbol")
                         .IsUnique();
@@ -244,16 +273,50 @@ namespace DSaladin.Frnq.Api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("DSaladin.Frnq.Api.Auth.UserModel", "User")
+                        .WithMany("Investments")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Quote");
+
+                    b.Navigation("User");
                 });
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteModel", b =>
+            modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteGroupMapping", b =>
                 {
                     b.HasOne("DSaladin.Frnq.Api.Quote.QuoteGroup", "Group")
-                        .WithMany("Quotes")
-                        .HasForeignKey("GroupId");
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DSaladin.Frnq.Api.Quote.QuoteGroup", null)
+                        .WithMany("Mappings")
+                        .HasForeignKey("QuoteGroupId");
+
+                    b.HasOne("DSaladin.Frnq.Api.Quote.QuoteModel", "Quote")
+                        .WithMany()
+                        .HasForeignKey("QuoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DSaladin.Frnq.Api.Quote.QuoteModel", null)
+                        .WithMany("Mappings")
+                        .HasForeignKey("QuoteModelId");
+
+                    b.HasOne("DSaladin.Frnq.Api.Auth.UserModel", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Group");
+
+                    b.Navigation("Quote");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuotePrice", b =>
@@ -267,13 +330,20 @@ namespace DSaladin.Frnq.Api.Migrations
                     b.Navigation("Quote");
                 });
 
+            modelBuilder.Entity("DSaladin.Frnq.Api.Auth.UserModel", b =>
+                {
+                    b.Navigation("Investments");
+                });
+
             modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteGroup", b =>
                 {
-                    b.Navigation("Quotes");
+                    b.Navigation("Mappings");
                 });
 
             modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteModel", b =>
                 {
+                    b.Navigation("Mappings");
+
                     b.Navigation("Prices");
                 });
 #pragma warning restore 612, 618

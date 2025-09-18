@@ -16,7 +16,6 @@ public class QuoteModel
     public string ExchangeDisposition { get; set; } = string.Empty;
     public string TypeDisposition { get; set; } = string.Empty;
     public string Currency { get; set; } = string.Empty;
-    public int? GroupId { get; set; }
     /// <summary>
     /// The last time the quote prices were updated in the database.
     /// </summary>
@@ -24,7 +23,8 @@ public class QuoteModel
 
     [JsonIgnore]
     public virtual ICollection<QuotePrice> Prices { get; set; } = [];
-    public virtual QuoteGroup? Group { get; set; }
+    [JsonIgnore]
+    public virtual ICollection<QuoteGroupMapping> Mappings { get; set; } = [];
 
     public static string GetSenatizedName(string name)
     {

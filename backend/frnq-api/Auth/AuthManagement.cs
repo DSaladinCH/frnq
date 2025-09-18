@@ -10,6 +10,12 @@ namespace DSaladin.Frnq.Api.Auth;
 
 public class AuthManagement(DatabaseContext databaseContext, IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
 {
+    public Guid GetCurrentUserId()
+    {
+        string? userIdClaim = httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return userIdClaim != null ? Guid.Parse(userIdClaim) : Guid.Empty;
+    }
+
     private async Task<UserModel?> GetUserByEmailAsync(string email)
     {
         return await databaseContext.Users.FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant());

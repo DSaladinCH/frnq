@@ -1,19 +1,22 @@
+using DSaladin.Frnq.Api.Auth;
 using DSaladin.Frnq.Api.Quote;
 using Microsoft.EntityFrameworkCore;
 
 namespace DSaladin.Frnq.Api.Investment;
 
-public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseContext databaseContext)
+public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseContext databaseContext, AuthManagement authManagement)
 {
+    private readonly Guid userId = authManagement.GetCurrentUserId();
+    
     public async Task<IEnumerable<InvestmentModel>> GetInvestmentsAsync()
     {
         // TODO: Filter investments by user ID
-        return await databaseContext.Investments.OrderBy(i => i.Date).ToListAsync();
+        return await databaseContext.Investments.Where(i => i.UserId == userId).OrderBy(i => i.Date).ToListAsync();
     }
 
     public async Task<InvestmentModel?> GetInvestmentByIdAsync(int id)
     {
-        return await databaseContext.Investments.FindAsync(id);
+        return await databaseContext.Investments.Where(i => i.UserId == userId && i.Id == id).FirstOrDefaultAsync();
     }
 
     public async Task<InvestmentModel> CreateInvestmentAsync(InvestmentRequest investmentRequest)
@@ -31,6 +34,7 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 
         InvestmentModel investment = new()
         {
+            UserId = userId,
             QuoteId = quote.Id,
             Date = DateTime.SpecifyKind(investmentRequest.Date, DateTimeKind.Utc),
             Type = investmentRequest.Type,
@@ -54,6 +58,9 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 
         if (investment is null)
             throw new KeyNotFoundException($"Investment with ID {id} not found.");
+
+        if (investment.UserId != userId)
+            throw new UnauthorizedAccessException("You do not have permission to update this investment.");
 
         QuoteModel? quote = await quoteManagement.GetQuoteAsync(investmentRequest);
 
@@ -85,6 +92,9 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 
         if (investment is null)
             throw new KeyNotFoundException($"Investment with ID {id} not found.");
+
+        if (investment.UserId != userId)
+            throw new UnauthorizedAccessException("You do not have permission to delete this investment.");
 
         databaseContext.Investments.Remove(investment);
         await databaseContext.SaveChangesAsync();

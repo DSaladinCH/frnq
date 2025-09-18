@@ -13,5 +13,5 @@ public class QuoteGroup
     public string Name { get; set; } = string.Empty;
 
     [JsonIgnore]
-    public virtual List<QuoteModel> Quotes { get; set; } = [];
+    public virtual ICollection<QuoteGroupMapping> Mappings { get; set; } = [];
 }

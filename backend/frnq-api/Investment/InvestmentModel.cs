@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using DSaladin.Frnq.Api.Auth;
 using DSaladin.Frnq.Api.Quote;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +12,7 @@ public class InvestmentModel
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
-    public string UserId { get; set; } = string.Empty;
+    public Guid UserId { get; set; }
     public int QuoteId { get; set; } // FK to QuoteModel
     public DateTime Date { get; set; }
 
@@ -24,5 +25,6 @@ public class InvestmentModel
     public decimal PricePerUnit { get; set; }
     public decimal TotalFees { get; set; }
 
+    public virtual UserModel User { get; set; } = null!;
     public virtual QuoteModel Quote { get; set; } = null!;
 }
