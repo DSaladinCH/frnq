@@ -1,11 +1,13 @@
 using DSaladin.Frnq.Api.ModelBinders;
 using DSaladin.Frnq.Api.Quote.Providers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DSaladin.Frnq.Api.Quote;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class QuoteController(QuoteManagement quoteManagement, ProviderRegistry registry) : ControllerBase
 {
     // GET: api/quote/search?query=apple&providerId=yahoo-finance

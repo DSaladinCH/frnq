@@ -1,11 +1,13 @@
 using DSaladin.Frnq.Api.Investment;
 using DSaladin.Frnq.Api.ModelBinders;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DSaladin.Frnq.Api.Position;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class PositionsController(PositionManagement positionManagement) : ControllerBase
 {
     [HttpGet]

@@ -1,12 +1,14 @@
 using System.Threading.Tasks;
 using DSaladin.Frnq.Api.Investment;
 using DSaladin.Frnq.Api.Quote;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DSaladin.Frnq.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class InvestmentsController(InvestmentManagement investmentManagement) : ControllerBase
 {
     [HttpGet]
