@@ -5,18 +5,6 @@
 
 	let { quote, snapshot }: { quote: QuoteModel; snapshot: PositionSnapshot } = $props();
 
-	const locale = navigator.languages?.[0] || navigator.language || 'en-US';
-
-	function formatDate(date: string): string {
-		return new Date(date).toLocaleDateString(locale, {
-			day: '2-digit',
-			month: '2-digit',
-			year: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit'
-		});
-	}
-
 	function formatCurrency(value: number): string {
 		return value.toLocaleString(undefined, { style: 'currency', currency: quote.currency });
 	}
