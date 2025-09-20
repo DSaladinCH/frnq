@@ -32,6 +32,26 @@
     color: var(--color-muted);
 }
 
+.color-primary {
+    color: var(--color-primary);
+}
+
+.color-secondary {
+    color: var(--color-secondary);
+}
+
+.color-accent {
+    color: var(--color-accent);
+}
+
+.color-error {
+    color: var(--color-error);
+}
+
+.color-success {
+    color: var(--color-success);
+}
+
 .bg-background {
     background-color: var(--color-background);
 }
@@ -169,7 +189,7 @@ body {
     padding: 0.8rem 1.2rem;
 }
 
-.card.card-reactive {
+.card.card-reactive:not(.no-click) {
     cursor: pointer;
 }
 
@@ -245,6 +265,16 @@ body {
     --btn-bg: var(--color-secondary);
 }
 
+.link-button {
+    text-decoration: none;
+    color: var(--color-secondary);
+}
+
+.link-button:hover {
+    color: var(--color-primary);
+    cursor: pointer;
+}
+
 /*****************/
 /**** TextBox ****/
 /*****************/
@@ -268,19 +298,19 @@ body {
     color: var(--color-text);
 }
 
-    .textbox:hover {
-        border-color: var(--color-primary) !important;
-    }
+.textbox:hover {
+    border-color: var(--color-primary) !important;
+}
 
-    .textbox:focus,
-    .textbox:-webkit-autofill:focus {
-        box-shadow: none !important;
-        border-color: var(--color-secondary) !important;
-    }
+.textbox:focus,
+.textbox:-webkit-autofill:focus {
+    box-shadow: none !important;
+    border-color: var(--color-secondary) !important;
+}
 
-    .textbox:invalid {
-        border-color: var(--color-error) !important;
-    }
+.textbox:invalid {
+    border-color: var(--color-error) !important;
+}
 
 /*******************/
 /**** ScrollBar ****/
