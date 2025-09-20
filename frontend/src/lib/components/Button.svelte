@@ -1,23 +1,27 @@
 <script lang="ts">
 	import { ColorStyle } from '$lib/types/ColorStyle';
 	import { ContentWidth } from '$lib/types/ContentSize';
+	import { StylePadding } from '$lib/types/StylePadding';
+	import { TextSize } from '$lib/types/TextSize';
 
 	let {
 		onclick,
 		text = '',
 		icon = 'fa-solid fa-arrow-right',
-		textSize = 'text-lg',
+		textSize = TextSize.Large,
 		style = ColorStyle.Primary,
 		width = ContentWidth.Max,
+		padding = StylePadding.Default,
 		disabled = false,
 		isLoading = false
 	}: {
 		onclick: () => void;
 		text?: string;
 		icon?: string;
-		textSize?: string;
-		width?: ContentWidth;
+		textSize?: TextSize;
 		style?: ColorStyle;
+		width?: ContentWidth;
+		padding?: StylePadding;
 		disabled?: boolean;
 		isLoading?: boolean;
 	} = $props();
@@ -34,6 +38,11 @@
 		[ContentWidth.Max]: 'w-max',
 		[ContentWidth.Full]: 'w-full'
 	};
+
+	let paddingClass = {
+		[StylePadding.Default]: 'px-4 py-2',
+		[StylePadding.Reduced]: 'px-2 py-1'
+	};
 </script>
 
 <button
@@ -41,7 +50,7 @@
 	disabled={disabled || isLoading}
 	class="button color-default {styleClass[
 		style
-	]} inline-block cursor-pointer rounded-lg border-0 px-4 py-2 font-bold decoration-0 {widthClass[width]}"
+	]} inline-block cursor-pointer rounded-lg border-0 {paddingClass[padding]} font-bold decoration-0 {widthClass[width]}"
 >
 	<div class="grid items-center justify-center {textSize}">
 		{#if isLoading}

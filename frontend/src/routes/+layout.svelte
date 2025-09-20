@@ -11,7 +11,8 @@
 
 	const links = [
 		{ key: '/portfolio', icon: 'fa-solid fa-chart-line', label: 'Portfolio', showWhenLoggedIn: true, inFooter: false },
-		{ key: '/investments', icon: 'fa-solid fa-money-bill', label: 'Investments', showWhenLoggedIn: true, inFooter: false },
+		{ key: '/investments', icon: 'fa-solid fa-coins', label: 'Investments', showWhenLoggedIn: true, inFooter: false },
+		{ key: '/wallet', icon: 'fa-solid fa-wallet', label: 'Wallet', showWhenLoggedIn: true, inFooter: false },
 		{ key: '/settings', icon: 'fa-solid fa-gear', label: 'Settings', showWhenLoggedIn: true, inFooter: true },
 		{ key: '/logout', icon: 'fa-solid fa-sign-out-alt', label: 'Logout', showWhenLoggedIn: true, inFooter: true },
 		{ key: '/login', icon: 'fa-solid fa-sign-in-alt', label: 'Login', showWhenLoggedIn: false, inFooter: true }

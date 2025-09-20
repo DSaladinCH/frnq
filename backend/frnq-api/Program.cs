@@ -1,5 +1,6 @@
 using DSaladin.Frnq.Api;
 using DSaladin.Frnq.Api.Auth;
+using DSaladin.Frnq.Api.Group;
 using DSaladin.Frnq.Api.Investment;
 using DSaladin.Frnq.Api.Position;
 using DSaladin.Frnq.Api.Quote;
@@ -20,6 +21,7 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<InvestmentManagement>();
 builder.Services.AddScoped<PositionManagement>();
 builder.Services.AddScoped<QuoteManagement>();
+builder.Services.AddScoped<GroupManagement>();
 builder.Services.AddScoped<AuthManagement>();
 
 // Add HTTP context accessor for AuthManagement

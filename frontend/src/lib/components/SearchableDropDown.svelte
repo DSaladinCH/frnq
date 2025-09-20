@@ -234,23 +234,6 @@
 </div>
 
 <style>
-	.searchable-dropdown {
-		position: relative;
-		width: 100%;
-		z-index: 20;
-	}
-
-	.input-container {
-		position: relative;
-		display: flex;
-		align-items: center;
-	}
-
-	.dropdown-input {
-		width: 100%;
-		padding-right: 3rem; /* Space for loading/clear buttons */
-	}
-
 	.loading-spinner,
 	.clear-button {
 		position: absolute;

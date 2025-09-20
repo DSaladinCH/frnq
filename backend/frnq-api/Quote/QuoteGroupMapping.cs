@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 using DSaladin.Frnq.Api.Auth;
 using Microsoft.EntityFrameworkCore;
+using DSaladin.Frnq.Api.Group;
 
 namespace DSaladin.Frnq.Api.Quote;
 

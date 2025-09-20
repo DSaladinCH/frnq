@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using DSaladin.Frnq.Api.Investment;
 using DSaladin.Frnq.Api.Quote;
 using DSaladin.Frnq.Api.Auth;
+using DSaladin.Frnq.Api.Group;
 
 public class DatabaseContext : DbContext
 {
@@ -41,6 +42,11 @@ public class DatabaseContext : DbContext
             .HasOne(i => i.User)
             .WithMany(u => u.Investments)
             .HasForeignKey(i => i.UserId);
+
+        modelBuilder.Entity<QuoteGroup>()
+            .HasOne(qg => qg.User)
+            .WithMany()
+            .HasForeignKey(qg => qg.UserId);
 
         modelBuilder.Entity<QuoteGroupMapping>()
             .HasKey(qgm => new { qgm.UserId, qgm.QuoteId });

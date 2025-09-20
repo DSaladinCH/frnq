@@ -3,6 +3,7 @@
 	import type { QuoteModel } from '$lib/Models/QuoteModel';
 	import Button from './Button.svelte';
 	import { ColorStyle } from '$lib/types/ColorStyle';
+	import { TextSize } from '$lib/types/TextSize';
 
 	let {
 		investment,
@@ -45,7 +46,7 @@
 <button class="btn-fake text-left" {onclick}>
 	<div class="card card-reactive relative @container grid gap-1">
 		<div class="absolute right-4 top-4">
-			<Button onclick={ondelete} icon="fa-solid fa-trash" textSize="text-sm" style={ColorStyle.Secondary} />
+			<Button onclick={ondelete} icon="fa-solid fa-trash" textSize={TextSize.Small} style={ColorStyle.Secondary} />
 		</div>
 
 		<div class="color-muted flex items-center gap-2 text-sm">

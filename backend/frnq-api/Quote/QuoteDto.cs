@@ -1,3 +1,5 @@
+using DSaladin.Frnq.Api.Group;
+
 namespace DSaladin.Frnq.Api.Quote;
 
 public class QuoteDto
