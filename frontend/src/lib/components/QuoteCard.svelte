@@ -3,7 +3,11 @@
 	import type { QuoteModel } from '$lib/Models/QuoteModel';
 	import type { PositionSnapshot } from '$lib/services/positionService';
 
-	let { quote, snapshot, onAssignGroup }: { quote: QuoteModel; snapshot: PositionSnapshot; onAssignGroup: () => void } = $props();
+	let {
+		quote,
+		snapshot,
+		onAssignGroup
+	}: { quote: QuoteModel; snapshot: PositionSnapshot; onAssignGroup: () => void } = $props();
 	let totalGain = $derived(snapshot.unrealizedGain + snapshot.realizedGain);
 
 	function formatCurrency(value: number): string {
@@ -18,15 +22,10 @@
 <!-- Type, Name, Date, Market Value, Amount, Fee, Total -->
 <div class="card card-reactive no-click @container relative grid gap-1">
 	<div class="color-muted flex items-center gap-2 text-sm">
-		{#if quote.group}
-			<span class="uppercase">{quote.group.name}</span>
-			<span>•</span>
-		{:else}
-			<button class="link-button" onclick={onAssignGroup}>
-				<span class="uppercase">No Group</span>
-			</button>
-			<span>•</span>
-		{/if}
+		<button class="link-button" onclick={onAssignGroup}>
+			<span class="uppercase">{quote.group ? quote.group.name : 'No Group'}</span>
+		</button>
+		<span>•</span>
 		<span class="uppercase">{quote.typeDisposition}</span>
 	</div>
 	<div class="mb-2 mt-2">
@@ -52,7 +51,9 @@
 		</div>
 		<div class="grid grid-rows-2">
 			<span class="color-muted">Total Gain</span>
-			<span class="font-bold {totalGain < 0 ? 'color-error' : 'color-success'}">{formatCurrency(totalGain)}</span>
+			<span class="font-bold {totalGain < 0 ? 'color-error' : 'color-success'}"
+				>{formatCurrency(totalGain)}</span
+			>
 		</div>
 	</div>
 </div>

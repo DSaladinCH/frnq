@@ -58,12 +58,12 @@ public class DatabaseContext : DbContext
 
         modelBuilder.Entity<QuoteGroupMapping>()
             .HasOne(qgm => qgm.Quote)
-            .WithMany()
+            .WithMany(q => q.Mappings)
             .HasForeignKey(qgm => qgm.QuoteId);
 
         modelBuilder.Entity<QuoteGroupMapping>()
             .HasOne(qgm => qgm.Group)
-            .WithMany()
+            .WithMany(g => g.Mappings)
             .HasForeignKey(qgm => qgm.GroupId);
 
         base.OnModelCreating(modelBuilder);

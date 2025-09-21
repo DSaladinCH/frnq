@@ -14,7 +14,8 @@ import {
 	deleteInvestment,
 	addQuoteGroup,
 	updateQuoteGroup,
-	deleteQuoteGroup
+	deleteQuoteGroup,
+	assignQuoteToGroup
 } from './dataStore';
 
 // Convert stores to runes-compatible reactive values
@@ -47,5 +48,6 @@ export const dataStore = {
 	deleteInvestment,
 	addQuoteGroup,
 	updateQuoteGroup,
-	deleteQuoteGroup
+	deleteQuoteGroup,
+	assignQuoteToGroup
 };

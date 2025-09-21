@@ -18,13 +18,27 @@ export class DataStore {
 	private _listeners = new Set<() => void>();
 
 	// Getters
-	get snapshots() { return this._snapshots; }
-	get quotes() { return this._quotes; }
-	get investments() { return this._investments; }
-	get groups() { return this._groups; }
-	get loading() { return this._loading; }
-	get error() { return this._error; }
-	get initialized() { return this._initialized; }
+	get snapshots() {
+		return this._snapshots;
+	}
+	get quotes() {
+		return this._quotes;
+	}
+	get investments() {
+		return this._investments;
+	}
+	get groups() {
+		return this._groups;
+	}
+	get loading() {
+		return this._loading;
+	}
+	get error() {
+		return this._error;
+	}
+	get initialized() {
+		return this._initialized;
+	}
 
 	// Subscribe to changes (for reactivity)
 	subscribe(listener: () => void) {
@@ -33,23 +47,23 @@ export class DataStore {
 	}
 
 	private notify() {
-		this._listeners.forEach(listener => listener());
+		this._listeners.forEach((listener) => listener());
 	}
 
 	async initialize() {
 		if (this._initialized) return;
-		
+
 		this._loading = true;
 		this._error = null;
 		this.notify();
-		
+
 		try {
 			const [positionsData, investmentsData, groupsData] = await Promise.all([
 				getPositionSnapshots(null, null),
 				getInvestments(),
 				getQuoteGroups()
 			]);
-			
+
 			this._snapshots = positionsData.snapshots;
 			this._quotes = positionsData.quotes;
 			this._investments = investmentsData;
@@ -68,14 +82,14 @@ export class DataStore {
 		this._loading = true;
 		this._error = null;
 		this.notify();
-		
+
 		try {
 			const [positionsData, investmentsData, groupsData] = await Promise.all([
 				getPositionSnapshots(null, null),
 				getInvestments(),
 				getQuoteGroups()
 			]);
-			
+
 			this._snapshots = positionsData.snapshots;
 			this._quotes = positionsData.quotes;
 			this._investments = investmentsData;
@@ -96,15 +110,19 @@ export class DataStore {
 		await this.refreshData();
 	}
 
-	// Method to update investment and refresh data  
+	// Method to update investment and refresh data
 	async updateInvestment(investment: InvestmentModel) {
-		const { updateInvestment: updateInvestmentAPI } = await import('$lib/services/investmentService');
+		const { updateInvestment: updateInvestmentAPI } = await import(
+			'$lib/services/investmentService'
+		);
 		await updateInvestmentAPI(investment);
 		await this.refreshData();
 	}
 
 	async deleteInvestment(investmentId: number) {
-		const { deleteInvestment: deleteInvestmentAPI } = await import('$lib/services/investmentService');
+		const { deleteInvestment: deleteInvestmentAPI } = await import(
+			'$lib/services/investmentService'
+		);
 		await deleteInvestmentAPI(investmentId);
 		await this.refreshData();
 	}
@@ -124,6 +142,20 @@ export class DataStore {
 	async deleteQuoteGroup(groupId: number) {
 		const { deleteQuoteGroup: deleteQuoteGroupAPI } = await import('$lib/services/groupService');
 		await deleteQuoteGroupAPI(groupId);
+		await this.refreshData();
+	}
+
+	async assignQuoteToGroup(quote: QuoteModel, groupId: number) {
+		const {
+			assignQuoteToGroup: assignQuoteToGroupAPI,
+			removeQuoteFromGroup: removeQuoteFromGroupAPI
+		} = await import('$lib/services/groupService');
+
+		if (groupId === 0) {
+			await removeQuoteFromGroupAPI(quote.id, quote.group?.id);
+		} else {
+			await assignQuoteToGroupAPI(quote.id, groupId);
+		}
 		await this.refreshData();
 	}
 }

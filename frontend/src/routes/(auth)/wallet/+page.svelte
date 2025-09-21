@@ -1,15 +1,21 @@
 <script lang="ts">
+	import Button from '$lib/components/Button.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import PageHead from '$lib/components/PageHead.svelte';
 	import QuoteCard from '$lib/components/QuoteCard.svelte';
+	import type { QuoteGroup } from '$lib/Models/QuoteGroup';
+	import type { QuoteModel } from '$lib/Models/QuoteModel';
 	import { dataStore } from '$lib/stores/dataStore';
+	import { ColorStyle } from '$lib/types/ColorStyle';
+	import { ContentWidth } from '$lib/types/ContentSize';
+	import { TextSize } from '$lib/types/TextSize';
 
 	let quotes = $state(dataStore.quotes);
 	let snapshots = $state(dataStore.snapshots);
 	let groups = $state(dataStore.groups);
-	let assignGroupQuoteId = $state<number | null>(null);
 
-	let assignGroupModalOpen = $state(true);
+	let assignGroupQuote = $state<QuoteModel | null>(null);
+	let assignGroupModalOpen = $state(false);
 
 	// Subscribe to store changes
 	$effect(() => {
@@ -21,14 +27,21 @@
 		return unsubscribe;
 	});
 
-	function handleAssignGroup(quoteId: number) {
-		assignGroupQuoteId = quoteId;
+	function handleAssignGroup(quote: QuoteModel) {
+		assignGroupQuote = quote;
 		assignGroupModalOpen = true;
 	}
 
 	function closeAssignGroup() {
-		assignGroupQuoteId = null;
+		assignGroupQuote = null;
 		assignGroupModalOpen = false;
+	}
+
+	function handleAssignGroupToQuote(groupId: number) {
+		if (assignGroupQuote !== null) {
+			dataStore.assignQuoteToGroup(assignGroupQuote, groupId);
+			closeAssignGroup();
+		}
 	}
 </script>
 
@@ -44,13 +57,38 @@
 			<QuoteCard
 				{quote}
 				snapshot={snapshots.filter((s) => s.quoteId === quote.id).slice(-1)[0]}
-				onAssignGroup={() => handleAssignGroup(quote.id)}
+				onAssignGroup={() => handleAssignGroup(quote)}
 			/>
 		{/each}
 	</div>
 </div>
 
-<Modal showModal={assignGroupModalOpen} onClose={closeAssignGroup}>
-	<h2 class="title mb-4 text-2xl font-bold">Assign Group</h2>
-	<p>This feature is not implemented yet.</p>
+<Modal showModal={assignGroupModalOpen} onClose={closeAssignGroup} title="Assign Group">
+	<div class="flex flex-col gap-4">
+		{#if assignGroupQuote?.group && assignGroupQuote.group.id}
+			<div class="group-item h-10">
+				<Button
+					text="No Group"
+					icon=""
+					textSize={TextSize.Medium}
+					style={ColorStyle.Secondary}
+					width={ContentWidth.Full}
+					onclick={() => handleAssignGroupToQuote(0)}
+				/>
+			</div>
+		{/if}
+
+		{#each groups.filter((g) => g.id !== assignGroupQuote?.group?.id) as group}
+			<div class="group-item h-10">
+				<Button
+					text={group.name}
+					icon=""
+					textSize={TextSize.Medium}
+					style={ColorStyle.Secondary}
+					width={ContentWidth.Full}
+					onclick={() => handleAssignGroupToQuote(group.id)}
+				/>
+			</div>
+		{/each}
+	</div>
 </Modal>

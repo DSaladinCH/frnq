@@ -50,7 +50,7 @@
 	disabled={disabled || isLoading}
 	class="button color-default {styleClass[
 		style
-	]} inline-block cursor-pointer rounded-lg border-0 {paddingClass[padding]} font-bold decoration-0 {widthClass[width]}"
+	]} inline-block cursor-pointer rounded-lg border-0 {paddingClass[padding]} font-bold decoration-0 {widthClass[width]} h-full"
 >
 	<div class="grid items-center justify-center {textSize}">
 		{#if isLoading}
@@ -67,11 +67,13 @@
 			</svg>
 		{/if}
 
-		<div class="col-1 row-1 {isLoading ? 'invisible' : ''}">
-			<i class={icon}></i>
+		<div class="flex items-center leading-none gap-1 col-1 row-1 {isLoading ? 'invisible' : ''}">
+			{#if icon}
+				<i class={icon}></i>
+			{/if}
 
 			{#if text}
-				<span class="ml-1">{text}</span>
+				<span>{text}</span>
 			{/if}
 		</div>
 	</div>

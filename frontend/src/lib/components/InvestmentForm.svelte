@@ -8,6 +8,7 @@
 	import type { QuoteModel } from '$lib/Models/QuoteModel';
 	import Button from './Button.svelte';
 	import SearchableDropDown from './SearchableDropDown.svelte';
+	import { ContentWidth } from '$lib/types/ContentSize';
 
 	type InvestmentTypeIcon = { type: InvestmentType; faIcon: string };
 	let isLoading = $state(false);
@@ -120,8 +121,6 @@
 	}
 </script>
 
-<h1 class="title">New Investment</h1>
-
 <div class="overflow-y-auto pr-1 grid gap-4">
 	<div class="grid gap-3 md:grid-cols-2">
 		<div class="xs:grid-cols-2 grid gap-3 sm:grid-cols-3">
@@ -216,6 +215,7 @@
 			icon={investment.id === 0 ? "fa-solid fa-plus" : "fa-solid fa-floppy-disk"}
 			text={investment.id === 0 ? 'Create Investment' : 'Save Changes'}
 			style={ColorStyle.Success}
+			width={ContentWidth.Full}
 			{isLoading}
 			onclick={() => saveChanges()}
 		/>

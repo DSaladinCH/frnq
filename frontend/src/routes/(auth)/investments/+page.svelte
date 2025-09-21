@@ -156,6 +156,6 @@
 	</div>
 </div>
 
-<Modal showModal={showInvestmentDialog} onClose={onInvestmentDialogClose}>
+<Modal showModal={showInvestmentDialog} onClose={onInvestmentDialogClose} title={currentInvestment.id === 0 ? 'New Investment' : 'Edit Investment'}>
 	<InvestmentForm bind:investment={currentInvestment} bind:quote={currentQuote} {saveInvestment} />
 </Modal>
