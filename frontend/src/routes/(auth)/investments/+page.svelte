@@ -4,7 +4,6 @@
 	import Modal from '$lib/components/Modal.svelte';
 	import type { QuoteModel } from '$lib/Models/QuoteModel';
 	import {
-		InvestmentType,
 		type InvestmentModel,
 		createDefaultInvestment
 	} from '$lib/services/investmentService';
@@ -13,11 +12,14 @@
 	import PageHead from '$lib/components/PageHead.svelte';
 	import { TextSize } from '$lib/types/TextSize';
 	import PageTitle from '$lib/components/PageTitle.svelte';
+	import { ContentWidth } from '$lib/types/ContentSize';
+	import InvestmentImport from '$lib/components/InvestmentImport.svelte';
 
 	// Reactive values that track the store
 	let investments = $state(dataStore.investments);
 	let quotes = $state(dataStore.quotes);
 	let showInvestmentDialog = $state(false);
+	let showInvestmentImportDialog = $state(true);
 
 	// Subscribe to store changes
 	$effect(() => {
@@ -44,21 +46,8 @@
 		});
 	}
 
-	function formatCurrency(value: number): string {
-		return value.toLocaleString(undefined, { style: 'currency', currency: 'CHF' });
-	}
-
 	function formatNumber(value: number): string {
 		return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 });
-	}
-
-	function getInvestmentType(investment: InvestmentModel): string {
-		switch (investment.type) {
-			case InvestmentType.Dividend:
-				return 'DIV';
-			default:
-				return InvestmentType[investment.type];
-		}
 	}
 
 	function newInvestment() {
@@ -132,6 +121,20 @@
 			console.error('Error deleting investment:', error);
 		}
 	}
+
+	function importInvestment() {
+		showInvestmentImportDialog = true;
+	}
+
+	function onImportInvestmentsClose() {
+		console.log('Import investments dialog closed');
+		showInvestmentImportDialog = false;
+	}
+
+	function onImportInvestments(data: string) {
+		console.log('Imported investment data:', data);
+		showInvestmentImportDialog = false;
+	}
 </script>
 
 <PageHead title="Investments" />
@@ -139,8 +142,21 @@
 <div class="xs:p-8 p-4">
 	<PageTitle title="Investments" icon="fa-solid fa-coins" />
 
-	<div class="mb-3 flex gap-2">
-		<Button onclick={newInvestment} text="Add Investment" icon="fa fa-plus" textSize={TextSize.Medium} />
+	<div class="mb-3 grid w-full max-w-md grid-cols-2 gap-2">
+		<Button
+			onclick={newInvestment}
+			text="Add Investment"
+			icon="fa fa-plus"
+			textSize={TextSize.Medium}
+			width={ContentWidth.Full}
+		/>
+		<Button
+			onclick={importInvestment}
+			text="Import Investment"
+			icon="fa fa-file-import"
+			textSize={TextSize.Medium}
+			width={ContentWidth.Full}
+		/>
 	</div>
 
 	<div
@@ -157,6 +173,18 @@
 	</div>
 </div>
 
-<Modal showModal={showInvestmentDialog} onClose={onInvestmentDialogClose} title={currentInvestment.id === 0 ? 'New Investment' : 'Edit Investment'}>
+<Modal
+	showModal={showInvestmentDialog}
+	onClose={onInvestmentDialogClose}
+	title={currentInvestment.id === 0 ? 'New Investment' : 'Edit Investment'}
+>
 	<InvestmentForm bind:investment={currentInvestment} bind:quote={currentQuote} {saveInvestment} />
+</Modal>
+
+<Modal
+	showModal={showInvestmentImportDialog}
+	onClose={onImportInvestmentsClose}
+	title="Import Investments"
+>
+	<InvestmentImport {onImportInvestments} />
 </Modal>
