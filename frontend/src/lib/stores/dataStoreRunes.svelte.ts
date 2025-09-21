@@ -1,15 +1,21 @@
 // This file wraps the stores to be compatible with Svelte 5 runes
 import { 
-	snapshots as snapshotsStore, 
-	quotes as quotesStore, 
-	investments as investmentsStore, 
-	loading as loadingStore, 
+	snapshots as snapshotsStore,
+	quotes as quotesStore,
+	investments as investmentsStore,
+	groups as groupsStore,
+	loading as loadingStore,
 	error as errorStore,
 	initialized as initializedStore,
 	initializeData,
 	refreshData,
-	addInvestment
-} from './dataStore.js';
+	addInvestment,
+	updateInvestment,
+	deleteInvestment,
+	addQuoteGroup,
+	updateQuoteGroup,
+	deleteQuoteGroup
+} from './dataStore';
 
 // Convert stores to runes-compatible reactive values
 export const dataStore = {
@@ -22,6 +28,9 @@ export const dataStore = {
 	get investments() {
 		return $state.snapshot(investmentsStore);
 	},
+	get groups() {
+		return $state.snapshot(groupsStore);
+	},
 	get loading() {
 		return $state.snapshot(loadingStore);
 	},
@@ -33,5 +42,10 @@ export const dataStore = {
 	},
 	initialize: initializeData,
 	refreshData,
-	addInvestment
+	addInvestment,
+	updateInvestment,
+	deleteInvestment,
+	addQuoteGroup,
+	updateQuoteGroup,
+	deleteQuoteGroup
 };

@@ -3,7 +3,7 @@
 	import type { QuoteModel } from '$lib/Models/QuoteModel';
 	import type { PositionSnapshot } from '$lib/services/positionService';
 
-	let { quote, snapshot }: { quote: QuoteModel; snapshot: PositionSnapshot } = $props();
+	let { quote, snapshot, onAssignGroup }: { quote: QuoteModel; snapshot: PositionSnapshot; onAssignGroup: () => void } = $props();
 	let totalGain = $derived(snapshot.unrealizedGain + snapshot.realizedGain);
 
 	function formatCurrency(value: number): string {
@@ -12,11 +12,6 @@
 
 	function formatNumber(value: number): string {
 		return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 });
-	}
-
-	function showGroupAssignModal() {
-		// TODO: Implement group assignment modal
-		alert('Group assignment modal not implemented yet.');
 	}
 </script>
 
@@ -27,7 +22,7 @@
 			<span class="uppercase">{quote.group.name}</span>
 			<span>•</span>
 		{:else}
-			<button class="link-button" onclick={showGroupAssignModal}>
+			<button class="link-button" onclick={onAssignGroup}>
 				<span class="uppercase">No Group</span>
 			</button>
 			<span>•</span>
