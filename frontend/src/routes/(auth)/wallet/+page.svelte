@@ -2,6 +2,7 @@
 	import Button from '$lib/components/Button.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import PageHead from '$lib/components/PageHead.svelte';
+	import PageTitle from '$lib/components/PageTitle.svelte';
 	import QuoteCard from '$lib/components/QuoteCard.svelte';
 	import type { QuoteGroup } from '$lib/Models/QuoteGroup';
 	import type { QuoteModel } from '$lib/Models/QuoteModel';
@@ -9,6 +10,7 @@
 	import { ColorStyle } from '$lib/types/ColorStyle';
 	import { ContentWidth } from '$lib/types/ContentSize';
 	import { TextSize } from '$lib/types/TextSize';
+	import { title } from 'process';
 
 	let quotes = $state(dataStore.quotes);
 	let snapshots = $state(dataStore.snapshots);
@@ -48,7 +50,7 @@
 <PageHead title="Wallet" />
 
 <div class="xs:p-8 p-4">
-	<h1 class="title mb-4 text-3xl font-bold">Wallet</h1>
+	<PageTitle title="Wallet" icon="fa-solid fa-wallet" />
 
 	<div
 		class="investments-list 3xl:grid-cols-4 grid gap-2 overflow-y-auto py-1 pr-1 lg:grid-cols-2 2xl:grid-cols-3"

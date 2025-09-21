@@ -12,6 +12,7 @@
 	import InvestmentCard from '$lib/components/InvestmentCard.svelte';
 	import PageHead from '$lib/components/PageHead.svelte';
 	import { TextSize } from '$lib/types/TextSize';
+	import PageTitle from '$lib/components/PageTitle.svelte';
 
 	// Reactive values that track the store
 	let investments = $state(dataStore.investments);
@@ -136,7 +137,7 @@
 <PageHead title="Investments" />
 
 <div class="xs:p-8 p-4">
-	<h1 class="title mb-4 text-3xl font-bold">Investments</h1>
+	<PageTitle title="Investments" icon="fa-solid fa-coins" />
 
 	<div class="mb-3 flex gap-2">
 		<Button onclick={newInvestment} text="Add Investment" icon="fa fa-plus" textSize={TextSize.Medium} />

@@ -122,7 +122,7 @@
 </script>
 
 <div class="overflow-y-auto pr-1 grid gap-4">
-	<div class="grid gap-3 md:grid-cols-2">
+	<div class="grid gap-3 md:grid-cols-[2fr_1fr]">
 		<div class="xs:grid-cols-2 grid gap-3 sm:grid-cols-3">
 			{#each investmentTypes as type}
 				<button class="btn-fake" onclick={() => selectType(type.type)}>

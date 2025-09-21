@@ -1,6 +1,8 @@
 <script lang="ts">
 	import IconButton from '$lib/components/IconButton.svelte';
 	import Input from '$lib/components/Input.svelte';
+	import PageHead from '$lib/components/PageHead.svelte';
+	import PageTitle from '$lib/components/PageTitle.svelte';
 	import { dataStore } from '$lib/stores/dataStore';
 	import { ColorStyle } from '$lib/types/ColorStyle';
 	import { tick } from 'svelte';
@@ -78,8 +80,10 @@
 	}
 </script>
 
-<div class="container mx-auto p-6">
-	<h1 class="mb-6 text-3xl font-bold">Settings</h1>
+<PageHead title="Settings" />
+
+<div class="w-full xs:p-8 p-4">
+	<PageTitle title="Settings" icon="fa-solid fa-gear" />
 
 	<div class="bg-card rounded-lg p-6 shadow-lg">
 		<h2 class="mb-4 text-xl font-semibold">Data Management</h2>

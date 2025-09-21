@@ -69,7 +69,7 @@
 <dialog bind:this={dialog} class="{showModal ? '' : 'hidden'} bg-transparent" onclose={onClose}>
 	<div id="dialog-content" class="fixed inset-0 m-4 flex items-center justify-center p-4">
 		<div
-			class="bg-background color-default relative flex h-max max-h-full w-max max-w-full flex-col overflow-hidden rounded-2xl md:p-0 lg:p-0"
+			class="bg-background color-default relative flex h-max max-h-full w-full xs:w-max max-w-full flex-col overflow-hidden rounded-2xl md:p-0 lg:p-0"
 		>
 			<!-- Fixed Header with Title and Close Button -->
 			<div class="flex gap-4 items-center justify-between border-b border-button p-5">
