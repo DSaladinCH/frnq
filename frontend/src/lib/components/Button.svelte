@@ -67,7 +67,7 @@
 			</svg>
 		{/if}
 
-		<div class="flex items-center leading-none gap-1 col-1 row-1 {isLoading ? 'invisible' : ''}">
+		<div class="flex items-center leading-none gap-2 col-1 row-1 {isLoading ? 'invisible' : ''}">
 			{#if icon}
 				<i class={icon}></i>
 			{/if}

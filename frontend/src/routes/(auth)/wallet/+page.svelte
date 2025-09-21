@@ -4,13 +4,11 @@
 	import PageHead from '$lib/components/PageHead.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import QuoteCard from '$lib/components/QuoteCard.svelte';
-	import type { QuoteGroup } from '$lib/Models/QuoteGroup';
 	import type { QuoteModel } from '$lib/Models/QuoteModel';
 	import { dataStore } from '$lib/stores/dataStore';
 	import { ColorStyle } from '$lib/types/ColorStyle';
 	import { ContentWidth } from '$lib/types/ContentSize';
 	import { TextSize } from '$lib/types/TextSize';
-	import { title } from 'process';
 
 	let quotes = $state(dataStore.quotes);
 	let snapshots = $state(dataStore.snapshots);

@@ -20,51 +20,34 @@
 	let mouseDownOutside = false;
 	onMount(() => {
 		dialog.addEventListener('mousedown', (e: MouseEvent) => {
-			const rect = dialog.getBoundingClientRect();
-			mouseDownOutside =
-				e.clientX < rect.left ||
-				e.clientX > rect.right ||
-				e.clientY < rect.top ||
-				e.clientY > rect.bottom;
+			const contentDiv = dialog.querySelector('#dialog-content > div');
+			if (contentDiv) {
+				const rect = contentDiv.getBoundingClientRect();
+				mouseDownOutside =
+					e.clientX < rect.left ||
+					e.clientX > rect.right ||
+					e.clientY < rect.top ||
+					e.clientY > rect.bottom;
+			}
 		});
 
 		dialog.addEventListener('mouseup', (e: MouseEvent) => {
-			const rect = dialog.getBoundingClientRect();
-			const mouseUpOutside =
-				e.clientX < rect.left ||
-				e.clientX > rect.right ||
-				e.clientY < rect.top ||
-				e.clientY > rect.bottom;
-			if (mouseDownOutside && mouseUpOutside) {
-				dialog.close();
+			const contentDiv = dialog.querySelector('#dialog-content > div');
+			if (contentDiv) {
+				const rect = contentDiv.getBoundingClientRect();
+				const mouseUpOutside =
+					e.clientX < rect.left ||
+					e.clientX > rect.right ||
+					e.clientY < rect.top ||
+					e.clientY > rect.bottom;
+				if (mouseDownOutside && mouseUpOutside) {
+					dialog.close();
+				}
 			}
 			mouseDownOutside = false;
 		});
 	});
 </script>
-
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
-<!-- <dialog
-	class="{showModal ? '' : 'hidden'} overflow-hidden bg-transparent"
-	bind:this={dialog}
-	onclose={onClose}
->
-	<div class="modal-overlay" aria-hidden="true">
-		<div
-			class="bg-background color-default max-h-[calc(100vh-3.5rem)] w-auto max-w-[min(96vw,900px)] overflow-hidden rounded-3xl shadow-lg"
-		>
-			<div class="max-h-[calc(100vh-3.5rem)] overflow-y-auto p-4">
-				<div class="relative flex flex-col">
-					{@render children?.()}
-
-					<div class="absolute right-0 top-0">
-						<button class="btn btn-primary" onclick={onClose}>Close</button>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-</dialog> -->
 
 <dialog bind:this={dialog} class="{showModal ? '' : 'hidden'} bg-transparent" onclose={onClose}>
 	<div id="dialog-content" class="fixed inset-0 m-4 flex items-center justify-center p-4">
