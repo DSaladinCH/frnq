@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
+	interface Props {
+		onfileSelected?: (data: { filename: string; content: string }) => void;
+		onnext?: () => void;
+	}
 
-	const dispatch = createEventDispatcher<{
-		fileSelected: { filename: string; content: string };
-		next: void;
-	}>();
+	const { onfileSelected, onnext }: Props = $props();
 
 	let fileInput: HTMLInputElement | null = $state(null);
 	let isDragActive = $state(false);
@@ -51,7 +51,7 @@
 			fileContent = text;
 			isProcessing = false;
 			
-			dispatch('fileSelected', {
+			onfileSelected?.({
 				filename: filename!,
 				content: text
 			});
@@ -103,7 +103,7 @@
 
 	function handleNext() {
 		if (fileContent && filename) {
-			dispatch('next');
+			onnext?.();
 		}
 	}
 </script>

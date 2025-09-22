@@ -56,10 +56,19 @@
 	// Data state
 	let filename = $state('');
 	let csvContent = $state('');
+	let csvHeaders: string[] = $state([]);
+	let csvData: string[][] = $state([]);
 	let columnMappings: Record<string, string> = $state({});
 	let valueMappings: Record<string, Record<string, string>> = $state({});
 	let useFixedValue = $state(false);
 	let fixedTypeValue = $state('BUY');
+
+	function parseCsvContent(content: string) {
+		const lines = content.split('\n').filter(line => line.trim());
+		const headers = lines[0].split(';').map(h => h.trim());
+		const data = lines.slice(1).map(line => line.split(';').map(cell => cell.trim()));
+		return { headers, data };
+	}
 
 	function navigateToStep(targetStep: number) {
 		if (targetStep === currentStep || isAnimating) return;
@@ -81,29 +90,30 @@
 		}, 150);
 	}
 
-	function handleFileSelected(event: CustomEvent<{ filename: string; content: string }>) {
-		filename = event.detail.filename;
-		csvContent = event.detail.content;
+	function handleFileSelected(data: { filename: string; content: string }) {
+		filename = data.filename;
+		csvContent = data.content;
+		
+		// Parse CSV to extract headers and data
+		const parsed = parseCsvContent(data.content);
+		csvHeaders = parsed.headers;
+		csvData = parsed.data;
 	}
 
 	function handleFileUploadNext() {
 		navigateToStep(1);
 	}
 
-	function handleMappingChanged(event: CustomEvent<{
+	function handleMappingChanged(data: {
 		columnMappings: Record<string, string>;
 		valueMappings: Record<string, Record<string, string>>;
-		useFixedValue?: boolean;
-		fixedTypeValue?: string;
-	}>) {
-		columnMappings = event.detail.columnMappings;
-		valueMappings = event.detail.valueMappings;
-		if (event.detail.useFixedValue !== undefined) {
-			useFixedValue = event.detail.useFixedValue;
-		}
-		if (event.detail.fixedTypeValue !== undefined) {
-			fixedTypeValue = event.detail.fixedTypeValue;
-		}
+		useFixedValue: boolean;
+		fixedTypeValue: string;
+	}) {
+		columnMappings = data.columnMappings;
+		valueMappings = data.valueMappings;
+		useFixedValue = data.useFixedValue;
+		fixedTypeValue = data.fixedTypeValue;
 	}
 
 	function handleMappingNext() {
@@ -118,13 +128,13 @@
 		navigateToStep(1);
 	}
 
-	function handleImport(event: CustomEvent<{ validatedData: ProcessedInvestment[] }>) {
+	function handleImport(data: { validatedData: ProcessedInvestment[] }) {
 		// Mark final step as completed
 		steps[2].completed = true;
 		
 		// Call the parent component's import function
 		if (onImportInvestments) {
-			onImportInvestments(event.detail.validatedData);
+			onImportInvestments(data.validatedData);
 		}
 	}
 
@@ -151,29 +161,32 @@
 			>
 				{#if currentStep === 0}
 					<FileUploadStep 
-						on:fileSelected={handleFileSelected}
-						on:next={handleFileUploadNext}
+						onfileSelected={handleFileSelected}
+						onnext={handleFileUploadNext}
 					/>
 				{:else if currentStep === 1}
 					<ColumnMappingStep 
-						{csvContent}
-						{filename}
-						{columnMappings}
-						{valueMappings}
-						{useFixedValue}
-						{fixedTypeValue}
-						on:mappingChanged={handleMappingChanged}
-						on:next={handleMappingNext}
-						on:back={handleMappingBack}
+						csvHeaders={csvHeaders}
+						sampleData={csvData.slice(0, 5)}
+						filename={filename}
+						initialColumnMappings={columnMappings}
+						initialValueMappings={valueMappings}
+						initialUseFixedValue={useFixedValue}
+						initialFixedTypeValue={fixedTypeValue}
+						onmappingChanged={handleMappingChanged}
+						onnext={handleMappingNext}
+						onback={handleMappingBack}
 					/>
 				{:else if currentStep === 2}
 					<DataPreviewStep 
-						{csvContent}
-						{filename}
-						{columnMappings}
-						{valueMappings}
-						on:back={handlePreviewBack}
-						on:import={handleImport}
+						csvData={csvData}
+						csvHeaders={csvHeaders}
+						columnMappings={columnMappings}
+						valueMappings={valueMappings}
+						useFixedValue={useFixedValue}
+						fixedTypeValue={fixedTypeValue}
+						onback={handlePreviewBack}
+						onimport={handleImport}
 					/>
 				{/if}
 			</div>

@@ -1,18 +1,37 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import Modal from './Modal.svelte';
 	import CustomDropdown from './CustomDropdown.svelte';
 
-	const dispatch = createEventDispatcher<{
-		back: void;
-		next: void;
-		mappingChanged: {
+	interface Props {
+		csvHeaders: string[];
+		sampleData: string[][];
+		filename?: string;
+		initialColumnMappings?: Record<string, string>;
+		initialValueMappings?: Record<string, Record<string, string>>;
+		initialUseFixedValue?: boolean;
+		initialFixedTypeValue?: string;
+		onback?: () => void;
+		onnext?: () => void;
+		onmappingChanged?: (data: {
 			columnMappings: Record<string, string>;
 			valueMappings: Record<string, Record<string, string>>;
 			useFixedValue: boolean;
 			fixedTypeValue: string;
-		};
-	}>();
+		}) => void;
+	}
+
+	const {
+		csvHeaders,
+		sampleData,
+		filename = 'uploaded-file.csv',
+		initialColumnMappings = {},
+		initialValueMappings = {},
+		initialUseFixedValue = false,
+		initialFixedTypeValue = '',
+		onback,
+		onnext,
+		onmappingChanged
+	}: Props = $props();
 
 	interface ColumnMapping {
 		csvColumn: string;
@@ -24,22 +43,6 @@
 		originalValue: string;
 		mappedValue: string;
 	}
-
-	let { 
-		csvContent,
-		filename,
-		columnMappings: initialColumnMappings = {},
-		valueMappings: initialValueMappings = {},
-		useFixedValue: initialUseFixedValue = false,
-		fixedTypeValue: initialFixedTypeValue = 'BUY'
-	}: { 
-		csvContent: string; 
-		filename: string; 
-		columnMappings?: Record<string, string>;
-		valueMappings?: Record<string, Record<string, string>>;
-		useFixedValue?: boolean;
-		fixedTypeValue?: string;
-	} = $props();
 
 	// Required fields for investment data
 	const requiredFields = [
@@ -61,8 +64,6 @@
 		{ value: 'SPIN_OFF', label: 'Spin-off' }
 	];
 
-	let csvHeaders: string[] = $state([]);
-	let csvRows: string[][] = $state([]);
 	let columnMappings: Record<string, string> = $state(initialColumnMappings);
 	let valueMappings: Record<string, Record<string, string>> = $state(initialValueMappings);
 	let showValueMapping = $state(false);
@@ -70,22 +71,12 @@
 	let useFixedValue = $state(initialUseFixedValue);
 	let fixedTypeValue = $state(initialFixedTypeValue);
 
-	// Parse CSV content
-	function parseCSV() {
-		const lines = csvContent.split('\n').filter(line => line.trim());
-		if (lines.length === 0) return;
-
-		// Parse headers (first line)
-		csvHeaders = lines[0].split(';').map(header => header.trim());
-		
-		// Parse data rows
-		csvRows = lines.slice(1).map(line => 
-			line.split(';').map(cell => cell.trim())
-		);
-
-		// Initialize column mappings with smart defaults
-		initializeColumnMappings();
-	}
+	// Initialize when headers are available
+	$effect(() => {
+		if (csvHeaders.length > 0) {
+			initializeColumnMappings();
+		}
+	});
 
 	function initializeColumnMappings() {
 		// Only auto-map if no existing mappings
@@ -116,7 +107,7 @@
 		const columnIndex = csvHeaders.indexOf(csvColumn);
 		if (columnIndex === -1) return [];
 		
-		const values = csvRows
+		const values = sampleData
 			.map(row => row[columnIndex])
 			.filter(val => val && val.trim())
 			.slice(0, 5);
@@ -128,7 +119,7 @@
 		const columnIndex = csvHeaders.indexOf(csvColumn);
 		if (columnIndex === -1) return [];
 		
-		const values = csvRows
+		const values = sampleData
 			.map(row => row[columnIndex])
 			.filter(val => val && val.trim());
 		
@@ -213,7 +204,7 @@
 	}
 
 	function emitMappingChange() {
-		dispatch('mappingChanged', {
+		onmappingChanged?.({
 			columnMappings,
 			valueMappings,
 			useFixedValue,
@@ -238,16 +229,13 @@
 
 	function handleNext() {
 		if (isComplete()) {
-			dispatch('next');
+			onnext?.();
 		}
 	}
 
 	function handleBack() {
-		dispatch('back');
+		onback?.();
 	}
-
-	// Initialize when component mounts
-	parseCSV();
 </script>
 
 <div class="mapping-step">
@@ -264,7 +252,7 @@
 			<div class="file-header">
 				<i class="fa-solid fa-file-csv"></i>
 				<span class="filename">{filename}</span>
-				<span class="row-count">{csvRows.length} rows</span>
+				<span class="row-count">{sampleData.length} rows</span>
 			</div>
 		</div>
 
@@ -322,7 +310,7 @@
 								]}
 								value={columnMappings[field.value] || ''}
 								disabled={field.value === 'type' && useFixedValue}
-								onchange={(e) => handleColumnMappingChange(field.value, e.detail)}
+								onchange={(value) => handleColumnMappingChange(field.value, value)}
 							/>
 						{/if}
 
@@ -389,7 +377,7 @@
 					<CustomDropdown
 						options={transactionTypes}
 						value={fixedTypeValue}
-						onchange={(e) => handleFixedTypeValueChange(e.detail)}
+						onchange={(value) => handleFixedTypeValueChange(value)}
 					/>
 				</div>
 			{:else}
@@ -412,7 +400,7 @@
 										...transactionTypes
 									]}
 									value={valueMappings.type?.[originalValue] || ''}
-									onchange={(e) => handleValueMappingChange(originalValue, e.detail)}
+									onchange={(value) => handleValueMappingChange(originalValue, value)}
 								/>
 							</div>
 						</div>
@@ -706,10 +694,6 @@
 		font-size: 0.9rem;
 		color: var(--color-text);
 		border: 1px solid var(--color-button);
-	}
-
-	.mapped-value {
-		/* Remove the margin-top to align properly */
 	}
 
 	.mr-2 {

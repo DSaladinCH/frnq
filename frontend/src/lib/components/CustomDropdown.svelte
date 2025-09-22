@@ -1,10 +1,4 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
-
-	const dispatch = createEventDispatcher<{
-		change: string;
-	}>();
-
 	interface Option {
 		value: string;
 		label: string;
@@ -15,13 +9,15 @@
 		value = '',
 		placeholder = 'Select an option...',
 		disabled = false,
-		class: className = ''
+		class: className = '',
+		onchange
 	}: {
 		options: Option[];
 		value?: string;
 		placeholder?: string;
 		disabled?: boolean;
 		class?: string;
+		onchange?: (value: string) => void;
 	} = $props();
 
 	let isOpen = $state(false);
@@ -33,7 +29,7 @@
 	function handleSelect(optionValue: string) {
 		value = optionValue;
 		isOpen = false;
-		dispatch('change', optionValue);
+		onchange?.(optionValue);
 	}
 
 	function updateDropdownPosition() {

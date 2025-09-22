@@ -1,10 +1,25 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
+	interface Props {
+		csvData: string[][];
+		csvHeaders: string[];
+		columnMappings: Record<string, string>;
+		valueMappings: Record<string, Record<string, string>>;
+		useFixedValue: boolean;
+		fixedTypeValue: string;
+		onback?: () => void;
+		onimport?: (data: { validatedData: ProcessedInvestment[] }) => void;
+	}
 
-	const dispatch = createEventDispatcher<{
-		back: void;
-		import: { validatedData: ProcessedInvestment[] };
-	}>();
+	const {
+		csvData,
+		csvHeaders,
+		columnMappings,
+		valueMappings,
+		useFixedValue,
+		fixedTypeValue,
+		onback,
+		onimport
+	}: Props = $props();
 
 	interface ProcessedInvestment {
 		symbol: string;
@@ -25,18 +40,6 @@
 		validationErrors: Record<string, number>;
 	}
 
-	let { 
-		csvContent,
-		filename,
-		columnMappings,
-		valueMappings 
-	}: { 
-		csvContent: string; 
-		filename: string;
-		columnMappings: Record<string, string>;
-		valueMappings: Record<string, Record<string, string>>;
-	} = $props();
-
 	let validationResult: ValidationResult = $state({
 		validRows: [],
 		invalidRows: [],
@@ -49,17 +52,13 @@
 	function validateAndProcessData() {
 		isProcessing = true;
 		
-		// Parse CSV
-		const lines = csvContent.split('\n').filter(line => line.trim());
-		const headers = lines[0].split(';').map(h => h.trim());
-		const dataRows = lines.slice(1).map(line => line.split(';').map(cell => cell.trim()));
-
+		// Use the provided csvData and csvHeaders
 		const validRows: ProcessedInvestment[] = [];
 		const invalidRows: ProcessedInvestment[] = [];
 		const validationErrors: Record<string, number> = {};
 
-		for (const row of dataRows) {
-			const processedRow = processRow(row, headers);
+		for (const row of csvData) {
+			const processedRow = processRow(row, csvHeaders);
 			
 			if (processedRow.isValid) {
 				validRows.push(processedRow);
@@ -75,7 +74,7 @@
 		validationResult = {
 			validRows,
 			invalidRows,
-			totalRows: dataRows.length,
+			totalRows: csvData.length,
 			validationErrors
 		};
 
@@ -217,11 +216,11 @@
 	}
 
 	function handleBack() {
-		dispatch('back');
+		onback?.();
 	}
 
 	function handleImport() {
-		dispatch('import', { validatedData: validationResult.validRows });
+		onimport?.({ validatedData: validationResult.validRows });
 	}
 
 	// Start validation when component mounts
