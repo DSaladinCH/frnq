@@ -5,10 +5,13 @@
 
 	let fileInput: HTMLInputElement | null = $state(null);
 	let isDragActive = $state(false);
-	let filename: string | null = $state(null);
+	let filename: string | null = $state('Test.csv');
 	let error: string | null = null;
 
-    let fileText: string | null = $state(null);
+	let fileText: string | null = $state(`0P0001IFRI.SW;1.2;137.24;0.73;2025-09-17T03:00:00
+0P0001IFRI.SW;0.8;157.37;0.72;2025-08-17T04:00:00
+0P0001IFRI.SW;2.14;112.82;0.71;2025-07-17T05:00:00
+`);
 
 	function openFilePicker() {
 		fileInput?.click();
@@ -36,7 +39,7 @@
 		reader.onload = () => {
 			const text = reader.result as string;
 			try {
-                fileText = text;
+				fileText = text;
 			} catch (e) {
 				error = 'Import handler threw an error.';
 			}
@@ -95,9 +98,26 @@
 </script>
 
 {#if filename}
-    <p>
-        {fileText}
-    </p>
+	<div class="grid grid-cols-[1fr_20px_1fr] gap-y-2">
+		<div class="row-1 col-1">
+			<span>Symbol</span>
+		</div>
+		<div class="row-1 col-2 flex justify-center items-center">
+			<i class="fa fa-arrow-right" aria-hidden="true"></i>
+		</div>
+		<div class="row-1 col-3">
+			<span></span>
+		</div>
+		<div class="row-2 col-1">
+			<span>Symbol</span>
+		</div>
+		<div class="row-2 col-2 flex justify-center items-center">
+			<i class="fa fa-arrow-right" aria-hidden="true"></i>
+		</div>
+		<div class="row-2 col-3">
+			<span></span>
+		</div>
+	</div>
 {:else}
 	<div
 		class="upload"
