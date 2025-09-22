@@ -14,12 +14,12 @@
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import { ContentWidth } from '$lib/types/ContentSize';
 	import InvestmentImport from '$lib/components/InvestmentImport.svelte';
+	import { goto } from '$app/navigation';
 
 	// Reactive values that track the store
 	let investments = $state(dataStore.investments);
 	let quotes = $state(dataStore.quotes);
 	let showInvestmentDialog = $state(false);
-	let showInvestmentImportDialog = $state(true);
 
 	// Subscribe to store changes
 	$effect(() => {
@@ -123,17 +123,7 @@
 	}
 
 	function importInvestment() {
-		showInvestmentImportDialog = true;
-	}
-
-	function onImportInvestmentsClose() {
-		console.log('Import investments dialog closed');
-		showInvestmentImportDialog = false;
-	}
-
-	function onImportInvestments(data: string) {
-		console.log('Imported investment data:', data);
-		showInvestmentImportDialog = false;
+		goto('/investments/import');
 	}
 </script>
 
@@ -179,12 +169,4 @@
 	title={currentInvestment.id === 0 ? 'New Investment' : 'Edit Investment'}
 >
 	<InvestmentForm bind:investment={currentInvestment} bind:quote={currentQuote} {saveInvestment} />
-</Modal>
-
-<Modal
-	showModal={showInvestmentImportDialog}
-	onClose={onImportInvestmentsClose}
-	title="Import Investments"
->
-	<InvestmentImport {onImportInvestments} />
 </Modal>
