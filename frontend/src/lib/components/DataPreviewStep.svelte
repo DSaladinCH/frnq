@@ -227,26 +227,26 @@
 	validateAndProcessData();
 </script>
 
-<div class="preview-step">
-	<div class="step-header">
-		<h2>Preview Import Data</h2>
-		<p class="step-description">
+<div class="max-w-5xl mx-auto">
+	<div class="text-center mb-8">
+		<h2 class="text-2xl font-semibold color-default mb-2">Preview Import Data</h2>
+		<p class="color-muted leading-relaxed m-0">
 			Review the processed data before importing. Check the validation results and ensure 
 			all data looks correct.
 		</p>
 	</div>
 
 	{#if isProcessing}
-		<div class="processing-state">
-			<div class="processing-icon">
+		<div class="text-center py-12 bg-card rounded-xl mb-8">
+			<div class="text-5xl color-primary mb-4">
 				<i class="fa-solid fa-spinner fa-spin"></i>
 			</div>
-			<h3>Processing Data...</h3>
-			<p>Validating and formatting your investment data</p>
+			<h3 class="text-xl color-default mb-2">Processing Data...</h3>
+			<p class="color-muted m-0">Validating and formatting your investment data</p>
 		</div>
 	{:else}
-		<div class="validation-summary">
-			<div class="summary-cards">
+		<div class="bg-card rounded-xl p-6 mb-8">
+			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
 				<div class="summary-card success">
 					<div class="card-icon">
 						<i class="fa-solid fa-check-circle"></i>
@@ -388,7 +388,7 @@
 		{/if}
 	{/if}
 
-	<div class="step-actions">
+	<div class="flex justify-between items-center gap-4 mt-8">
 		<button class="btn btn-secondary" onclick={handleBack}>
 			<i class="fa-solid fa-arrow-left mr-2"></i>
 			Back to Mapping
@@ -406,68 +406,7 @@
 </div>
 
 <style>
-	.preview-step {
-		max-width: 1000px;
-		margin: 0 auto;
-	}
-
-	.step-header {
-		text-align: center;
-		margin-bottom: 2rem;
-	}
-
-	.step-header h2 {
-		font-size: 1.5rem;
-		font-weight: 600;
-		color: var(--color-text);
-		margin: 0 0 0.5rem 0;
-	}
-
-	.step-description {
-		color: var(--color-muted);
-		line-height: 1.5;
-		margin: 0;
-	}
-
-	.processing-state {
-		text-align: center;
-		padding: 3rem 1rem;
-		background: var(--color-card);
-		border-radius: 12px;
-		margin-bottom: 2rem;
-	}
-
-	.processing-icon {
-		font-size: 3rem;
-		color: var(--color-primary);
-		margin-bottom: 1rem;
-	}
-
-	.processing-state h3 {
-		font-size: 1.2rem;
-		color: var(--color-text);
-		margin: 0 0 0.5rem 0;
-	}
-
-	.processing-state p {
-		color: var(--color-muted);
-		margin: 0;
-	}
-
-	.validation-summary {
-		background: var(--color-card);
-		border-radius: 12px;
-		padding: 1.5rem;
-		margin-bottom: 2rem;
-	}
-
-	.summary-cards {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-		gap: 1rem;
-		margin-bottom: 1.5rem;
-	}
-
+	/* Keep complex table and card styling that's difficult to replace with Tailwind */
 	.summary-card {
 		display: flex;
 		align-items: center;
@@ -524,17 +463,6 @@
 		color: var(--color-muted);
 	}
 
-	.error-summary {
-		border-top: 1px solid var(--color-button);
-		padding-top: 1.5rem;
-	}
-
-	.error-summary h4 {
-		font-size: 1rem;
-		color: var(--color-text);
-		margin: 0 0 0.75rem 0;
-	}
-
 	.error-types {
 		display: flex;
 		flex-wrap: wrap;
@@ -557,13 +485,6 @@
 		border-radius: 12px;
 		padding: 1.5rem;
 		margin-bottom: 2rem;
-	}
-
-	.invalid-rows-section h3,
-	.valid-rows-section h3 {
-		font-size: 1.1rem;
-		color: var(--color-text);
-		margin: 0 0 1rem 0;
 	}
 
 	.table-container {
@@ -664,14 +585,6 @@
 		border-top: 1px solid var(--color-button);
 	}
 
-	.step-actions {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 1rem;
-		margin-top: 2rem;
-	}
-
 	.mr-2 {
 		margin-right: 0.5rem;
 	}
@@ -682,14 +595,6 @@
 
 	/* Responsive design */
 	@media (max-width: 768px) {
-		.summary-cards {
-			grid-template-columns: 1fr;
-		}
-
-		.step-actions {
-			flex-direction: column;
-		}
-
 		.data-table th,
 		.data-table td {
 			padding: 0.5rem 0.25rem;

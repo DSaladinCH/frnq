@@ -238,45 +238,46 @@
 	}
 </script>
 
-<div class="mapping-step">
-	<div class="step-header">
-		<h2>Map CSV Columns</h2>
-		<p class="step-description">
+<div class="max-w-4xl mx-auto">
+	<div class="text-center mb-8">
+		<h2 class="text-2xl font-semibold color-default mb-2">Map CSV Columns</h2>
+		<p class="color-muted leading-relaxed m-0">
 			Map the columns from your CSV file to the required investment data fields. 
 			The system has tried to auto-detect the mappings based on column names.
 		</p>
 	</div>
 
-	<div class="mapping-container">
-		<div class="file-info">
-			<div class="file-header">
-				<i class="fa-solid fa-file-csv"></i>
-				<span class="filename">{filename}</span>
-				<span class="row-count">{sampleData.length} rows</span>
+	<div class="bg-card rounded-xl p-6 mb-8">
+		<div class="mb-6 pb-4 border-b border-button">
+			<div class="flex items-center gap-3 text-base">
+				<i class="fa-solid fa-file-csv color-success text-xl"></i>
+				<span class="font-semibold color-default">{filename}</span>
+				<span class="color-muted text-sm">{sampleData.length} rows</span>
 			</div>
 		</div>
 
-		<div class="mapping-grid">
+		<div class="flex flex-col gap-6">
 			{#each requiredFields as field}
-				<div class="mapping-row">
-					<div class="target-field">
-						<div class="field-info">
-							<div class="field-label">
+				<div class="grid grid-cols-1 lg:grid-cols-[1fr_40px_1fr] gap-4 items-start p-4 rounded-lg bg-background border border-button">
+					<div class="flex flex-col gap-2">
+						<div class="flex flex-col gap-2">
+							<div class="text-sm font-semibold color-default">
 								{field.label}
 								{#if field.required}
-									<span class="required">*</span>
+									<span class="color-error ml-1">*</span>
 								{/if}
 							</div>
 							{#if field.value === 'type'}
-								<div class="type-options">
+								<div class="flex flex-col gap-2">
 									<div class="type-toggle">
-										<label class="toggle-label">
+										<label class="flex items-center gap-2 cursor-pointer text-sm">
 											<input 
 												type="checkbox" 
+												class="w-4 h-4 accent-[var(--color-primary)]"
 												bind:checked={useFixedValue}
 												onchange={() => handleFixedValueChange(useFixedValue)}
 											/>
-											<span class="toggle-text">Use fixed value</span>
+											<span class="color-default">Use fixed value</span>
 										</label>
 									</div>
 									<button 
@@ -327,14 +328,14 @@
 			{/each}
 		</div>
 
-		<div class="validation-summary">
+		<div class="mt-6 pt-4 border-t border-button">
 			{#if isComplete()}
-				<div class="validation-success">
+				<div class="flex items-center gap-2 color-success font-medium">
 					<i class="fa-solid fa-check-circle"></i>
 					All required fields are mapped correctly
 				</div>
 			{:else}
-				<div class="validation-warning">
+				<div class="flex items-center gap-2 color-accent font-medium">
 					<i class="fa-solid fa-exclamation-triangle"></i>
 					Please map all required fields (marked with *)
 				</div>
@@ -342,7 +343,7 @@
 		</div>
 	</div>
 
-	<div class="step-actions">
+	<div class="flex justify-between items-center gap-4 mt-8">
 		<button class="btn btn-secondary" onclick={handleBack}>
 			<i class="fa-solid fa-arrow-left mr-2"></i>
 			Back
@@ -520,24 +521,6 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-	}
-
-	.toggle-label {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		cursor: pointer;
-		font-size: 0.9rem;
-	}
-
-	.toggle-label input[type="checkbox"] {
-		width: 16px;
-		height: 16px;
-		accent-color: var(--color-primary);
-	}
-
-	.toggle-text {
-		color: var(--color-text);
 	}
 
 	.mapping-btn {

@@ -146,13 +146,13 @@
 	});
 </script>
 
-<div class="import-wizard">
-	<div class="wizard-container">
+<div class="min-h-[600px] w-full">
+	<div class="max-w-6xl mx-auto">
 		<!-- Progress Bar -->
 		<ProgressBar {steps} {currentStep} />
 
 		<!-- Step Content Container -->
-		<div class="step-container">
+		<div class="relative overflow-hidden min-h-[500px] my-4">
 			<div 
 				class="step-content {isAnimating ? 'animating' : ''} slide-{slideDirection}"
 				class:step-0={currentStep === 0}
@@ -197,23 +197,7 @@
 </div>
 
 <style>
-	.import-wizard {
-		min-height: 600px;
-		width: 100%;
-	}
-
-	.wizard-container {
-		max-width: 1200px;
-		margin: 0 auto;
-	}
-
-	.step-container {
-		position: relative;
-		overflow: hidden;
-		min-height: 500px;
-		margin: 1rem 0;
-	}
-
+	/* Keep complex animation and transition styling */
 	.step-content {
 		width: 100%;
 		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -232,9 +216,6 @@
 	.step-content.animating.slide-left {
 		transform: translateX(-50px);
 	}
-
-	/* Step Navigation */
-	/* Removed redundant bottom navigation - progress bar at top is sufficient */
 
 	/* Responsive design */
 	@media (max-width: 768px) {
