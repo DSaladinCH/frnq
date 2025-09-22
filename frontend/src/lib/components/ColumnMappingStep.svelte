@@ -413,110 +413,6 @@
 </Modal>
 
 <style>
-	.mapping-step {
-		max-width: 800px;
-		margin: 0 auto;
-	}
-
-	.step-header {
-		text-align: center;
-		margin-bottom: 2rem;
-	}
-
-	.step-header h2 {
-		font-size: 1.5rem;
-		font-weight: 600;
-		color: var(--color-text);
-		margin: 0 0 0.5rem 0;
-	}
-
-	.step-description {
-		color: var(--color-muted);
-		line-height: 1.5;
-		margin: 0;
-	}
-
-	.mapping-container {
-		background: var(--color-card);
-		border-radius: 12px;
-		padding: 1.5rem;
-		margin-bottom: 2rem;
-	}
-
-	.file-info {
-		margin-bottom: 1.5rem;
-		padding-bottom: 1rem;
-		border-bottom: 1px solid var(--color-button);
-	}
-
-	.file-header {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		font-size: 1rem;
-	}
-
-	.file-header i {
-		color: var(--color-success);
-		font-size: 1.2rem;
-	}
-
-	.filename {
-		font-weight: 600;
-		color: var(--color-text);
-	}
-
-	.row-count {
-		color: var(--color-muted);
-		font-size: 0.9rem;
-	}
-
-	.mapping-grid {
-		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
-	}
-
-	.mapping-row {
-		display: grid;
-		grid-template-columns: 1fr 40px 1fr;
-		gap: 1rem;
-		align-items: start;
-		padding: 1rem;
-		border-radius: 8px;
-		background: var(--color-background);
-		border: 1px solid var(--color-button);
-	}
-
-	.target-field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
-	.field-info {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
-	.field-label {
-		font-weight: 600;
-		color: var(--color-text);
-		font-size: 0.95rem;
-	}
-
-	.required {
-		color: var(--color-error);
-		margin-left: 0.25rem;
-	}
-
-	.type-options {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
 	.type-toggle {
 		display: flex;
 		align-items: center;
@@ -590,35 +486,6 @@
 		font-family: 'Fira Mono', 'Consolas', monospace;
 	}
 
-	.validation-summary {
-		margin-top: 1.5rem;
-		padding-top: 1rem;
-		border-top: 1px solid var(--color-button);
-	}
-
-	.validation-success {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		color: var(--color-success);
-		font-weight: 500;
-	}
-
-	.validation-warning {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		color: var(--color-error);
-		font-weight: 500;
-	}
-
-	.step-actions {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 1rem;
-	}
-
 	/* Modal Styles */
 	.modal-content-inner {
 		width: 100%;
@@ -689,21 +556,9 @@
 
 	/* Responsive design */
 	@media (max-width: 768px) {
-		.mapping-row {
-			grid-template-columns: 1fr;
-			gap: 0.75rem;
-		}
 
 		.arrow {
 			transform: rotate(90deg);
-		}
-
-		.type-options {
-			align-items: flex-start;
-		}
-
-		.step-actions {
-			flex-direction: column;
 		}
 
 		.value-mapping-row {
