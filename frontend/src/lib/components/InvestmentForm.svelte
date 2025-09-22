@@ -130,8 +130,8 @@
 						class="investment-type card card-reactive h-15 xs:h-22 xs:flex-col xs:gap-2 flex items-center justify-center gap-4"
 						class:selected={investment.type === type.type}
 					>
-						<i class="{type.faIcon} xs:text-[1.75rem] text-[1.5rem]"></i>
-						<span class="xs:text-[1.25rem] text-[1.125rem] font-bold"
+						<i class="{type.faIcon} text-2xl xs:text-3xl"></i>
+						<span class="text-lg xs:text-xl font-bold"
 							>{InvestmentType[type.type]}</span
 						>
 					</div>
@@ -143,7 +143,7 @@
 	</div>
 
 	<div>
-		<label for="quote-search" class="text-[1.125rem] font-bold mb-2 block">Quote</label>
+		<label for="quote-search" class="text-lg font-bold mb-2 block">Quote</label>
 		<SearchableDropDown 
 			bind:selectedQuote={selectedQuote}
 			onSelect={handleQuoteSelect}
@@ -154,7 +154,7 @@
 
 	<div class="xs:grid-cols-2 xs:gap-3 grid grid-cols-1 gap-1 sm:grid-cols-3">
 		<div class="flex flex-col">
-			<span class="text-[1.125rem] font-bold">Market</span>
+			<span class="text-lg font-bold">Market</span>
 			<input
 				class="textbox"
 				type="number"
@@ -165,7 +165,7 @@
 			/>
 		</div>
 		<div class="flex flex-col">
-			<span class="text-[1.125rem] font-bold">Amount</span>
+			<span class="text-lg font-bold">Amount</span>
 			<input
 				class="textbox"
 				type="number"
@@ -176,7 +176,7 @@
 			/>
 		</div>
 		<div class="flex flex-col">
-			<span class="text-[1.125rem] font-bold">Fees</span>
+			<span class="text-lg font-bold">Fees</span>
 			<input
 				class="textbox"
 				type="number"
@@ -187,7 +187,7 @@
 			/>
 		</div>
 		<div class="flex flex-col">
-			<span class="text-[1.125rem] font-bold">Date</span>
+			<span class="text-lg font-bold">Date</span>
 			<input
 				class="textbox"
 				type="datetime-local"
@@ -199,8 +199,8 @@
 		<!-- Empty placeholder -->
 		<div class="xs:max-sm:hidden"></div>
 		<div class="flex flex-col">
-			<span class="text-[1.125rem] font-bold">Total</span>
-			<span class="grow-1 text-(--color-success) flex items-center text-[1.25rem] font-bold">
+			<span class="text-lg font-bold">Total</span>
+			<span class="grow-1 text-(--color-success) flex items-center text-xl font-bold">
 				{#if totalInvestment === 0}
 					<span class="text-(--color-error)">-</span>
 				{:else}

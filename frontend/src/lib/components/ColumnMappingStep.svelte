@@ -293,15 +293,17 @@
 						</div>
 					</div>
 
-					<div class="arrow">
+					<div class="flex items-center justify-center color-muted mt-2">
 						<i class="fa-solid fa-arrow-left"></i>
 					</div>
 
-					<div class="csv-column">
+					<div class="flex flex-col gap-2">
 						{#if field.value === 'type' && useFixedValue}
-							<div class="fixed-value-display">
-								<span class="fixed-label">Fixed Value:</span>
-								<span class="fixed-value">{fixedTypeValue}</span>
+							<div class="flex items-center gap-2 p-2 bg-background border border-button rounded-md">
+								<span class="text-sm color-muted">Fixed Value:</span>
+								<span class="font-semibold color-primary px-2 py-1 rounded text-xs uppercase" style="background: color-mix(in srgb, var(--color-primary), transparent 90%);">
+									{fixedTypeValue}
+								</span>
 							</div>
 						{:else}
 							<CustomDropdown
@@ -316,10 +318,10 @@
 						{/if}
 
 						{#if columnMappings[field.value] && !(field.value === 'type' && useFixedValue)}
-							<div class="sample-values">
-								<span class="sample-label">Sample values:</span>
+							<div class="flex flex-wrap gap-2 items-center">
+								<span class="text-xs color-muted">Sample values:</span>
 								{#each getSampleValues(columnMappings[field.value]) as value}
-									<span class="sample-value">{value}</span>
+									<span class="bg-card px-2 py-1 rounded text-xs color-default border border-button font-mono">{value}</span>
 								{/each}
 							</div>
 						{/if}
@@ -363,8 +365,8 @@
 <!-- Value Mapping Modal -->
 <Modal bind:showModal={showValueMapping} title="Configure Transaction Types" onClose={() => showValueMapping = false}>
 	{#snippet children()}
-		<div class="modal-content-inner">
-			<p class="modal-description">
+		<div class="w-full">
+			<p class="color-muted m-0 mb-6 leading-relaxed">
 				{#if useFixedValue}
 					Set a fixed transaction type that will be applied to all records.
 				{:else}
@@ -373,8 +375,8 @@
 			</p>
 			
 			{#if useFixedValue}
-				<div class="fixed-value-section">
-					<div class="fixed-value-label">Transaction Type:</div>
+				<div class="flex flex-col gap-3">
+					<div class="font-semibold color-default">Transaction Type:</div>
 					<CustomDropdown
 						options={transactionTypes}
 						value={fixedTypeValue}
@@ -382,19 +384,20 @@
 					/>
 				</div>
 			{:else}
-				<div class="value-mappings">
+				<div class="flex flex-col gap-4">
 					{#each getUniqueValues(columnMappings.type) as originalValue}
-						<div class="value-mapping-row">
-							<div class="original-value">
-								<span class="value-label">CSV Value:</span>
-								<code>{originalValue}</code>
+						<div class="grid grid-cols-1 md:grid-cols-[1fr_40px_1fr] gap-4 items-center p-4 bg-background rounded-md border border-button">
+							<div class="flex flex-col gap-1">
+								<span class="text-xs color-muted">CSV Value:</span>
+								<code class="bg-card px-2 py-1 rounded font-mono text-sm color-default border border-button">{originalValue}</code>
 							</div>
 							
-							<div class="arrow">
-								<i class="fa-solid fa-arrow-right"></i>
+							<div class="flex items-center justify-center color-muted mt-2 md:mt-0">
+								<i class="fa-solid fa-arrow-right md:block hidden"></i>
+								<i class="fa-solid fa-arrow-down md:hidden block"></i>
 							</div>
 							
-							<div class="mapped-value">
+							<div>
 								<CustomDropdown
 									options={[
 										{ value: '', label: 'Select type...' },
@@ -413,160 +416,9 @@
 </Modal>
 
 <style>
-	.type-toggle {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.mapping-btn {
-		font-size: 0.8rem;
-		padding: 0.25rem 0.75rem;
-		align-self: flex-start;
-	}
-
-	.arrow {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: var(--color-muted);
-		margin-top: 0.5rem;
-	}
-
-	.csv-column {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
-	.fixed-value-display {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.5rem;
-		background: var(--color-background);
-		border: 1px solid var(--color-button);
-		border-radius: 6px;
-	}
-
-	.fixed-label {
-		font-size: 0.9rem;
-		color: var(--color-muted);
-	}
-
-	.fixed-value {
-		font-weight: 600;
-		color: var(--color-primary);
-		padding: 0.25rem 0.5rem;
-		background: color-mix(in srgb, var(--color-primary), transparent 90%);
-		border-radius: 4px;
-		font-size: 0.8rem;
-		text-transform: uppercase;
-	}
-
-	.sample-values {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-		align-items: center;
-	}
-
-	.sample-label {
-		font-size: 0.8rem;
-		color: var(--color-muted);
-	}
-
-	.sample-value {
-		background: var(--color-card);
-		padding: 0.25rem 0.5rem;
-		border-radius: 4px;
-		font-size: 0.8rem;
-		color: var(--color-text);
-		border: 1px solid var(--color-button);
-		font-family: 'Fira Mono', 'Consolas', monospace;
-	}
-
-	/* Modal Styles */
-	.modal-content-inner {
-		width: 100%;
-	}
-
-	.modal-description {
-		color: var(--color-muted);
-		margin: 0 0 1.5rem 0;
-		line-height: 1.5;
-	}
-
-	.fixed-value-section {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	.fixed-value-label {
-		font-weight: 600;
-		color: var(--color-text);
-	}
-
-	.value-mappings {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-	}
-
-	.value-mapping-row {
-		display: grid;
-		grid-template-columns: 1fr 40px 1fr;
-		gap: 1rem;
-		align-items: center;
-		padding: 1rem;
-		background: var(--color-background);
-		border-radius: 6px;
-		border: 1px solid var(--color-button);
-	}
-
-	.original-value {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-	}
-
-	.value-label {
-		font-size: 0.8rem;
-		color: var(--color-muted);
-	}
-
-	.original-value code {
-		background: var(--color-card);
-		padding: 0.25rem 0.5rem;
-		border-radius: 4px;
-		font-family: 'Fira Mono', 'Consolas', monospace;
-		font-size: 0.9rem;
-		color: var(--color-text);
-		border: 1px solid var(--color-button);
-	}
-
-	.mr-2 {
-		margin-right: 0.5rem;
-	}
-
-	.ml-2 {
-		margin-left: 0.5rem;
-	}
-
-	/* Responsive design */
+	/* Responsive arrow rotation for mobile */
 	@media (max-width: 768px) {
-
-		.arrow {
-			transform: rotate(90deg);
-		}
-
-		.value-mapping-row {
-			grid-template-columns: 1fr;
-			gap: 0.75rem;
-		}
-
-		.value-mapping-row .arrow {
+		.grid-cols-1 .fa-arrow-left {
 			transform: rotate(90deg);
 		}
 	}

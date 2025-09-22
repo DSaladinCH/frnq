@@ -146,15 +146,15 @@
 	});
 </script>
 
-<div class="min-h-[600px] w-full">
+<div class="min-h-150 w-full">
 	<div class="max-w-6xl mx-auto">
 		<!-- Progress Bar -->
 		<ProgressBar {steps} {currentStep} />
 
 		<!-- Step Content Container -->
-		<div class="relative overflow-hidden min-h-[500px] my-4">
+		<div class="relative overflow-hidden min-h-125 my-4">
 			<div 
-				class="step-content {isAnimating ? 'animating' : ''} slide-{slideDirection}"
+				class="w-full opacity-100 transform-none transition-all duration-400 ease-in-out {isAnimating ? 'opacity-0' : ''} {isAnimating && slideDirection === 'right' ? 'translate-x-[50px]' : ''} {isAnimating && slideDirection === 'left' ? 'translate-x-[-50px]' : ''}"
 				class:step-0={currentStep === 0}
 				class:step-1={currentStep === 1}
 				class:step-2={currentStep === 2}
@@ -197,61 +197,14 @@
 </div>
 
 <style>
-	/* Keep complex animation and transition styling */
-	.step-content {
-		width: 100%;
-		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-		opacity: 1;
-		transform: translateX(0);
-	}
-
-	.step-content.animating {
-		opacity: 0;
-	}
-
-	.step-content.animating.slide-right {
-		transform: translateX(50px);
-	}
-
-	.step-content.animating.slide-left {
-		transform: translateX(-50px);
-	}
-
-	/* Responsive design */
+	/* Responsive animation adjustments for mobile */
 	@media (max-width: 768px) {
-		.step-content.animating.slide-right {
+		.translate-x-\[50px\] {
 			transform: translateX(30px);
 		}
-
-		.step-content.animating.slide-left {
+		
+		.translate-x-\[-50px\] {
 			transform: translateX(-30px);
 		}
-	}
-
-	/* Animation keyframes for enhanced effects */
-	@keyframes slideInRight {
-		from {
-			opacity: 0;
-			transform: translateX(50px);
-		}
-		to {
-			opacity: 1;
-			transform: translateX(0);
-		}
-	}
-
-	@keyframes slideInLeft {
-		from {
-			opacity: 0;
-			transform: translateX(-50px);
-		}
-		to {
-			opacity: 1;
-			transform: translateX(0);
-		}
-	}
-
-	.step-content:not(.animating) {
-		animation: slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 </style>

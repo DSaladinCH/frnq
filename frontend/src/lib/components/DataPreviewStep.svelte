@@ -247,43 +247,43 @@
 	{:else}
 		<div class="bg-card rounded-xl p-6 mb-8">
 			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-				<div class="summary-card success">
-					<div class="card-icon">
+				<div class="flex items-center gap-4 p-4 rounded-lg border border-button" style="background: color-mix(in srgb, var(--color-success), transparent 92%); border-color: color-mix(in srgb, var(--color-success), transparent 70%);">
+					<div class="text-2xl color-success">
 						<i class="fa-solid fa-check-circle"></i>
 					</div>
-					<div class="card-content">
-						<div class="card-number">{validationResult.validRows.length}</div>
-						<div class="card-label">Valid Records</div>
+					<div class="flex flex-col">
+						<div class="text-2xl font-bold color-default">{validationResult.validRows.length}</div>
+						<div class="text-sm color-muted">Valid Records</div>
 					</div>
 				</div>
 
-				<div class="summary-card {validationResult.invalidRows.length === 0 ? 'success' : 'error'}">
-					<div class="card-icon">
+				<div class="flex items-center gap-4 p-4 rounded-lg border border-button" style="background: color-mix(in srgb, var(--color-{validationResult.invalidRows.length === 0 ? 'success' : 'error'}), transparent 92%); border-color: color-mix(in srgb, var(--color-{validationResult.invalidRows.length === 0 ? 'success' : 'error'}), transparent 70%);">
+					<div class="text-2xl {validationResult.invalidRows.length === 0 ? 'color-success' : 'color-error'}">
 						<i class="fa-solid fa-exclamation-triangle"></i>
 					</div>
-					<div class="card-content">
-						<div class="card-number">{validationResult.invalidRows.length}</div>
-						<div class="card-label">Invalid Records</div>
+					<div class="flex flex-col">
+						<div class="text-2xl font-bold color-default">{validationResult.invalidRows.length}</div>
+						<div class="text-sm color-muted">Invalid Records</div>
 					</div>
 				</div>
 
-				<div class="summary-card {validationResult.invalidRows.length === 0 ? 'success' : 'info'}">
-					<div class="card-icon">
+				<div class="flex items-center gap-4 p-4 rounded-lg border border-button" style="background: color-mix(in srgb, var(--color-{validationResult.invalidRows.length === 0 ? 'success' : 'primary'}), transparent 92%); border-color: color-mix(in srgb, var(--color-{validationResult.invalidRows.length === 0 ? 'success' : 'primary'}), transparent 70%);">
+					<div class="text-2xl {validationResult.invalidRows.length === 0 ? 'color-success' : 'color-primary'}">
 						<i class="fa-solid fa-file-csv"></i>
 					</div>
-					<div class="card-content">
-						<div class="card-number">{validationResult.totalRows}</div>
-						<div class="card-label">Total Records</div>
+					<div class="flex flex-col">
+						<div class="text-2xl font-bold color-default">{validationResult.totalRows}</div>
+						<div class="text-sm color-muted">Total Records</div>
 					</div>
 				</div>
 			</div>
 
 			{#if validationResult.invalidRows.length > 0}
-				<div class="error-summary">
-					<h4>Validation Issues Found:</h4>
-					<div class="error-types">
+				<div class="mb-6">
+					<h4 class="text-lg font-semibold color-default mb-3">Validation Issues Found:</h4>
+					<div class="flex flex-wrap gap-2 mb-4">
 						{#each Object.entries(validationResult.validationErrors) as [error, count]}
-							<span class="error-badge">
+							<span class="px-3 py-1 rounded-xl text-xs border" style="background: color-mix(in srgb, var(--color-error), transparent 85%); color: var(--color-error); border-color: color-mix(in srgb, var(--color-error), transparent 70%);">
 								{error} ({count})
 							</span>
 						{/each}
@@ -300,34 +300,34 @@
 		</div>
 
 		{#if showInvalidRows && validationResult.invalidRows.length > 0}
-			<div class="invalid-rows-section">
-				<h3>Invalid Records</h3>
-				<div class="table-container">
-					<table class="data-table invalid">
+			<div class="bg-card rounded-xl p-6 mb-8">
+				<h3 class="text-xl font-semibold color-default mb-4">Invalid Records</h3>
+				<div class="overflow-x-auto rounded-lg border border-button">
+					<table class="w-full border-collapse bg-background">
 						<thead>
 							<tr>
-								<th>Symbol</th>
-								<th>Type</th>
-								<th>Date/Time</th>
-								<th>Amount</th>
-								<th>Unit Price</th>
-								<th>Fee</th>
-								<th>Errors</th>
+								<th class="bg-card color-default font-semibold px-2 py-3 text-left border-b border-button text-sm">Symbol</th>
+								<th class="bg-card color-default font-semibold px-2 py-3 text-left border-b border-button text-sm">Type</th>
+								<th class="bg-card color-default font-semibold px-2 py-3 text-left border-b border-button text-sm">Date/Time</th>
+								<th class="bg-card color-default font-semibold px-2 py-3 text-left border-b border-button text-sm">Amount</th>
+								<th class="bg-card color-default font-semibold px-2 py-3 text-left border-b border-button text-sm">Unit Price</th>
+								<th class="bg-card color-default font-semibold px-2 py-3 text-left border-b border-button text-sm">Fee</th>
+								<th class="bg-card color-default font-semibold px-2 py-3 text-left border-b border-button text-sm">Errors</th>
 							</tr>
 						</thead>
 						<tbody>
 							{#each validationResult.invalidRows.slice(0, 10) as row}
 								<tr>
-									<td>{row.symbol || '-'}</td>
-									<td>{row.type || '-'}</td>
-									<td>{row.datetime ? formatDate(row.datetime) : '-'}</td>
-									<td>{row.amount > 0 ? row.amount : '-'}</td>
-									<td>{row.unitPrice > 0 ? formatCurrency(row.unitPrice) : '-'}</td>
-									<td>{row.feePrice > 0 ? formatCurrency(row.feePrice) : '-'}</td>
-									<td>
-										<div class="errors-list">
+									<td class="px-2 py-3 text-sm color-muted" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.symbol || '-'}</td>
+									<td class="px-2 py-3 text-sm color-muted" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.type || '-'}</td>
+									<td class="px-2 py-3 text-sm color-muted" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.datetime ? formatDate(row.datetime) : '-'}</td>
+									<td class="px-2 py-3 text-sm color-muted" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.amount > 0 ? row.amount : '-'}</td>
+									<td class="px-2 py-3 text-sm color-muted" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.unitPrice > 0 ? formatCurrency(row.unitPrice) : '-'}</td>
+									<td class="px-2 py-3 text-sm color-muted" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.feePrice > 0 ? formatCurrency(row.feePrice) : '-'}</td>
+									<td class="px-2 py-3 text-sm" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">
+										<div class="flex flex-col gap-1">
 											{#each row.errors as error}
-												<span class="error-item">{error}</span>
+												<span class="px-2 py-1 rounded text-xs" style="background: color-mix(in srgb, var(--color-error), transparent 85%); color: var(--color-error);">{error}</span>
 											{/each}
 										</div>
 									</td>
@@ -336,7 +336,7 @@
 						</tbody>
 					</table>
 					{#if validationResult.invalidRows.length > 10}
-						<div class="table-footer">
+						<div class="px-3 py-3 text-center color-muted text-sm bg-card border-t border-button">
 							Showing first 10 of {validationResult.invalidRows.length} invalid records
 						</div>
 					{/if}
@@ -345,41 +345,41 @@
 		{/if}
 
 		{#if validationResult.validRows.length > 0}
-			<div class="valid-rows-section">
-				<h3>Valid Records Preview</h3>
-				<div class="table-container">
-					<table class="data-table valid">
+			<div class="bg-card rounded-xl p-6 mb-8">
+				<h3 class="text-xl font-semibold color-default mb-4">Valid Records Preview</h3>
+				<div class="overflow-x-auto rounded-lg border border-button">
+					<table class="w-full border-collapse bg-background">
 						<thead>
 							<tr>
-								<th>Symbol</th>
-								<th>Type</th>
-								<th>Date/Time</th>
-								<th>Amount</th>
-								<th>Unit Price</th>
-								<th>Fee</th>
-								<th>Total Value</th>
+								<th class="bg-card color-default font-semibold px-2 py-3 text-left border-b border-button text-sm">Symbol</th>
+								<th class="bg-card color-default font-semibold px-2 py-3 text-left border-b border-button text-sm">Type</th>
+								<th class="bg-card color-default font-semibold px-2 py-3 text-left border-b border-button text-sm">Date/Time</th>
+								<th class="bg-card color-default font-semibold px-2 py-3 text-left border-b border-button text-sm">Amount</th>
+								<th class="bg-card color-default font-semibold px-2 py-3 text-left border-b border-button text-sm">Unit Price</th>
+								<th class="bg-card color-default font-semibold px-2 py-3 text-left border-b border-button text-sm">Fee</th>
+								<th class="bg-card color-default font-semibold px-2 py-3 text-left border-b border-button text-sm">Total Value</th>
 							</tr>
 						</thead>
 						<tbody>
 							{#each validationResult.validRows.slice(0, 10) as row}
 								<tr>
-									<td class="symbol">{row.symbol}</td>
-									<td>
-										<span class="type-badge type-{row.type.toLowerCase()}">
+									<td class="px-2 py-3 text-sm color-default font-mono font-semibold" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.symbol}</td>
+									<td class="px-2 py-3 text-sm" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">
+										<span class="px-2 py-1 rounded text-xs font-semibold uppercase {row.type.toLowerCase() === 'buy' ? 'color-success' : row.type.toLowerCase() === 'sell' ? 'color-error' : 'color-primary'}" style="background: color-mix(in srgb, var(--color-{row.type.toLowerCase() === 'buy' ? 'success' : row.type.toLowerCase() === 'sell' ? 'error' : 'primary'}), transparent 85%);">
 											{row.type}
 										</span>
 									</td>
-									<td>{formatDate(row.datetime)}</td>
-									<td class="amount">{row.amount}</td>
-									<td class="price">{formatCurrency(row.unitPrice)}</td>
-									<td class="price">{row.feePrice > 0 ? formatCurrency(row.feePrice) : '-'}</td>
-									<td class="price total">{formatCurrency(row.amount * row.unitPrice)}</td>
+									<td class="px-2 py-3 text-sm color-default" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{formatDate(row.datetime)}</td>
+									<td class="px-2 py-3 text-sm color-default text-right font-mono" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.amount}</td>
+									<td class="px-2 py-3 text-sm color-default text-right font-mono" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{formatCurrency(row.unitPrice)}</td>
+									<td class="px-2 py-3 text-sm color-default text-right font-mono" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.feePrice > 0 ? formatCurrency(row.feePrice) : '-'}</td>
+									<td class="px-2 py-3 text-sm color-default text-right font-mono font-semibold" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{formatCurrency(row.amount * row.unitPrice)}</td>
 								</tr>
 							{/each}
 						</tbody>
 					</table>
 					{#if validationResult.validRows.length > 10}
-						<div class="table-footer">
+						<div class="px-3 py-3 text-center color-muted text-sm bg-card border-t border-button">
 							Showing first 10 of {validationResult.validRows.length} valid records
 						</div>
 					{/if}
@@ -406,199 +406,11 @@
 </div>
 
 <style>
-	/* Keep complex table and card styling that's difficult to replace with Tailwind */
-	.summary-card {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		padding: 1rem;
-		border-radius: 8px;
-		border: 1px solid var(--color-button);
-	}
-
-	.summary-card.success {
-		background: color-mix(in srgb, var(--color-success), transparent 92%);
-		border-color: color-mix(in srgb, var(--color-success), transparent 70%);
-	}
-
-	.summary-card.error {
-		background: color-mix(in srgb, var(--color-error), transparent 92%);
-		border-color: color-mix(in srgb, var(--color-error), transparent 70%);
-	}
-
-	.summary-card.info {
-		background: color-mix(in srgb, var(--color-primary), transparent 92%);
-		border-color: color-mix(in srgb, var(--color-primary), transparent 70%);
-	}
-
-	.card-icon {
-		font-size: 1.5rem;
-	}
-
-	.summary-card.success .card-icon {
-		color: var(--color-success);
-	}
-
-	.summary-card.error .card-icon {
-		color: var(--color-error);
-	}
-
-	.summary-card.info .card-icon {
-		color: var(--color-primary);
-	}
-
-	.card-content {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.card-number {
-		font-size: 1.5rem;
-		font-weight: 700;
-		color: var(--color-text);
-	}
-
-	.card-label {
-		font-size: 0.85rem;
-		color: var(--color-muted);
-	}
-
-	.error-types {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-		margin-bottom: 1rem;
-	}
-
-	.error-badge {
-		background: color-mix(in srgb, var(--color-error), transparent 85%);
-		color: var(--color-error);
-		padding: 0.25rem 0.75rem;
-		border-radius: 12px;
-		font-size: 0.8rem;
-		border: 1px solid color-mix(in srgb, var(--color-error), transparent 70%);
-	}
-
-	.invalid-rows-section,
-	.valid-rows-section {
-		background: var(--color-card);
-		border-radius: 12px;
-		padding: 1.5rem;
-		margin-bottom: 2rem;
-	}
-
-	.table-container {
-		overflow-x: auto;
-		border-radius: 8px;
-		border: 1px solid var(--color-button);
-	}
-
-	.data-table {
-		width: 100%;
-		border-collapse: collapse;
-		background: var(--color-background);
-	}
-
-	.data-table th {
-		background: var(--color-card);
-		color: var(--color-text);
-		font-weight: 600;
-		padding: 0.75rem 0.5rem;
-		text-align: left;
-		border-bottom: 1px solid var(--color-button);
-		font-size: 0.9rem;
-	}
-
-	.data-table td {
-		padding: 0.75rem 0.5rem;
-		border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);
-		font-size: 0.9rem;
-		color: var(--color-text);
-	}
-
-	.data-table.invalid td {
-		color: var(--color-muted);
-	}
-
-	.symbol {
-		font-family: 'Fira Mono', 'Consolas', monospace;
-		font-weight: 600;
-	}
-
-	.type-badge {
-		padding: 0.25rem 0.5rem;
-		border-radius: 4px;
-		font-size: 0.8rem;
-		font-weight: 600;
-		text-transform: uppercase;
-	}
-
-	.type-buy {
-		background: color-mix(in srgb, var(--color-success), transparent 85%);
-		color: var(--color-success);
-	}
-
-	.type-sell {
-		background: color-mix(in srgb, var(--color-error), transparent 85%);
-		color: var(--color-error);
-	}
-
-	.type-dividend {
-		background: color-mix(in srgb, var(--color-primary), transparent 85%);
-		color: var(--color-primary);
-	}
-
-	.amount {
-		text-align: right;
-		font-family: 'Fira Mono', 'Consolas', monospace;
-	}
-
-	.price {
-		text-align: right;
-		font-family: 'Fira Mono', 'Consolas', monospace;
-	}
-
-	.price.total {
-		font-weight: 600;
-	}
-
-	.errors-list {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-	}
-
-	.error-item {
-		background: color-mix(in srgb, var(--color-error), transparent 85%);
-		color: var(--color-error);
-		padding: 0.15rem 0.5rem;
-		border-radius: 4px;
-		font-size: 0.75rem;
-	}
-
-	.table-footer {
-		padding: 0.75rem;
-		text-align: center;
-		color: var(--color-muted);
-		font-size: 0.85rem;
-		background: var(--color-card);
-		border-top: 1px solid var(--color-button);
-	}
-
-	.mr-2 {
-		margin-right: 0.5rem;
-	}
-
-	.ml-1 {
-		margin-left: 0.25rem;
-	}
-
-	/* Responsive design */
+	/* Responsive design for tables */
 	@media (max-width: 768px) {
-		.data-table th,
-		.data-table td {
-			padding: 0.5rem 0.25rem;
-			font-size: 0.8rem;
+		th, td {
+			padding: 0.5rem 0.25rem !important;
+			font-size: 0.8rem !important;
 		}
 	}
 </style>

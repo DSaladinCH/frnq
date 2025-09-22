@@ -211,7 +211,7 @@
 	{/if}
 
 	{#if error}
-		<div class="flex items-center gap-2 bg-[color-mix(in_srgb,var(--color-error),transparent_90%)] text-[var(--color-error)] px-4 py-3 rounded-lg border border-[color-mix(in_srgb,var(--color-error),transparent_70%)] mb-6" id="upload-error">
+		<div class="flex items-center gap-2 bg-[color-mix(in_srgb,var(--color-error),transparent_90%)] color-error px-4 py-3 rounded-lg border border-[color-mix(in_srgb,var(--color-error),transparent_70%)] mb-6" id="upload-error">
 			<i class="fa-solid fa-exclamation-triangle"></i>
 			{error}
 		</div>
