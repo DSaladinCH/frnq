@@ -249,7 +249,7 @@
 			<p class="color-muted m-0">Validating and formatting your investment data</p>
 		</div>
 	{:else}
-		<div class="bg-card rounded-xl p-6">
+		<div class="bg-card rounded-xl p-6 flex flex-col gap-4">
 			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 				<div class="flex items-center gap-4 p-4 rounded-lg border border-button" style="background: color-mix(in srgb, var(--color-success), transparent 92%); border-color: color-mix(in srgb, var(--color-success), transparent 70%);">
 					<div class="text-2xl color-success">
@@ -283,27 +283,20 @@
 			</div>
 
 			{#if validationResult.invalidRows.length > 0}
-				<div class="mb-6">
+				<div>
 					<h4 class="text-lg font-semibold color-default mb-3">Validation Issues Found:</h4>
-					<div class="flex flex-wrap gap-2 mb-4">
+					<div class="flex flex-wrap gap-2">
 						{#each Object.entries(validationResult.validationErrors) as [error, count]}
 							<span class="px-3 py-1 rounded-xl text-xs border" style="background: color-mix(in srgb, var(--color-error), transparent 85%); color: var(--color-error); border-color: color-mix(in srgb, var(--color-error), transparent 70%);">
 								{error} ({count})
 							</span>
 						{/each}
 					</div>
-					<button 
-						class="btn btn-small btn-secondary"
-						onclick={() => showInvalidRows = !showInvalidRows}
-					>
-						{showInvalidRows ? 'Hide' : 'Show'} Invalid Records
-						<i class="fa-solid {showInvalidRows ? 'fa-chevron-up' : 'fa-chevron-down'} ml-1"></i>
-					</button>
 				</div>
 			{/if}
 		</div>
 
-		{#if showInvalidRows && validationResult.invalidRows.length > 0}
+		{#if validationResult.invalidRows.length > 0}
 			<div class="bg-card rounded-xl p-6">
 				<h3 class="text-xl font-semibold color-default mb-4">Invalid Records</h3>
 				<div class="overflow-x-auto rounded-lg border border-button">
