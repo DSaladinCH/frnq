@@ -62,12 +62,22 @@
 	let valueMappings: Record<string, Record<string, string>> = $state({});
 	let useFixedValue = $state(false);
 	let fixedTypeValue = $state('BUY');
+	let treatHeaderAsData = $state(false);
 
-	function parseCsvContent(content: string) {
+	function parseCsvContent(content: string, treatHeaderAsData: boolean = false) {
 		const lines = content.split('\n').filter(line => line.trim());
-		const headers = lines[0].split(';').map(h => h.trim());
-		const data = lines.slice(1).map(line => line.split(';').map(cell => cell.trim()));
-		return { headers, data };
+		
+		if (treatHeaderAsData) {
+			// When treating header as data, use first row as headers and include all rows as data
+			const headers = lines[0].split(';').map(cell => cell.trim());
+			const data = lines.map(line => line.split(';').map(cell => cell.trim()));
+			return { headers, data };
+		} else {
+			// Standard parsing with first row as headers
+			const headers = lines[0].split(';').map(h => h.trim());
+			const data = lines.slice(1).map(line => line.split(';').map(cell => cell.trim()));
+			return { headers, data };
+		}
 	}
 
 	function navigateToStep(targetStep: number) {
@@ -90,12 +100,13 @@
 		}, 150);
 	}
 
-	function handleFileSelected(data: { filename: string; content: string }) {
+	function handleFileSelected(data: { filename: string; content: string; treatHeaderAsData: boolean }) {
 		filename = data.filename;
 		csvContent = data.content;
+		treatHeaderAsData = data.treatHeaderAsData;
 		
 		// Parse CSV to extract headers and data
-		const parsed = parseCsvContent(data.content);
+		const parsed = parseCsvContent(data.content, data.treatHeaderAsData);
 		csvHeaders = parsed.headers;
 		csvData = parsed.data;
 	}
@@ -173,6 +184,7 @@
 						initialValueMappings={valueMappings}
 						initialUseFixedValue={useFixedValue}
 						initialFixedTypeValue={fixedTypeValue}
+						treatHeaderAsData={treatHeaderAsData}
 						onmappingChanged={handleMappingChanged}
 						onnext={handleMappingNext}
 						onback={handleMappingBack}

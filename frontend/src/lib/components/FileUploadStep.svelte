@@ -1,6 +1,12 @@
 <script lang="ts">
+	import Input from './Input.svelte';
+
 	interface Props {
-		onfileSelected?: (data: { filename: string; content: string }) => void;
+		onfileSelected?: (data: {
+			filename: string;
+			content: string;
+			treatHeaderAsData: boolean;
+		}) => void;
 		onnext?: () => void;
 	}
 
@@ -12,6 +18,7 @@
 	let fileContent: string | null = $state(null);
 	let error: string | null = $state(null);
 	let isProcessing = $state(false);
+	let treatHeaderAsData = $state(false);
 
 	function openFilePicker() {
 		fileInput?.click();
@@ -21,6 +28,7 @@
 		filename = null;
 		fileContent = null;
 		error = null;
+		treatHeaderAsData = false;
 		if (fileInput) fileInput.value = '';
 	}
 
@@ -45,18 +53,19 @@
 
 		filename = file.name;
 		const reader = new FileReader();
-		
+
 		reader.onload = () => {
 			const text = reader.result as string;
 			fileContent = text;
 			isProcessing = false;
-			
+
 			onfileSelected?.({
 				filename: filename!,
-				content: text
+				content: text,
+				treatHeaderAsData
 			});
 		};
-		
+
 		reader.onerror = () => {
 			error = 'Failed to read file.';
 			isProcessing = false;
@@ -108,11 +117,11 @@
 	}
 </script>
 
-<div class="max-w-2xl mx-auto">
-	<div class="text-center mb-8">
-		<h2 class="text-2xl font-semibold color-default mb-2">Upload CSV File</h2>
-		<p class="color-muted leading-relaxed m-0">
-			Select or drop a CSV file containing your investment data. The file should include columns for 
+<div class="mx-auto max-w-2xl">
+	<div class="mb-8 text-center">
+		<h2 class="color-default mb-2 text-2xl font-semibold">Upload CSV File</h2>
+		<p class="color-muted m-0 leading-relaxed">
+			Select or drop a CSV file containing your investment data. The file should include columns for
 			symbol, transaction type, date, amount, unit price, and fees.
 		</p>
 	</div>
@@ -142,7 +151,7 @@
 
 			<div class={isDragActive ? 'upload-inner active' : 'upload-inner'}>
 				{#if isProcessing}
-					<div class="color-primary text-3xl flex-shrink-0">
+					<div class="color-primary flex-shrink-0 text-3xl">
 						<i class="fa-solid fa-spinner fa-spin"></i>
 					</div>
 				{:else}
@@ -157,12 +166,14 @@
 						<path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
 					</svg>
 				{/if}
-				
+
 				<div class="flex-1">
 					{#if isProcessing}
-						<p class="m-0 color-default">Processing file...</p>
+						<p class="color-default m-0">Processing file...</p>
 					{:else}
-						<p id="upload-desc" class="m-0 color-default">Drop a CSV file here or click to select one</p>
+						<p id="upload-desc" class="color-default m-0">
+							Drop a CSV file here or click to select one
+						</p>
 						<p class="hint">Supported formats: .csv</p>
 						<p class="hint">Press <kbd>Enter</kbd> or <kbd>Space</kbd> to open file picker</p>
 					{/if}
@@ -170,40 +181,59 @@
 			</div>
 		</div>
 	{:else}
-		<div class="bg-card rounded-xl p-6 mb-6">
-			<div class="flex items-center gap-4 mb-4">
-				<div class="text-3xl color-success flex-shrink-0">
+		<div class="bg-card mb-6 rounded-xl p-6">
+			<div class="mb-4 flex items-center gap-4">
+				<div class="color-success flex-shrink-0 text-3xl">
 					<i class="fa-solid fa-file-csv"></i>
 				</div>
 				<div class="flex-1">
-					<h3 class="text-lg font-semibold color-default mb-1">{filename}</h3>
-					<p class="color-muted text-sm m-0">
-						{fileContent ? `${fileContent.split('\n').filter(line => line.trim()).length} rows` : 'Processing...'}
+					<h3 class="color-default mb-1 text-lg font-semibold">{filename}</h3>
+					<p class="color-muted m-0 text-sm">
+						{fileContent
+							? `${fileContent.split('\n').filter((line) => line.trim()).length} rows`
+							: 'Processing...'}
 					</p>
 				</div>
 				<button class="btn-fake remove-file" onclick={reset} aria-label="Remove file">
 					<i class="fa-solid fa-times"></i>
 				</button>
 			</div>
-			
+
 			{#if fileContent}
-				<div class="border-t border-button pt-4">
-					<h4 class="text-sm font-semibold color-default mb-3">File Preview</h4>
+				<div class="border-button border-t pt-4">
+					<h4 class="color-default mb-3 text-sm font-semibold">File Preview</h4>
 					<div class="file-preview-content">
 						{#each fileContent.split('\n').slice(0, 5) as line, index}
 							{#if line.trim()}
-								<div class="flex gap-4 mb-1">
-									<span class="color-muted min-w-5 text-right flex-shrink-0 text-sm">{index + 1}</span>
-									<span class="color-default text-sm break-all">{line}</span>
+								<div class="mb-1 last:mb-0 flex gap-4">
+									<span class="color-muted min-w-5 flex-shrink-0 text-right text-sm"
+										>{index + 1}</span
+									>
+									<span class="color-default break-all text-sm">{line}</span>
 								</div>
 							{/if}
 						{/each}
 						{#if fileContent.split('\n').length > 5}
-							<div class="flex gap-4 mb-1 color-muted italic">
-								<span class="min-w-5 text-right flex-shrink-0 text-sm">...</span>
+							<div class="color-muted ml-2 mt-1 flex gap-4 italic">
+								<span class="min-w-5 flex-shrink-0 text-right text-sm">...</span>
 								<span class="text-sm">and {fileContent.split('\n').length - 5} more rows</span>
 							</div>
 						{/if}
+					</div>
+				</div>
+
+				<div class="border-button mt-4 border-t pt-4 text-sm">
+					<h4 class="color-default mb-3 font-semibold">Import Options</h4>
+					<Input
+						type="checkbox"
+						bind:checked={treatHeaderAsData}
+						title="Treat first row as data"
+						onchange={() =>
+							onfileSelected?.({ filename: filename!, content: fileContent!, treatHeaderAsData })}
+					/>
+					<div class="color-muted mt-1 text-xs">
+						Enable this if your CSV file doesn't have headers and the first row contains actual
+						investment data
 					</div>
 				</div>
 			{/if}
@@ -211,14 +241,17 @@
 	{/if}
 
 	{#if error}
-		<div class="flex items-center gap-2 bg-[color-mix(in_srgb,var(--color-error),transparent_90%)] color-error px-4 py-3 rounded-lg border border-[color-mix(in_srgb,var(--color-error),transparent_70%)] mb-6" id="upload-error">
+		<div
+			class="color-error mb-6 flex items-center gap-2 rounded-lg border border-[color-mix(in_srgb,var(--color-error),transparent_70%)] bg-[color-mix(in_srgb,var(--color-error),transparent_90%)] px-4 py-3"
+			id="upload-error"
+		>
 			<i class="fa-solid fa-exclamation-triangle"></i>
 			{error}
 		</div>
 	{/if}
 
 	{#if filename && fileContent}
-		<div class="flex justify-center mt-8">
+		<div class="mt-8 flex justify-center">
 			<button class="btn btn-primary btn-big" onclick={handleNext}>
 				Continue to Column Mapping
 				<i class="fa-solid fa-arrow-right ml-2"></i>
@@ -292,7 +325,8 @@
 		background: color-mix(in srgb, var(--color-card), var(--color-background) 15%);
 		border: 1px solid var(--color-button);
 		color: var(--color-text);
-		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', 'Segoe UI Mono', monospace;
+		font-family:
+			ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', 'Segoe UI Mono', monospace;
 		font-size: 0.75rem;
 	}
 

@@ -14,6 +14,7 @@
 		initialValueMappings?: Record<string, Record<string, string>>;
 		initialUseFixedValue?: boolean;
 		initialFixedTypeValue?: string;
+		treatHeaderAsData?: boolean;
 		onback?: () => void;
 		onnext?: () => void;
 		onmappingChanged?: (data: {
@@ -32,6 +33,7 @@
 		initialValueMappings = {},
 		initialUseFixedValue = false,
 		initialFixedTypeValue = '',
+		treatHeaderAsData = false,
 		onback,
 		onnext,
 		onmappingChanged
@@ -111,7 +113,7 @@
 		const values = sampleData
 			.map((row) => row[columnIndex])
 			.filter((val) => val && val.trim())
-			.slice(0, 5);
+			.slice(0, 3);
 
 		return [...new Set(values)]; // Remove duplicates
 	}
@@ -243,8 +245,11 @@
 	<div class="text-center">
 		<h2 class="color-default mb-2 text-2xl font-semibold">Map CSV Columns</h2>
 		<p class="color-muted m-0 leading-relaxed">
-			Map the columns from your CSV file to the required investment data fields. The system has
-			tried to auto-detect the mappings based on column names.
+			{#if treatHeaderAsData}
+				Map the columns from your CSV file to the required investment data fields. The column headers shown are the values from your first data row.
+			{:else}
+				Map the columns from your CSV file to the required investment data fields. The system has tried to auto-detect the mappings based on column names.
+			{/if}
 		</p>
 	</div>
 
@@ -253,7 +258,13 @@
 			<div class="flex items-center gap-3 text-base">
 				<i class="fa-solid fa-file-csv color-success text-xl"></i>
 				<span class="color-default font-semibold">{filename}</span>
-				<span class="color-muted text-sm">{sampleData.length} rows</span>
+				<span class="color-muted text-sm">
+					{#if treatHeaderAsData}
+						{sampleData.length} total rows (all as data)
+					{:else}
+						{sampleData.length} data rows
+					{/if}
+				</span>
 			</div>
 		</div>
 
@@ -411,16 +422,14 @@
 							class="bg-background border-button grid grid-cols-1 items-center gap-4 rounded-md border p-4 md:grid-cols-[1fr_40px_1fr]"
 						>
 							<div class="flex flex-col gap-1">
-								<span class="color-muted text-xs">CSV Value:</span>
 								<code
-									class="bg-card color-default border-button rounded border px-2 py-1 font-mono text-sm"
+									class="bg-card color-default border-button rounded border px-2 py-2 font-mono text-base"
 									>{originalValue}</code
 								>
 							</div>
 
 							<div class="color-muted mt-2 flex items-center justify-center md:mt-0">
-								<i class="fa-solid fa-arrow-right hidden md:block"></i>
-								<i class="fa-solid fa-arrow-down block md:hidden"></i>
+								<i class="fa-solid fa-arrow-right max-md:rotate-90"></i>
 							</div>
 
 							<div>
