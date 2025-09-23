@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Modal from './Modal.svelte';
 	import CustomDropdown from './CustomDropdown.svelte';
+	import Input from './Input.svelte';
 
 	interface Props {
 		csvHeaders: string[];
@@ -81,7 +82,7 @@
 	function initializeColumnMappings() {
 		// Only auto-map if no existing mappings
 		if (Object.keys(columnMappings).length > 0) return;
-		
+
 		const smartMappings: Record<string, string[]> = {
 			symbol: ['symbol', 'ticker', 'isin', 'instrument'],
 			type: ['type', 'transaction', 'action', 'side'],
@@ -95,7 +96,7 @@
 		for (const [targetField, possibleNames] of Object.entries(smartMappings)) {
 			for (const header of csvHeaders) {
 				const normalizedHeader = header.toLowerCase().replace(/[^a-z]/g, '');
-				if (possibleNames.some(name => normalizedHeader.includes(name))) {
+				if (possibleNames.some((name) => normalizedHeader.includes(name))) {
 					columnMappings[targetField] = header;
 					break;
 				}
@@ -106,23 +107,21 @@
 	function getSampleValues(csvColumn: string): string[] {
 		const columnIndex = csvHeaders.indexOf(csvColumn);
 		if (columnIndex === -1) return [];
-		
+
 		const values = sampleData
-			.map(row => row[columnIndex])
-			.filter(val => val && val.trim())
+			.map((row) => row[columnIndex])
+			.filter((val) => val && val.trim())
 			.slice(0, 5);
-		
+
 		return [...new Set(values)]; // Remove duplicates
 	}
 
 	function getUniqueValues(csvColumn: string): string[] {
 		const columnIndex = csvHeaders.indexOf(csvColumn);
 		if (columnIndex === -1) return [];
-		
-		const values = sampleData
-			.map(row => row[columnIndex])
-			.filter(val => val && val.trim());
-		
+
+		const values = sampleData.map((row) => row[columnIndex]).filter((val) => val && val.trim());
+
 		return [...new Set(values)];
 	}
 
@@ -132,12 +131,12 @@
 		} else {
 			columnMappings[targetField] = csvColumn;
 		}
-		
+
 		// If this is a type field, initialize value mappings
 		if (targetField === 'type' && csvColumn && !useFixedValue) {
 			initializeValueMappings(csvColumn);
 		}
-		
+
 		emitMappingChange();
 	}
 
@@ -146,12 +145,12 @@
 		if (!valueMappings.type) {
 			valueMappings.type = {};
 		}
-		
+
 		// Try to auto-map common values
 		for (const value of uniqueValues) {
 			const normalizedValue = value.toLowerCase().trim();
 			let mappedValue = '';
-			
+
 			if (['buy', 'purchase', 'b'].includes(normalizedValue)) {
 				mappedValue = 'BUY';
 			} else if (['sell', 'sale', 's'].includes(normalizedValue)) {
@@ -161,7 +160,7 @@
 			} else if (normalizedValue.includes('split')) {
 				mappedValue = 'SPLIT';
 			}
-			
+
 			valueMappings.type[value] = mappedValue;
 		}
 	}
@@ -220,10 +219,12 @@
 	}
 
 	function isComplete(): boolean {
-		const requiredFieldsSet = requiredFields.filter(f => f.required).map(f => f.value);
+		const requiredFieldsSet = requiredFields.filter((f) => f.required).map((f) => f.value);
 		// For type field, it's complete if we have either a column mapping or fixed value
 		const typeComplete = Boolean(columnMappings.type) || useFixedValue;
-		const otherFieldsComplete = requiredFieldsSet.filter(f => f !== 'type').every(field => Boolean(columnMappings[field]));
+		const otherFieldsComplete = requiredFieldsSet
+			.filter((f) => f !== 'type')
+			.every((field) => Boolean(columnMappings[field]));
 		return typeComplete && otherFieldsComplete;
 	}
 
@@ -238,70 +239,82 @@
 	}
 </script>
 
-<div class="max-w-4xl mx-auto">
-	<div class="text-center mb-8">
-		<h2 class="text-2xl font-semibold color-default mb-2">Map CSV Columns</h2>
-		<p class="color-muted leading-relaxed m-0">
-			Map the columns from your CSV file to the required investment data fields. 
-			The system has tried to auto-detect the mappings based on column names.
+<div class="mx-auto max-w-4xl">
+	<div class="mb-8 text-center">
+		<h2 class="color-default mb-2 text-2xl font-semibold">Map CSV Columns</h2>
+		<p class="color-muted m-0 leading-relaxed">
+			Map the columns from your CSV file to the required investment data fields. The system has
+			tried to auto-detect the mappings based on column names.
 		</p>
 	</div>
 
-	<div class="bg-card rounded-xl p-6 mb-8">
-		<div class="mb-6 pb-4 border-b border-button">
+	<div class="bg-card mb-8 rounded-xl p-6">
+		<div class="border-button mb-6 border-b pb-4">
 			<div class="flex items-center gap-3 text-base">
 				<i class="fa-solid fa-file-csv color-success text-xl"></i>
-				<span class="font-semibold color-default">{filename}</span>
+				<span class="color-default font-semibold">{filename}</span>
 				<span class="color-muted text-sm">{sampleData.length} rows</span>
 			</div>
 		</div>
 
 		<div class="flex flex-col gap-6">
 			{#each requiredFields as field}
-				<div class="grid grid-cols-1 lg:grid-cols-[1fr_40px_1fr] gap-4 items-start p-4 rounded-lg bg-background border border-button">
-					<div class="flex flex-col gap-2">
-						<div class="flex flex-col gap-2">
-							<div class="text-sm font-semibold color-default">
-								{field.label}
-								{#if field.required}
-									<span class="color-error ml-1">*</span>
-								{/if}
-							</div>
-							{#if field.value === 'type'}
-								<div class="flex flex-col gap-2">
-									<div class="type-toggle">
-										<label class="flex items-center gap-2 cursor-pointer text-sm">
-											<input 
+				<div
+					class="bg-background border-button grid grid-cols-1 items-start gap-x-4 max-lg:gap-y-4 rounded-lg border p-4 lg:grid-cols-[1fr_40px_1fr] lg:grid-rows-[auto_auto]"
+				>
+					<div class="row-1 col-1 flex flex-col gap-2">
+						<div class="color-default text-sm font-semibold">
+							{field.label}
+							{#if field.required}
+								<span class="color-error ml-1">*</span>
+							{/if}
+						</div>
+					</div>
+
+					<div class="row-2 col-1 flex flex-col gap-2">
+						{#if field.value === 'type'}
+							<div class="type-toggle">
+								<label class="flex cursor-pointer items-center gap-2 text-sm">
+									<!-- <input 
 												type="checkbox" 
 												class="w-4 h-4 accent-[var(--color-primary)]"
 												bind:checked={useFixedValue}
 												onchange={() => handleFixedValueChange(useFixedValue)}
 											/>
-											<span class="color-default">Use fixed value</span>
-										</label>
-									</div>
-									<button 
-										class="btn btn-small mapping-btn"
-										onclick={() => showValueMappingDialog('type')}
-										disabled={!columnMappings.type && !useFixedValue}
-									>
-										<i class="fa-solid fa-cog"></i>
-										{useFixedValue ? 'Set Value' : 'Map Values'}
-									</button>
-								</div>
-							{/if}
-						</div>
+											<span class="color-default">Use fixed value</span> -->
+									<Input
+										type="checkbox"
+										bind:checked={useFixedValue}
+										onchange={() => handleFixedValueChange(useFixedValue)}
+										title="Use fixed value"
+									/>
+								</label>
+							</div>
+							<button
+								class="btn btn-small mapping-btn"
+								onclick={() => showValueMappingDialog('type')}
+								disabled={!columnMappings.type && !useFixedValue}
+							>
+								<i class="fa-solid fa-cog"></i>
+								{useFixedValue ? 'Set Value' : 'Map Values'}
+							</button>
+						{/if}
 					</div>
 
-					<div class="flex items-center justify-center color-muted mt-2">
-						<i class="fa-solid fa-arrow-left"></i>
+					<div class="color-muted self-center flex items-center justify-center">
+						<i class="fa-solid fa-arrow-left max-lg:rotate-90"></i>
 					</div>
 
 					<div class="flex flex-col gap-2">
 						{#if field.value === 'type' && useFixedValue}
-							<div class="flex items-center gap-2 p-2 bg-background border border-button rounded-md">
-								<span class="text-sm color-muted">Fixed Value:</span>
-								<span class="font-semibold color-primary px-2 py-1 rounded text-xs uppercase" style="background: color-mix(in srgb, var(--color-primary), transparent 90%);">
+							<div
+								class="bg-background border-button flex items-center gap-2 rounded-md border p-2"
+							>
+								<span class="color-muted text-sm">Fixed Value:</span>
+								<span
+									class="color-primary rounded px-2 py-1 text-xs font-semibold uppercase"
+									style="background: color-mix(in srgb, var(--color-primary), transparent 90%);"
+								>
 									{fixedTypeValue}
 								</span>
 							</div>
@@ -309,7 +322,7 @@
 							<CustomDropdown
 								options={[
 									{ value: '', label: 'Select column...' },
-									...csvHeaders.map(header => ({ value: header, label: header }))
+									...csvHeaders.map((header) => ({ value: header, label: header }))
 								]}
 								value={columnMappings[field.value] || ''}
 								disabled={field.value === 'type' && useFixedValue}
@@ -318,10 +331,13 @@
 						{/if}
 
 						{#if columnMappings[field.value] && !(field.value === 'type' && useFixedValue)}
-							<div class="flex flex-wrap gap-2 items-center">
-								<span class="text-xs color-muted">Sample values:</span>
+							<div class="flex flex-wrap items-center gap-2">
+								<span class="color-muted text-xs">Sample values:</span>
 								{#each getSampleValues(columnMappings[field.value]) as value}
-									<span class="bg-card px-2 py-1 rounded text-xs color-default border border-button font-mono">{value}</span>
+									<span
+										class="bg-card color-default border-button rounded border px-2 py-1 font-mono text-xs"
+										>{value}</span
+									>
 								{/each}
 							</div>
 						{/if}
@@ -330,14 +346,14 @@
 			{/each}
 		</div>
 
-		<div class="mt-6 pt-4 border-t border-button">
+		<div class="border-button mt-6 border-t pt-4">
 			{#if isComplete()}
-				<div class="flex items-center gap-2 color-success font-medium">
+				<div class="color-success flex items-center gap-2 font-medium">
 					<i class="fa-solid fa-check-circle"></i>
 					All required fields are mapped correctly
 				</div>
 			{:else}
-				<div class="flex items-center gap-2 color-accent font-medium">
+				<div class="color-accent flex items-center gap-2 font-medium">
 					<i class="fa-solid fa-exclamation-triangle"></i>
 					Please map all required fields (marked with *)
 				</div>
@@ -345,17 +361,13 @@
 		</div>
 	</div>
 
-	<div class="flex justify-between items-center gap-4 mt-8">
+	<div class="mt-8 flex items-center justify-between gap-4">
 		<button class="btn btn-secondary" onclick={handleBack}>
 			<i class="fa-solid fa-arrow-left mr-2"></i>
 			Back
 		</button>
-		
-		<button 
-			class="btn btn-primary btn-big" 
-			onclick={handleNext}
-			disabled={!isComplete()}
-		>
+
+		<button class="btn btn-primary btn-big" onclick={handleNext} disabled={!isComplete()}>
 			Continue to Preview
 			<i class="fa-solid fa-arrow-right ml-2"></i>
 		</button>
@@ -363,7 +375,11 @@
 </div>
 
 <!-- Value Mapping Modal -->
-<Modal bind:showModal={showValueMapping} title="Configure Transaction Types" onClose={() => showValueMapping = false}>
+<Modal
+	bind:showModal={showValueMapping}
+	title="Configure Transaction Types"
+	onClose={() => (showValueMapping = false)}
+>
 	{#snippet children()}
 		<div class="w-full">
 			<p class="color-muted m-0 mb-6 leading-relaxed">
@@ -373,10 +389,10 @@
 					Map the transaction type values from your CSV to standard transaction types.
 				{/if}
 			</p>
-			
+
 			{#if useFixedValue}
 				<div class="flex flex-col gap-3">
-					<div class="font-semibold color-default">Transaction Type:</div>
+					<div class="color-default font-semibold">Transaction Type:</div>
 					<CustomDropdown
 						options={transactionTypes}
 						value={fixedTypeValue}
@@ -386,23 +402,25 @@
 			{:else}
 				<div class="flex flex-col gap-4">
 					{#each getUniqueValues(columnMappings.type) as originalValue}
-						<div class="grid grid-cols-1 md:grid-cols-[1fr_40px_1fr] gap-4 items-center p-4 bg-background rounded-md border border-button">
+						<div
+							class="bg-background border-button grid grid-cols-1 items-center gap-4 rounded-md border p-4 md:grid-cols-[1fr_40px_1fr]"
+						>
 							<div class="flex flex-col gap-1">
-								<span class="text-xs color-muted">CSV Value:</span>
-								<code class="bg-card px-2 py-1 rounded font-mono text-sm color-default border border-button">{originalValue}</code>
+								<span class="color-muted text-xs">CSV Value:</span>
+								<code
+									class="bg-card color-default border-button rounded border px-2 py-1 font-mono text-sm"
+									>{originalValue}</code
+								>
 							</div>
-							
-							<div class="flex items-center justify-center color-muted mt-2 md:mt-0">
-								<i class="fa-solid fa-arrow-right md:block hidden"></i>
-								<i class="fa-solid fa-arrow-down md:hidden block"></i>
+
+							<div class="color-muted mt-2 flex items-center justify-center md:mt-0">
+								<i class="fa-solid fa-arrow-right hidden md:block"></i>
+								<i class="fa-solid fa-arrow-down block md:hidden"></i>
 							</div>
-							
+
 							<div>
 								<CustomDropdown
-									options={[
-										{ value: '', label: 'Select type...' },
-										...transactionTypes
-									]}
+									options={[{ value: '', label: 'Select type...' }, ...transactionTypes]}
 									value={valueMappings.type?.[originalValue] || ''}
 									onchange={(value) => handleValueMappingChange(originalValue, value)}
 								/>
@@ -416,10 +434,5 @@
 </Modal>
 
 <style>
-	/* Responsive arrow rotation for mobile */
-	@media (max-width: 768px) {
-		.grid-cols-1 .fa-arrow-left {
-			transform: rotate(90deg);
-		}
-	}
+
 </style>
