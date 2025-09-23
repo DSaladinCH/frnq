@@ -239,7 +239,7 @@
 	}
 </script>
 
-<div class="mx-auto max-w-4xl grid gap-8">
+<div class="mx-auto flex max-w-4xl flex-col gap-8">
 	<div class="text-center">
 		<h2 class="color-default mb-2 text-2xl font-semibold">Map CSV Columns</h2>
 		<p class="color-muted m-0 leading-relaxed">
@@ -257,7 +257,7 @@
 			</div>
 		</div>
 
-		<div class="flex flex-col gap-6">
+		<div class="flex flex-col gap-4">
 			{#each requiredFields as field}
 				<div
 					class="bg-background border-button grid grid-cols-1 items-start gap-x-4 rounded-lg border p-4 max-md:gap-y-4 md:grid-cols-[1fr_40px_1fr]"
@@ -282,14 +282,16 @@
 								/>
 							</div>
 
-							<Button
-								icon="fa-solid fa-cog"
-								text={useFixedValue ? 'Set Value' : 'Map Values'}
-								onclick={() => showValueMappingDialog('type')}
-								disabled={!columnMappings.type && !useFixedValue}
-								textSize={TextSize.Small}
-								style={ColorStyle.Control}
-							/>
+							<div class="max-md:self-center">
+								<Button
+									icon="fa-solid fa-cog"
+									text={useFixedValue ? 'Set Value' : 'Map Values'}
+									onclick={() => showValueMappingDialog('type')}
+									disabled={!columnMappings.type && !useFixedValue}
+									textSize={TextSize.Small}
+									style={ColorStyle.Control}
+								/>
+							</div>
 						</div>
 					{/if}
 
@@ -353,7 +355,7 @@
 		</div>
 	</div>
 
-	<div class="flex items-center justify-between gap-4 h-13">
+	<div class="h-13 flex items-center justify-between gap-4">
 		<div class="h-[stretch]">
 			<Button
 				text="Back"

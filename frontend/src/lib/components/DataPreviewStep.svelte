@@ -1,4 +1,8 @@
 <script lang="ts">
+	import { ColorStyle } from "$lib/types/ColorStyle";
+	import { TextSize } from "$lib/types/TextSize";
+	import Button from "./Button.svelte";
+
 	interface Props {
 		csvData: string[][];
 		csvHeaders: string[];
@@ -227,8 +231,8 @@
 	validateAndProcessData();
 </script>
 
-<div class="max-w-5xl mx-auto">
-	<div class="text-center mb-8">
+<div class="max-w-5xl mx-auto flex flex-col gap-8">
+	<div class="text-center">
 		<h2 class="text-2xl font-semibold color-default mb-2">Preview Import Data</h2>
 		<p class="color-muted leading-relaxed m-0">
 			Review the processed data before importing. Check the validation results and ensure 
@@ -237,7 +241,7 @@
 	</div>
 
 	{#if isProcessing}
-		<div class="text-center py-12 bg-card rounded-xl mb-8">
+		<div class="text-center py-12 bg-card rounded-xl">
 			<div class="text-5xl color-primary mb-4">
 				<i class="fa-solid fa-spinner fa-spin"></i>
 			</div>
@@ -245,8 +249,8 @@
 			<p class="color-muted m-0">Validating and formatting your investment data</p>
 		</div>
 	{:else}
-		<div class="bg-card rounded-xl p-6 mb-8">
-			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+		<div class="bg-card rounded-xl p-6">
+			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 				<div class="flex items-center gap-4 p-4 rounded-lg border border-button" style="background: color-mix(in srgb, var(--color-success), transparent 92%); border-color: color-mix(in srgb, var(--color-success), transparent 70%);">
 					<div class="text-2xl color-success">
 						<i class="fa-solid fa-check-circle"></i>
@@ -300,7 +304,7 @@
 		</div>
 
 		{#if showInvalidRows && validationResult.invalidRows.length > 0}
-			<div class="bg-card rounded-xl p-6 mb-8">
+			<div class="bg-card rounded-xl p-6">
 				<h3 class="text-xl font-semibold color-default mb-4">Invalid Records</h3>
 				<div class="overflow-x-auto rounded-lg border border-button">
 					<table class="w-full border-collapse bg-background">
@@ -345,7 +349,7 @@
 		{/if}
 
 		{#if validationResult.validRows.length > 0}
-			<div class="bg-card rounded-xl p-6 mb-8">
+			<div class="bg-card rounded-xl p-6">
 				<h3 class="text-xl font-semibold color-default mb-4">Valid Records Preview</h3>
 				<div class="overflow-x-auto rounded-lg border border-button">
 					<table class="w-full border-collapse bg-background">
@@ -354,10 +358,10 @@
 								<th class="bg-card color-default font-semibold px-2 py-3 text-left border-b border-button text-sm">Symbol</th>
 								<th class="bg-card color-default font-semibold px-2 py-3 text-left border-b border-button text-sm">Type</th>
 								<th class="bg-card color-default font-semibold px-2 py-3 text-left border-b border-button text-sm">Date/Time</th>
-								<th class="bg-card color-default font-semibold px-2 py-3 text-left border-b border-button text-sm">Amount</th>
-								<th class="bg-card color-default font-semibold px-2 py-3 text-left border-b border-button text-sm">Unit Price</th>
-								<th class="bg-card color-default font-semibold px-2 py-3 text-left border-b border-button text-sm">Fee</th>
-								<th class="bg-card color-default font-semibold px-2 py-3 text-left border-b border-button text-sm">Total Value</th>
+								<th class="bg-card color-default font-semibold px-2 py-3 text-right border-b border-button text-sm">Amount</th>
+								<th class="bg-card color-default font-semibold px-2 py-3 text-right border-b border-button text-sm">Unit Price</th>
+								<th class="bg-card color-default font-semibold px-2 py-3 text-right border-b border-button text-sm">Fee</th>
+								<th class="bg-card color-default font-semibold px-2 py-3 text-right border-b border-button text-sm">Total Value</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -388,20 +392,27 @@
 		{/if}
 	{/if}
 
-	<div class="flex justify-between items-center gap-4 mt-8">
-		<button class="btn btn-secondary" onclick={handleBack}>
-			<i class="fa-solid fa-arrow-left mr-2"></i>
-			Back to Mapping
-		</button>
-		
-		<button 
-			class="btn btn-success btn-big" 
-			onclick={handleImport}
-			disabled={isProcessing || validationResult.validRows.length === 0}
-		>
-			<i class="fa-solid fa-download mr-2"></i>
-			Import {validationResult.validRows.length} Records
-		</button>
+	<div class="flex items-center justify-between gap-4 h-13">
+		<div class="h-[stretch]">
+			<Button
+				text="Back"
+				icon="fa-solid fa-arrow-left"
+				onclick={handleBack}
+				textSize={TextSize.Large}
+				style={ColorStyle.Secondary}
+			/>
+		</div>
+
+		<div class="h-[stretch]">
+			<Button
+				text="Import {validationResult.validRows.length} Records"
+				icon="fa-solid fa-download"
+				onclick={handleImport}
+				disabled={isProcessing || validationResult.validRows.length === 0}
+				textSize={TextSize.Large}
+				style={ColorStyle.Primary}
+			/>
+		</div>
 	</div>
 </div>
 
