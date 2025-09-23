@@ -26,14 +26,6 @@
 		isLoading?: boolean;
 	} = $props();
 
-	let styleClass = {
-		[ColorStyle.Primary]: 'button-primary',
-		[ColorStyle.Secondary]: 'button-secondary',
-		[ColorStyle.Accent]: 'button-accent',
-		[ColorStyle.Success]: 'button-success',
-		[ColorStyle.Error]: 'button-error'
-	};
-
 	let widthClass = {
 		[ContentWidth.Max]: 'w-max',
 		[ContentWidth.Full]: 'w-full'
@@ -48,9 +40,7 @@
 <button
 	{onclick}
 	disabled={disabled || isLoading}
-	class="button color-default {styleClass[
-		style
-	]} inline-block cursor-pointer rounded-lg border-0 {paddingClass[padding]} font-bold decoration-0 {widthClass[width]} h-full"
+	class="button color-default button-{style} inline-block rounded-lg border-0 {paddingClass[padding]} font-bold decoration-0 {widthClass[width]} h-full"
 >
 	<div class="grid items-center justify-center {textSize}">
 		{#if isLoading}
@@ -100,6 +90,10 @@
 		--btn-bg: var(--color-error);
 	}
 
+	.button-button {
+		--btn-bg: var(--color-button);
+	}
+
 	.button {
 		--white-ratio: 15%;
 		background-image: linear-gradient(
@@ -112,7 +106,12 @@
 		transition: background-position 0.5s;
 	}
 
-	.button:hover {
+	.button:hover:not(:disabled) {
 		background-position: right center;
+		cursor: pointer;
+	}
+
+	.button:disabled {
+		color: var(--color-muted);
 	}
 </style>

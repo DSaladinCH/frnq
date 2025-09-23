@@ -2,6 +2,9 @@
 	import Modal from './Modal.svelte';
 	import CustomDropdown from './CustomDropdown.svelte';
 	import Input from './Input.svelte';
+	import Button from './Button.svelte';
+	import { TextSize } from '$lib/types/TextSize';
+	import { ColorStyle } from '$lib/types/ColorStyle';
 
 	interface Props {
 		csvHeaders: string[];
@@ -59,10 +62,7 @@
 	const transactionTypes = [
 		{ value: 'BUY', label: 'Buy' },
 		{ value: 'SELL', label: 'Sell' },
-		{ value: 'DIVIDEND', label: 'Dividend' },
-		{ value: 'SPLIT', label: 'Stock Split' },
-		{ value: 'MERGER', label: 'Merger' },
-		{ value: 'SPIN_OFF', label: 'Spin-off' }
+		{ value: 'DIVIDEND', label: 'Dividend' }
 	];
 
 	let columnMappings: Record<string, string> = $state(initialColumnMappings);
@@ -239,8 +239,8 @@
 	}
 </script>
 
-<div class="mx-auto max-w-4xl">
-	<div class="mb-8 text-center">
+<div class="mx-auto max-w-4xl grid gap-8">
+	<div class="text-center">
 		<h2 class="color-default mb-2 text-2xl font-semibold">Map CSV Columns</h2>
 		<p class="color-muted m-0 leading-relaxed">
 			Map the columns from your CSV file to the required investment data fields. The system has
@@ -248,7 +248,7 @@
 		</p>
 	</div>
 
-	<div class="bg-card mb-8 rounded-xl p-6">
+	<div class="bg-card rounded-xl p-6">
 		<div class="border-button mb-6 border-b pb-4">
 			<div class="flex items-center gap-3 text-base">
 				<i class="fa-solid fa-file-csv color-success text-xl"></i>
@@ -260,49 +260,41 @@
 		<div class="flex flex-col gap-6">
 			{#each requiredFields as field}
 				<div
-					class="bg-background border-button grid grid-cols-1 items-start gap-x-4 max-lg:gap-y-4 rounded-lg border p-4 lg:grid-cols-[1fr_40px_1fr] lg:grid-rows-[auto_auto]"
+					class="bg-background border-button grid grid-cols-1 items-start gap-x-4 rounded-lg border p-4 max-md:gap-y-4 md:grid-cols-[1fr_40px_1fr]"
 				>
-					<div class="row-1 col-1 flex flex-col gap-2">
-						<div class="color-default text-sm font-semibold">
+					<div class="row-1 col-1 flex flex-col gap-2 self-center max-md:text-center">
+						<div class="color-default text-base font-semibold">
 							{field.label}
 							{#if field.required}
-								<span class="color-error ml-1">*</span>
+								<span class="color-error">*</span>
 							{/if}
 						</div>
 					</div>
 
-					<div class="row-2 col-1 flex flex-col gap-2">
-						{#if field.value === 'type'}
-							<div class="type-toggle">
-								<label class="flex cursor-pointer items-center gap-2 text-sm">
-									<!-- <input 
-												type="checkbox" 
-												class="w-4 h-4 accent-[var(--color-primary)]"
-												bind:checked={useFixedValue}
-												onchange={() => handleFixedValueChange(useFixedValue)}
-											/>
-											<span class="color-default">Use fixed value</span> -->
-									<Input
-										type="checkbox"
-										bind:checked={useFixedValue}
-										onchange={() => handleFixedValueChange(useFixedValue)}
-										title="Use fixed value"
-									/>
-								</label>
+					{#if field.value === 'type'}
+						<div class="row-2 col-1 flex flex-col gap-2">
+							<div class="type-toggle text-sm max-md:self-center">
+								<Input
+									type="checkbox"
+									bind:checked={useFixedValue}
+									onchange={() => handleFixedValueChange(useFixedValue)}
+									title="Use fixed value"
+								/>
 							</div>
-							<button
-								class="btn btn-small mapping-btn"
+
+							<Button
+								icon="fa-solid fa-cog"
+								text={useFixedValue ? 'Set Value' : 'Map Values'}
 								onclick={() => showValueMappingDialog('type')}
 								disabled={!columnMappings.type && !useFixedValue}
-							>
-								<i class="fa-solid fa-cog"></i>
-								{useFixedValue ? 'Set Value' : 'Map Values'}
-							</button>
-						{/if}
-					</div>
+								textSize={TextSize.Small}
+								style={ColorStyle.Control}
+							/>
+						</div>
+					{/if}
 
-					<div class="color-muted self-center flex items-center justify-center">
-						<i class="fa-solid fa-arrow-left max-lg:rotate-90"></i>
+					<div class="color-muted flex items-center justify-center self-center">
+						<i class="fa-solid fa-arrow-left max-md:rotate-90"></i>
 					</div>
 
 					<div class="flex flex-col gap-2">
@@ -361,16 +353,27 @@
 		</div>
 	</div>
 
-	<div class="mt-8 flex items-center justify-between gap-4">
-		<button class="btn btn-secondary" onclick={handleBack}>
-			<i class="fa-solid fa-arrow-left mr-2"></i>
-			Back
-		</button>
+	<div class="flex items-center justify-between gap-4 h-13">
+		<div class="h-[stretch]">
+			<Button
+				text="Back"
+				icon="fa-solid fa-arrow-left"
+				onclick={handleBack}
+				textSize={TextSize.Large}
+				style={ColorStyle.Secondary}
+			/>
+		</div>
 
-		<button class="btn btn-primary btn-big" onclick={handleNext} disabled={!isComplete()}>
-			Continue to Preview
-			<i class="fa-solid fa-arrow-right ml-2"></i>
-		</button>
+		<div class="h-[stretch]">
+			<Button
+				text="Continue to Preview"
+				icon="fa-solid fa-arrow-right"
+				onclick={handleNext}
+				disabled={!isComplete()}
+				textSize={TextSize.Large}
+				style={ColorStyle.Primary}
+			/>
+		</div>
 	</div>
 </div>
 
@@ -434,5 +437,4 @@
 </Modal>
 
 <style>
-
 </style>
