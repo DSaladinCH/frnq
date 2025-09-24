@@ -35,18 +35,14 @@
 	} = $props();
 
 	// Update investment fields when quote changes
-	$effect(() => {
-		console.log("Quote: ", quote);
-		
+	$effect(() => {		
 		if (quote) {
 			// Check if the quote exists in database (has a valid ID > 0)
 			if (quote.id > 0) {
-				console.log("Quote exists in DB with ID: ", quote.id);
 				investment.quoteId = quote.id;
 				investment.providerId = quote.providerId;
 				investment.quoteSymbol = quote.symbol;
 			} else {
-				console.log("Quote does not exist in DB, using providerId and symbol");
 				// Quote doesn't exist in database yet, use providerId and symbol
 				investment.quoteId = 0;
 				investment.providerId = quote.providerId;
