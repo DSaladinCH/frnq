@@ -1,6 +1,7 @@
 <script lang="ts">
 	import {
 		InvestmentType,
+		investmentValuesValid,
 		updateInvestment,
 		type InvestmentModel
 	} from '$lib/services/investmentService';
@@ -12,7 +13,6 @@
 
 	type InvestmentTypeIcon = { type: InvestmentType; faIcon: string };
 	let isLoading = $state(false);
-	let selectedQuote: QuoteModel | null = $state(null);
 
 	let {
 		investment = $bindable({
@@ -28,15 +28,36 @@
 		}),
 		quote = $bindable(null),
 		saveInvestment
-	}: { 
-		investment?: InvestmentModel; 
+	}: {
+		investment?: InvestmentModel;
 		quote?: QuoteModel | null;
-		saveInvestment: (investment: InvestmentModel) => Promise<void> 
+		saveInvestment: (investment: InvestmentModel) => Promise<void>;
 	} = $props();
 
-	// Sync selectedQuote with the quote prop
+	// Update investment fields when quote changes
 	$effect(() => {
-		selectedQuote = quote;
+		console.log("Quote: ", quote);
+		
+		if (quote) {
+			// Check if the quote exists in database (has a valid ID > 0)
+			if (quote.id > 0) {
+				console.log("Quote exists in DB with ID: ", quote.id);
+				investment.quoteId = quote.id;
+				investment.providerId = quote.providerId;
+				investment.quoteSymbol = quote.symbol;
+			} else {
+				console.log("Quote does not exist in DB, using providerId and symbol");
+				// Quote doesn't exist in database yet, use providerId and symbol
+				investment.quoteId = 0;
+				investment.providerId = quote.providerId;
+				investment.quoteSymbol = quote.symbol;
+			}
+		} else {
+			// Clear quote fields if no quote selected
+			investment.quoteId = 0;
+			investment.providerId = undefined;
+			investment.quoteSymbol = undefined;
+		}
 	});
 
 	// Helper to normalize date string for datetime-local input
@@ -66,7 +87,9 @@
 	}
 
 	let totalInvestment: number = $derived(
-		investment.pricePerUnit * investment.amount + investment.totalFees
+		investment.type === InvestmentType.Dividend
+			? investment.amount
+			: investment.pricePerUnit * investment.amount + investment.totalFees
 	);
 
 	const investmentTypes: InvestmentTypeIcon[] = [
@@ -79,40 +102,18 @@
 		investment.type = type;
 	}
 
-	function handleQuoteSelect(selectedQuote: QuoteModel | null) {
-		quote = selectedQuote;
-
-		if (selectedQuote) {
-			// Check if the quote exists in database (has a valid ID > 0)
-			if (selectedQuote.id > 0) {
-				investment.quoteId = selectedQuote.id;
-				investment.providerId = undefined;
-				investment.quoteSymbol = undefined;
-			} else {
-				// Quote doesn't exist in database yet, use providerId and symbol
-				investment.quoteId = 0;
-				investment.providerId = selectedQuote.providerId;
-				investment.quoteSymbol = selectedQuote.symbol;
-			}
-		} else {
-			investment.quoteId = 0;
-			investment.providerId = undefined;
-			investment.quoteSymbol = undefined;
-		}
-	}
-
 	function formatCurrency(value: number): string {
 		return value.toLocaleString(undefined, { style: 'currency', currency: 'CHF' });
 	}
 
 	async function saveChanges() {
-		// Validate inputs
-		const hasValidQuote = investment.quoteId > 0 || (investment.providerId && investment.quoteSymbol);
-		
-		if (investment.pricePerUnit <= 0 || investment.amount <= 0 || !investment.date || !hasValidQuote) {
+		if (!investmentValuesValid(investment)) {
 			// TODO: Implement toast notifications
-			alert('Please fill in all required fields with valid values and select a quote.');
-			return;
+			let errorMsg = 'Please fix the following issues:\n';
+			if (!investmentValuesValid(investment)) {
+				alert(errorMsg);
+				return;
+			}
 		}
 
 		isLoading = true;
@@ -121,7 +122,7 @@
 	}
 </script>
 
-<div class="overflow-y-auto pr-1 grid gap-4">
+<div class="grid gap-4 overflow-y-auto pr-1">
 	<div class="grid gap-3 md:grid-cols-[2fr_1fr]">
 		<div class="xs:grid-cols-2 grid gap-3 sm:grid-cols-3">
 			{#each investmentTypes as type}
@@ -130,10 +131,8 @@
 						class="investment-type card card-reactive h-15 xs:h-22 xs:flex-col xs:gap-2 flex items-center justify-center gap-4"
 						class:selected={investment.type === type.type}
 					>
-						<i class="{type.faIcon} text-2xl xs:text-3xl"></i>
-						<span class="text-lg xs:text-xl font-bold"
-							>{InvestmentType[type.type]}</span
-						>
+						<i class="{type.faIcon} xs:text-3xl text-2xl"></i>
+						<span class="xs:text-xl text-lg font-bold">{InvestmentType[type.type]}</span>
 					</div>
 				</button>
 			{/each}
@@ -143,17 +142,15 @@
 	</div>
 
 	<div>
-		<label for="quote-search" class="text-lg font-bold mb-2 block">Quote</label>
-		<SearchableDropDown 
-			bind:selectedQuote={selectedQuote}
-			onSelect={handleQuoteSelect}
+		<label for="quote-search" class="mb-2 block text-lg font-bold">Quote</label>
+		<SearchableDropDown
+			bind:selectedQuote={quote}
 			placeholder="Search for a quote (e.g., Apple, AAPL)..."
 		/>
 	</div>
 
-
 	<div class="xs:grid-cols-2 xs:gap-3 grid grid-cols-1 gap-1 sm:grid-cols-3">
-		<div class="flex flex-col">
+		<div class="flex flex-col {investment.type === InvestmentType.Dividend ? 'hidden' : ''}">
 			<span class="text-lg font-bold">Market</span>
 			<input
 				class="textbox"
@@ -175,7 +172,7 @@
 				bind:value={investment.amount}
 			/>
 		</div>
-		<div class="flex flex-col">
+		<div class="flex flex-col {investment.type === InvestmentType.Dividend ? 'hidden' : ''}">
 			<span class="text-lg font-bold">Fees</span>
 			<input
 				class="textbox"
@@ -197,7 +194,9 @@
 			/>
 		</div>
 		<!-- Empty placeholder -->
-		<div class="xs:max-sm:hidden"></div>
+		<div
+			class="xs:max-sm:hidden {investment.type === InvestmentType.Dividend ? 'hidden' : ''}"
+		></div>
 		<div class="flex flex-col">
 			<span class="text-lg font-bold">Total</span>
 			<span class="grow-1 text-(--color-success) flex items-center text-xl font-bold">
@@ -212,7 +211,7 @@
 
 	<div class="grid">
 		<Button
-			icon={investment.id === 0 ? "fa-solid fa-plus" : "fa-solid fa-floppy-disk"}
+			icon={investment.id === 0 ? 'fa-solid fa-plus' : 'fa-solid fa-floppy-disk'}
 			text={investment.id === 0 ? 'Create Investment' : 'Save Changes'}
 			style={ColorStyle.Success}
 			width={ContentWidth.Full}

@@ -1,4 +1,4 @@
-import { fetchWithAuth } from "./authService";
+import { fetchWithAuth } from './authService';
 
 // Helper to create a default InvestmentModel
 export function createDefaultInvestment(): InvestmentModel {
@@ -38,6 +38,24 @@ export enum InvestmentType {
 type InvestmentRequest = Omit<InvestmentModel, 'provider'> & {
 	providerId: string;
 };
+
+export function investmentValuesValid(investment: InvestmentModel): boolean {
+	const hasValidQuote =
+		investment.quoteId > 0 ||
+		(investment.providerId !== undefined &&
+			investment.providerId !== '' &&
+			investment.quoteSymbol !== undefined &&
+			investment.quoteSymbol !== '');
+
+	const validNumber =
+		investment.type === InvestmentType.Dividend
+			? investment.amount > 0
+			: investment.pricePerUnit > 0 && investment.amount > 0;
+
+	const hasValidDate = investment.date !== undefined && investment.date !== '';
+
+	return hasValidQuote && validNumber && hasValidDate;
+}
 
 export async function getInvestments(): Promise<InvestmentModel[]> {
 	const startTime = Date.now();
@@ -98,7 +116,7 @@ export async function updateInvestment(investment: InvestmentModel): Promise<Inv
 
 export async function deleteInvestment(investmentId: number): Promise<void> {
 	const startTime = Date.now();
-	
+
 	const url = `${baseUrl}/api/investments/${investmentId}`;
 	const res = await fetchWithAuth(url, {
 		method: 'DELETE'

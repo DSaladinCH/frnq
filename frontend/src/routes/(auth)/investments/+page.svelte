@@ -5,7 +5,10 @@
 	import type { QuoteModel } from '$lib/Models/QuoteModel';
 	import {
 		type InvestmentModel,
-		createDefaultInvestment
+		createDefaultInvestment,
+
+		investmentValuesValid
+
 	} from '$lib/services/investmentService';
 	import { dataStore } from '$lib/stores/dataStore';
 	import InvestmentCard from '$lib/components/InvestmentCard.svelte';
@@ -70,7 +73,7 @@
 
 	async function saveInvestment(investment: InvestmentModel) {
 		// Validate inputs
-		if (investment.pricePerUnit <= 0 || investment.amount <= 0 || !investment.date) {
+		if (!investmentValuesValid(investment)) {
 			// TODO: Implement toast notifications
 			alert('Please fill in all required fields with valid values.');
 			return;

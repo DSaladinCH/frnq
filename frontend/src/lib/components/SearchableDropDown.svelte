@@ -4,14 +4,14 @@
 
 	type Props = {
 		selectedQuote?: QuoteModel | null;
-		onSelect: (quote: QuoteModel | null) => void;
+		onSelect?: (quote: QuoteModel | null) => void;
 		placeholder?: string;
 		providerId?: string;
 	};
 
 	let {
 		selectedQuote = $bindable(null),
-		onSelect,
+		onSelect = undefined,
 		placeholder = 'Search for quotes...',
 		providerId = 'yahoo-finance'
 	}: Props = $props();
@@ -60,12 +60,9 @@
 		const target = e.target as HTMLInputElement;
 		searchTerm = target.value;
 
-		// Clear selection if user is typing something different
-		if (selectedQuote && searchTerm !== selectedQuote.name) {
-			selectedQuote = null;
-			onSelect(null);
-		}
-
+		// Don't clear selection while user is typing - let them finish their search
+		// Selection will be cleared when they explicitly select a different quote or clear the input
+		
 		// Clear existing timeout
 		if (searchTimeout) {
 			clearTimeout(searchTimeout);
@@ -82,7 +79,7 @@
 		selectedQuote = quote;
 		searchTerm = quote.name;
 		isOpen = false;
-		onSelect(quote);
+		onSelect?.(quote);
 	}
 
 	// Clear selection
@@ -91,7 +88,7 @@
 		searchTerm = '';
 		searchResults = [];
 		isOpen = false;
-		onSelect(null);
+		onSelect?.(null);
 		inputElement.focus();
 	}
 

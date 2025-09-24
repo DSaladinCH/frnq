@@ -64,15 +64,15 @@
 				<span class="color-muted">Amount</span>
 				<span class="font-bold">{formatNumber(investment.amount)}</span>
 			</div>
-			<div class="grid grid-rows-2">
+			<div class="grid grid-rows-2 {investment.type === InvestmentType.Dividend ? 'hidden' : ''}">
 				<span class="color-muted">Price per Unit</span>
 				<span class="font-bold">{formatCurrency(investment.pricePerUnit)}</span>
 			</div>
-			<div class="grid grid-rows-2">
+			<div class="grid grid-rows-2 {investment.type === InvestmentType.Dividend ? 'hidden' : ''}">
 				<span class="color-muted">Total Fees</span>
 				<span class="font-bold">{formatCurrency(investment.totalFees)}</span>
 			</div>
-			<div class="grid grid-rows-2">
+			<div class="grid grid-rows-2 {investment.type === InvestmentType.Dividend ? 'hidden' : ''}">
 				<span class="color-muted">Total</span>
 				<span class="font-bold"
 					>{formatCurrency(
