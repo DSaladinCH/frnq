@@ -23,37 +23,9 @@
 	let mainLinks = $derived(visibleLinks.filter(link => !link.inFooter));
 	let footerLinks = $derived(visibleLinks.filter(link => link.inFooter));
 
-	let showLoading = $state(true);
-	let fadeOut = $state(false);
 	let mobileMenuOpen = $state(false);
 
-	// Reactive values that track the store
-	let loading = $state(dataStore.loading);
-	let error = $state(dataStore.error);
-
-	// Subscribe to store changes
-	$effect(() => {
-		const unsubscribe = dataStore.subscribe(() => {
-			loading = dataStore.loading;
-			error = dataStore.error;
-		});
-		return unsubscribe;
-	});
-
-	$effect(() => {
-		if (!loading && showLoading && !fadeOut) {
-			// Start fade-out when loading completes
-			fadeOut = true;
-		} else if (loading && !showLoading) {
-			// Reset loading screen when loading starts again
-			showLoading = true;
-			fadeOut = false;
-		}
-	});
-
-	onMount(async () => {
-		await dataStore.initialize();
-	});
+	// No data initialization in main layout - that's handled by (auth) routes
 
 	function navigateTo(path: string) {
 		goto(path);
@@ -197,65 +169,7 @@
 
 	<!-- Main Content Area -->
 	<div class="relative md:col-start-2">
-		{#if showLoading}
-			<div
-				class="loading-screen bg-background-backdrop color-default fixed left-0 top-0 z-50 flex h-screen w-full flex-col items-center justify-center md:absolute md:h-full"
-				class:fade-out={fadeOut}
-				ontransitionend={() => {
-					if (fadeOut) showLoading = false;
-				}}
-			>
-				<div class="bouncing-dots">
-					<div class="dot"></div>
-					<div class="dot"></div>
-					<div class="dot"></div>
-				</div>
-				<p class="fade-in pulse">Loading positions...</p>
-			</div>
-		{/if}
-		{#if !loading && !showLoading}
-			{#if error}
-				<div class="error-screen">
-					<div class="sad-icon" aria-hidden="true">
-						<svg
-							width="64"
-							height="64"
-							viewBox="0 0 64 64"
-							fill="none"
-							xmlns="http://www.w3.org/2000/svg"
-							aria-hidden="true"
-						>
-							<circle cx="32" cy="32" r="28" stroke="#ffb3c6" stroke-width="6" fill="none" />
-							<line
-								x1="20"
-								y1="20"
-								x2="44"
-								y2="44"
-								stroke="#ffb3c6"
-								stroke-width="6"
-								stroke-linecap="round"
-							/>
-							<line
-								x1="44"
-								y1="20"
-								x2="20"
-								y2="44"
-								stroke="#ffb3c6"
-								stroke-width="6"
-								stroke-linecap="round"
-							/>
-						</svg>
-					</div>
-					<h2>There was an error fetching the data</h2>
-					<!-- <p class="error-message">{error}</p> -->
-					<button class="btn btn-big btn-error" onclick={() => dataStore.refreshData()}
-						>Retry</button
-					>
-				</div>
-			{:else}
-				{@render children?.()}
-			{/if}
-		{/if}
+		{@render children?.()}
 	</div>
 </div>
 

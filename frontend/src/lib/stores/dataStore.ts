@@ -53,17 +53,20 @@ export class DataStore {
 	async initialize() {
 		if (this._initialized) return;
 
+		console.log('DataStore: Starting initialization...');
 		this._loading = true;
 		this._error = null;
 		this.notify();
 
 		try {
+			console.log('DataStore: Making API calls...');
 			const [positionsData, investmentsData, groupsData] = await Promise.all([
 				getPositionSnapshots(null, null),
 				getInvestments(),
 				getQuoteGroups()
 			]);
 
+			console.log('DataStore: API calls successful');
 			this._snapshots = positionsData.snapshots;
 			this._quotes = positionsData.quotes;
 			this._investments = investmentsData;
@@ -71,8 +74,10 @@ export class DataStore {
 			this._initialized = true;
 			this._error = null;
 		} catch (e) {
+			console.log('DataStore: API calls failed:', e);
 			this._error = (e as Error).message;
 		} finally {
+			console.log('DataStore: Setting loading to false');
 			this._loading = false;
 			this.notify();
 		}

@@ -28,7 +28,13 @@ function scheduleRefresh(expiry: number) {
 	const msUntilExpiry = expiry - now;
 
 	if (msUntilExpiry > 30_000) {
-		refreshTimeout = setTimeout(refreshToken, msUntilExpiry - 30_000);
+		refreshTimeout = setTimeout(async () => {
+			const success = await refreshToken();
+			if (!success && browser) {
+				const { goto } = await import('$app/navigation');
+				goto('/login');
+			}
+		}, msUntilExpiry - 30_000);
 	}
 }
 
@@ -85,7 +91,7 @@ export async function login(email: string, password: string): Promise<void> {
 /**
  * Refresh token using refresh cookie
  */
-export async function refreshToken(): Promise<void> {
+export async function refreshToken(): Promise<boolean> {
 	const res = await fetch(`${baseUrl}/api/auth/refresh`, {
 		method: 'POST',
 		credentials: 'include'
@@ -94,11 +100,12 @@ export async function refreshToken(): Promise<void> {
 	if (!res.ok) {
 		accessToken.set(null);
 		expiresAt.set(null);
-		return;
+		return false;
 	}
 
 	const data: AuthResponse = await res.json();
 	setAuth(data.accessToken, data.expiresAt);
+	return true;
 }
 
 /**
@@ -131,11 +138,35 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
 	let res = await fetch(url, options);
 
 	if (res.status === 401) {
-		await refreshToken();
-		accessToken.subscribe((v) => (token = v))();
+		// Try to refresh the token
+		const refreshSuccess = await refreshToken();
+		
+		if (!refreshSuccess) {
+			// Refresh failed, redirect to login
+			if (browser) {
+				const { goto } = await import('$app/navigation');
+				goto('/login');
+			}
+			throw new Error('Authentication failed');
+		}
+		
+		// Get the refreshed token
+		let refreshedToken: string | null = null;
+		accessToken.subscribe((v) => (refreshedToken = v))();
+		
+		// Retry with new token
 		if (!options.headers) options.headers = {};
-		(options.headers as Record<string, string>).Authorization = token ? `Bearer ${token}` : '';
+		(options.headers as Record<string, string>).Authorization = `Bearer ${refreshedToken}`;
 		res = await fetch(url, options);
+		
+		// If still 401 after refresh, redirect to login
+		if (res.status === 401) {
+			if (browser) {
+				const { goto } = await import('$app/navigation');
+				goto('/login');
+			}
+			throw new Error('Authentication failed');
+		}
 	}
 
 	return res;
