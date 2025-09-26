@@ -187,7 +187,7 @@
 	/* Keep complex dropdown styling that's difficult to replace with Tailwind */
 	.dropdown-button {
 		width: 100%;
-		padding: 0.5rem 1.5rem 0.5rem 0.75rem;
+		padding: 0.5rem 0.75rem 0.5rem 0.75rem;
 		border: 1px solid var(--color-button);
 		border-radius: 6px;
 		background: var(--color-card);
@@ -196,6 +196,7 @@
 		cursor: pointer;
 		transition: all 0.2s ease;
 		display: flex;
+		gap: 0.25rem;
 		align-items: center;
 		justify-content: space-between;
 		text-align: left;
