@@ -527,8 +527,6 @@
 	</div>
 </div>
 
-<!-- The tooltip element is created dynamically and appended to body -->
-
 <style>
 	.background-fade {
 		background: linear-gradient(
