@@ -56,9 +56,10 @@
 		const last = snaps[snaps.length - 1];
 		return {
 			invested: last?.invested ?? 0,
-			totalValue: last?.totalValue ?? 0,
+			currentValue: last?.currentValue ?? 0,
+			totalValue: last?.currentValue ?? 0 + (last?.realizedGain ?? 0),
 			realized: last?.realizedGain ?? 0,
-			unrealized: last?.unrealizedGain ?? 0
+			totalProfit: (last?.currentValue ?? 0 + (last?.realizedGain ?? 0)) - (last?.invested ?? 0)
 		};
 	}
 
@@ -69,9 +70,13 @@
 			.filter(Boolean);
 		return {
 			invested: lastSnaps.reduce((sum, s) => sum + (s.invested ?? 0), 0),
-			totalValue: lastSnaps.reduce((sum, s) => sum + (s.totalValue ?? 0), 0),
+			currentValue: lastSnaps.reduce((sum, s) => sum + (s.currentValue ?? 0), 0),
 			realized: lastSnaps.reduce((sum, s) => sum + (s.realizedGain ?? 0), 0),
-			unrealized: lastSnaps.reduce((sum, s) => sum + (s.unrealizedGain ?? 0), 0)
+			totalValue: lastSnaps.reduce((sum, s) => sum + (s.currentValue ?? 0), 0) +
+				lastSnaps.reduce((sum, s) => sum + (s.realizedGain ?? 0), 0),
+			totalProfit: lastSnaps.reduce((sum, s) => sum + (s.currentValue ?? 0), 0) +
+				lastSnaps.reduce((sum, s) => sum + (s.realizedGain ?? 0), 0) -
+				lastSnaps.reduce((sum, s) => sum + (s.invested ?? 0), 0)
 		};
 	}
 
@@ -97,9 +102,8 @@
 		const firstNonZeroIdx = snaps.findIndex(
 			(s) =>
 				(s.invested ?? 0) !== 0 ||
-				(s.totalValue ?? 0) !== 0 ||
-				(s.realizedGain ?? 0) !== 0 ||
-				(s.unrealizedGain ?? 0) !== 0
+				(s.currentValue ?? 0) !== 0 ||
+				(s.realizedGain ?? 0) !== 0
 		);
 		return firstNonZeroIdx === -1 ? [] : snaps.slice(firstNonZeroIdx);
 	}
@@ -113,6 +117,7 @@
 		} else if (filterMode === 'quote' && filterQuoteId != null) {
 			snaps = snapshots.filter((s) => s.quoteId === filterQuoteId);
 		} else snaps = snapshots;
+		
 		return filterLeadingZeroSnapshots(snaps);
 	});
 
@@ -164,6 +169,24 @@
 	}
 	type Card = GroupCard | QuoteCard;
 
+	// Helper to check if a quote has any active positions in recent history
+	function hasActivePosition(snapshots: PositionSnapshot[]): boolean {
+		if (snapshots.length === 0) return false;
+		// Check if the quote had any active positions in its recent history (last 3 months by default)
+		// This aligns with the chart's default period of 3m
+		const now = new Date();
+		const threeMonthsAgo = new Date(now);
+		threeMonthsAgo.setMonth(now.getMonth() - 3);
+		
+		const recentSnapshots = snapshots.filter(snap => new Date(snap.date) >= threeMonthsAgo);
+		return recentSnapshots.some(snap => snap.amount > 0);
+	}
+
+	// Helper to check if a group has any currently active positions
+	function hasActivePositionsInGroup(quotes: Record<number, PositionSnapshot[]>): boolean {
+		return Object.values(quotes).some(snaps => hasActivePosition(snaps));
+	}
+
 	function getQuoteCards(
 		groupedSnapshotsValue: {
 			groups: Record<string, { name: string; quotes: Record<number, PositionSnapshot[]> }>;
@@ -175,30 +198,34 @@
 	): Card[] {
 		if (filterModeValue === 'full') {
 			return [
-				...Object.entries(groupedSnapshotsValue.groups).map(
-					([groupId, { name: groupName, quotes }]) => ({
+				...Object.entries(groupedSnapshotsValue.groups)
+					.filter(([groupId, { quotes }]) => hasActivePositionsInGroup(quotes))
+					.map(([groupId, { name: groupName, quotes }]) => ({
 						type: 'group' as const,
 						groupId,
 						groupName,
 						quotes
-					})
-				),
-				...Object.entries(groupedSnapshotsValue.ungrouped).map(([quoteKey, snaps]) => ({
-					type: 'quote' as const,
-					quoteKey: +quoteKey,
-					snaps
-				}))
+					})),
+				...Object.entries(groupedSnapshotsValue.ungrouped)
+					.filter(([quoteKey, snaps]) => hasActivePosition(snaps))
+					.map(([quoteKey, snaps]) => ({
+						type: 'quote' as const,
+						quoteKey: +quoteKey,
+						snaps
+					}))
 			];
 		} else if (filterModeValue === 'group' && filterGroupIdValue) {
-			// Only show quotes of the selected group
+			// Only show quotes of the selected group that have active positions
 			const group = groupedSnapshotsValue.groups[filterGroupIdValue];
 			if (!group) return [];
-			return Object.entries(group.quotes).map(([quoteKey, snaps]) => ({
-				type: 'quote' as const,
-				quoteKey: +quoteKey,
-				snaps,
-				groupId: filterGroupIdValue
-			}));
+			return Object.entries(group.quotes)
+				.filter(([quoteKey, snaps]) => hasActivePosition(snaps))
+				.map(([quoteKey, snaps]) => ({
+					type: 'quote' as const,
+					quoteKey: +quoteKey,
+					snaps,
+					groupId: filterGroupIdValue
+				}));
 		} else if (filterModeValue === 'quote' && filterQuoteIdValue != null) {
 			let snaps = null;
 			let groupId: string | undefined = filterGroupIdValue ?? undefined;
@@ -228,7 +255,7 @@
 	type PositionCardProps = {
 		type: 'group' | 'quote';
 		groupName?: string;
-		summary: { invested: number; totalValue: number; realized: number; unrealized: number };
+		summary: { invested: number; currentValue: number; totalValue: number; realized: number; totalProfit: number };
 		title: string;
 		onView?: (() => void) | undefined;
 		isActiveQuote?: boolean;
@@ -239,7 +266,7 @@
 	function getCardProps(card: Card): PositionCardProps {
 		if (card.type === 'group') {
 			const summary = getGroupSummaryLast(card.quotes);
-			const profit = summary.realized + summary.unrealized;
+			const profit = summary.totalProfit;
 			return {
 				type: 'group',
 				groupName: card.groupName,
@@ -252,7 +279,7 @@
 			};
 		} else {
 			const summary = getSummaryFromLastSnapshots(card.snaps);
-			const profit = summary.realized + summary.unrealized;
+			const profit = summary.totalProfit;
 			return {
 				type: 'quote',
 				title: getQuoteDisplayName(card.quoteKey),
@@ -291,7 +318,7 @@
 			<PositionCard
 				type="group"
 				title="<i class='fa-solid fa-arrow-left'></i> Back to full view"
-				summary={{ invested: 0, totalValue: 0, realized: 0, unrealized: 0 }}
+				summary={{ invested: 0, currentValue: 0, totalValue: 0, realized: 0, totalProfit: 0 }}
 				onView={handleBackToFullView}
 				isActiveQuote={false}
 				viewLabel="Back to full view"

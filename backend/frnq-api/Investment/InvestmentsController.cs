@@ -35,6 +35,13 @@ public class InvestmentsController(InvestmentManagement investmentManagement) : 
         return Created();
     }
 
+    [HttpPost("bulk")]
+    public async Task<IActionResult> CreateInvestmentsBulk([FromBody] List<InvestmentRequest> investments)
+    {
+        var createdInvestments = await investmentManagement.CreateInvestmentsAsync(investments);
+        return Ok(createdInvestments);
+    }
+
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateInvestment(int id, [FromBody] InvestmentRequest investment)
     {

@@ -8,7 +8,7 @@
 
 	interface Props {
 		csvHeaders: string[];
-		sampleData: string[][];
+		csvData: string[][];
 		filename?: string;
 		initialColumnMappings?: Record<string, string>;
 		initialValueMappings?: Record<string, Record<string, string>>;
@@ -27,7 +27,7 @@
 
 	const {
 		csvHeaders,
-		sampleData,
+		csvData,
 		filename = 'uploaded-file.csv',
 		initialColumnMappings = {},
 		initialValueMappings = {},
@@ -110,10 +110,11 @@
 		const columnIndex = csvHeaders.indexOf(csvColumn);
 		if (columnIndex === -1) return [];
 
-		const values = sampleData
+		const values = csvData
+			.slice(0, 5) // Only use first 5 rows for sample display
 			.map((row) => row[columnIndex])
 			.filter((val) => val && val.trim())
-			.slice(0, 3);
+			.slice(0, 3); // Show only first 3 unique values for cleaner display
 
 		return [...new Set(values)]; // Remove duplicates
 	}
@@ -122,7 +123,7 @@
 		const columnIndex = csvHeaders.indexOf(csvColumn);
 		if (columnIndex === -1) return [];
 
-		const values = sampleData.map((row) => row[columnIndex]).filter((val) => val && val.trim());
+		const values = csvData.map((row) => row[columnIndex]).filter((val) => val && val.trim());
 
 		return [...new Set(values)];
 	}
@@ -260,9 +261,9 @@
 				<span class="color-default font-semibold">{filename}</span>
 				<span class="color-muted text-sm">
 					{#if treatHeaderAsData}
-						{sampleData.length} total rows (all as data)
+						{csvData.length} total rows (all as data)
 					{:else}
-						{sampleData.length} data rows
+						{csvData.length} data rows
 					{/if}
 				</span>
 			</div>

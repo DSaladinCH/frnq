@@ -2,6 +2,8 @@
 	import PageHead from '$lib/components/PageHead.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import ImportWizard from '$lib/components/ImportWizard.svelte';
+	import { addInvestmentsBulk, InvestmentType } from '$lib/services/investmentService';
+	import type { InvestmentModel } from '$lib/services/investmentService';
 	import { onMount } from 'svelte';
 
 	interface ProcessedInvestment {
@@ -21,25 +23,65 @@
 	let isImporting = $state(false);
 	let importSuccess = $state(false);
 	let importedCount = $state(0);
+	let importError = $state<string | null>(null);
+
+	function convertProcessedToInvestmentModel(processed: ProcessedInvestment): InvestmentModel {
+		// Convert string type to enum
+		let investmentType = InvestmentType.Buy;
+		switch (processed.type.toLowerCase()) {
+			case 'sell':
+				investmentType = InvestmentType.Sell;
+				break;
+			case 'dividend':
+				investmentType = InvestmentType.Dividend;
+				break;
+			default:
+				investmentType = InvestmentType.Buy;
+				break;
+		}
+
+		return {
+			id: 0,
+			quoteId: 0,
+			providerId: 'yahoo-finance', // Set default provider
+			quoteSymbol: processed.symbol,
+			date: processed.datetime,
+			type: investmentType,
+			amount: processed.amount,
+			pricePerUnit: processed.unitPrice,
+			totalFees: processed.feePrice
+		};
+	}
 
 	async function handleImportInvestments(data: ProcessedInvestment[]) {
 		isImporting = true;
+		importError = null;
 		
 		try {
-			// Simulate API call delay
-			await new Promise(resolve => setTimeout(resolve, 1500));
+			// Filter only valid investments
+			const validInvestments = data.filter(item => item.isValid);
 			
-			// Call the parent component's import function
+			if (validInvestments.length === 0) {
+				throw new Error('No valid investments to import');
+			}
+
+			// Convert ProcessedInvestment to InvestmentModel
+			const investmentModels = validInvestments.map(convertProcessedToInvestmentModel);
+			
+			// Call the API to bulk create investments
+			await addInvestmentsBulk(investmentModels);
+			
+			// Call the parent component's import function if it exists
 			if (onImportInvestments) {
 				onImportInvestments(data);
 			}
 			
-			importedCount = data.length;
+			importedCount = validInvestments.length;
 			importSuccess = true;
 			
 		} catch (error) {
 			console.error('Import failed:', error);
-			// Handle error - could show error state
+			importError = error instanceof Error ? error.message : 'An unknown error occurred';
 		} finally {
 			isImporting = false;
 		}
@@ -48,6 +90,7 @@
 	function startNewImport() {
 		importSuccess = false;
 		importedCount = 0;
+		importError = null;
 	}
 
 	onMount(() => {
@@ -73,6 +116,21 @@
 				<p>Please wait while we process and save your investment data.</p>
 				<div class="progress-bar-loading">
 					<div class="progress-fill"></div>
+				</div>
+			</div>
+		</div>
+	{:else if importError}
+		<div class="import-error">
+			<div class="error-content">
+				<div class="error-icon">
+					<i class="fa-solid fa-exclamation-triangle"></i>
+				</div>
+				<h2>Import Failed</h2>
+				<p class="error-message">{importError}</p>
+				<div class="error-actions">
+					<button class="btn btn-primary btn-big" onclick={startNewImport}>
+						Try Again
+					</button>
 				</div>
 			</div>
 		</div>
@@ -110,7 +168,18 @@
 		margin: 2rem 0;
 	}
 
-	.progress-content {
+	.import-error {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 400px;
+		background: var(--color-card);
+		border-radius: 12px;
+		margin: 2rem 0;
+	}
+
+	.progress-content,
+	.error-content {
 		text-align: center;
 		max-width: 400px;
 	}
@@ -121,16 +190,36 @@
 		margin-bottom: 1.5rem;
 	}
 
-	.progress-content h2 {
+	.error-icon {
+		font-size: 4rem;
+		color: var(--color-danger);
+		margin-bottom: 1.5rem;
+	}
+
+	.progress-content h2,
+	.error-content h2 {
 		font-size: 1.5rem;
 		color: var(--color-text);
 		margin: 0 0 0.5rem 0;
 	}
 
-	.progress-content p {
+	.progress-content p,
+	.error-content p {
 		color: var(--color-muted);
 		margin: 0 0 2rem 0;
 		line-height: 1.5;
+	}
+
+	.error-message {
+		color: var(--color-danger) !important;
+		font-weight: 500;
+	}
+
+	.error-actions {
+		display: flex;
+		gap: 1rem;
+		justify-content: center;
+		flex-wrap: wrap;
 	}
 
 	.progress-bar-loading {
@@ -224,18 +313,21 @@
 
 	/* Responsive design */
 	@media (max-width: 768px) {
-		.success-actions {
+		.success-actions,
+		.error-actions {
 			flex-direction: column;
 			align-items: center;
 		}
 
 		.progress-icon,
-		.success-icon {
+		.success-icon,
+		.error-icon {
 			font-size: 3rem;
 		}
 
 		.progress-content h2,
-		.success-content h2 {
+		.success-content h2,
+		.error-content h2 {
 			font-size: 1.3rem;
 		}
 	}

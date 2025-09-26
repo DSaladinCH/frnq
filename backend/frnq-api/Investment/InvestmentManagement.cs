@@ -49,6 +49,43 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
         return investment;
     }
 
+    public async Task<List<InvestmentModel>> CreateInvestmentsAsync(List<InvestmentRequest> investmentRequests)
+    {
+        var investments = new List<InvestmentModel>();
+        
+        foreach (var investmentRequest in investmentRequests)
+        {
+            QuoteModel? quote = await quoteManagement.GetQuoteAsync(investmentRequest);
+
+            if (quote is null)
+            {
+                await quoteManagement.GetHistoricalPricesAsync(investmentRequest.ProviderId, investmentRequest.QuoteSymbol, DateTime.MinValue, DateTime.UtcNow);
+                quote = await quoteManagement.GetQuoteAsync(investmentRequest);
+            }
+
+            if (quote is null)
+                throw new ArgumentException($"Referenced quote does not exist for symbol {investmentRequest.QuoteSymbol}.");
+
+            InvestmentModel investment = new()
+            {
+                UserId = userId,
+                QuoteId = quote.Id,
+                Date = DateTime.SpecifyKind(investmentRequest.Date, DateTimeKind.Utc),
+                Type = investmentRequest.Type,
+                Amount = investmentRequest.Amount,
+                PricePerUnit = investmentRequest.PricePerUnit,
+                TotalFees = investmentRequest.TotalFees
+            };
+
+            investments.Add(investment);
+        }
+
+        databaseContext.Investments.AddRange(investments);
+        await databaseContext.SaveChangesAsync();
+
+        return investments;
+    }
+
     public async Task<InvestmentModel> UpdateInvestmentAsync(int id, InvestmentRequest investmentRequest)
     {
         if (investmentRequest is null)

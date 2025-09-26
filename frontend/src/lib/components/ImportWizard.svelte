@@ -64,20 +64,85 @@
 	let fixedTypeValue = $state('BUY');
 	let treatHeaderAsData = $state(false);
 
+	function detectDelimiter(content: string): string {
+		const lines = content.split('\n').filter(line => line.trim());
+		if (lines.length === 0) return ',';
+		
+		// Check first few lines to determine delimiter
+		const sampleLines = lines.slice(0, 3);
+		let semicolonCount = 0;
+		let commaCount = 0;
+		
+		for (const line of sampleLines) {
+			// Count delimiters outside of quotes
+			let inQuotes = false;
+			for (let i = 0; i < line.length; i++) {
+				const char = line[i];
+				if (char === '"') {
+					inQuotes = !inQuotes;
+				} else if (!inQuotes) {
+					if (char === ';') semicolonCount++;
+					if (char === ',') commaCount++;
+				}
+			}
+		}
+		
+		// Return the delimiter that appears more frequently
+		return semicolonCount > commaCount ? ';' : ',';
+	}
+
+	function parseCsvLine(line: string, delimiter: string): string[] {
+		const result: string[] = [];
+		let current = '';
+		let inQuotes = false;
+		
+		for (let i = 0; i < line.length; i++) {
+			const char = line[i];
+			const nextChar = line[i + 1];
+			
+			if (char === '"') {
+				if (inQuotes && nextChar === '"') {
+					// Escaped quote (double quote within quoted field)
+					current += '"';
+					i++; // Skip next quote
+				} else {
+					// Toggle quote state
+					inQuotes = !inQuotes;
+				}
+			} else if (char === delimiter && !inQuotes) {
+				// Delimiter outside quotes - end of field
+				result.push(current.trim());
+				current = '';
+			} else {
+				// Regular character
+				current += char;
+			}
+		}
+		
+		// Add the last field
+		result.push(current.trim());
+		
+		return result;
+	}
+
 	function parseCsvContent(content: string, treatHeaderAsData: boolean = false) {
 		const lines = content.split('\n').filter(line => line.trim());
+		const delimiter = detectDelimiter(content);
 		
 		if (treatHeaderAsData) {
 			// When treating header as data, use first row as headers and include all rows as data
-			const headers = lines[0].split(';').map(cell => cell.trim());
-			const data = lines.map(line => line.split(';').map(cell => cell.trim()));
+			const headers = parseCsvLine(lines[0], delimiter);
+			const data = lines.map(line => parseCsvLine(line, delimiter));
+			console.log('Parsed CSV:', { headers, data });
 			return { headers, data };
 		} else {
 			// Standard parsing with first row as headers
-			const headers = lines[0].split(';').map(h => h.trim());
-			const data = lines.slice(1).map(line => line.split(';').map(cell => cell.trim()));
+			const headers = parseCsvLine(lines[0], delimiter);
+			const data = lines.slice(1).map(line => parseCsvLine(line, delimiter));
+			console.log('Parsed CSV:', { headers, data });
 			return { headers, data };
 		}
+
 	}
 
 	function navigateToStep(targetStep: number) {
@@ -178,7 +243,7 @@
 				{:else if currentStep === 1}
 					<ColumnMappingStep 
 						csvHeaders={csvHeaders}
-						sampleData={csvData.slice(0, 5)}
+						csvData={csvData}
 						filename={filename}
 						initialColumnMappings={columnMappings}
 						initialValueMappings={valueMappings}

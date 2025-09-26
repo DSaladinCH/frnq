@@ -43,19 +43,18 @@
 		const result = Object.entries(grouped).map(([date, snaps]) => {
 			// Aggregate: sum invested, unrealizedGain, realizedGain
 			const invested = snaps.reduce((sum, s) => sum + (s.invested ?? 0), 0);
-			const unrealizedGain = snaps.reduce((sum, s) => sum + (s.unrealizedGain ?? 0), 0);
+			const currentValue = snaps.reduce((sum, s) => sum + (s.currentValue ?? 0), 0);
 			const realizedGain = snaps.reduce((sum, s) => sum + (s.realizedGain ?? 0), 0);
 			// Total Value = invested + unrealized + realized
-			const totalValue = invested + unrealizedGain + realizedGain;
+			const totalValue = currentValue + realizedGain;
 			// Total Profit = unrealized + realized
-			const totalProfit = unrealizedGain + realizedGain;
+			const totalProfit = totalValue - invested;
 
 			return {
 				date,
 				invested,
 				totalValue,
 				totalProfit,
-				unrealizedGain,
 				realizedGain
 			};
 		});
@@ -133,7 +132,7 @@
 				if (!isNaN(num)) {
 					value = num.toFixed(2);
 				}
-				
+
 				innerHtml += `<div class="tooltip-item-flex"><span class="tooltip-color" style="background:${color}"></span><span class="tooltip-label">${label}: </span><span class="tooltip-value">${value}</span></div>`;
 			}
 			innerHtml += '</div>';
@@ -255,7 +254,9 @@
 	});
 
 	// Compute current portfolio info (latest date)
-	let filteredSnapshots = $derived(filterSnapshotsByPeriod(snapshots, selectedPeriod));
+	let filteredSnapshots = $derived(
+		filterSnapshotsWithActivePositionsInPeriod(snapshots, selectedPeriod)
+	);
 	let groupedSnapshots = $derived(groupSnapshotsByDate(filteredSnapshots));
 	let latest = $derived(
 		groupedSnapshots.length ? groupedSnapshots[groupedSnapshots.length - 1] : null
@@ -263,9 +264,9 @@
 	let first = $derived(groupedSnapshots.length ? groupedSnapshots[0] : null);
 
 	// Total profit (realized + unrealized)
-	let totalProfit = $derived(latest ? latest.realizedGain + latest.unrealizedGain : 0);
+	let totalProfit = $derived(latest ? latest.totalProfit : 0);
 	// Profit at start
-	let startProfit = $derived(first ? first.realizedGain + first.unrealizedGain : 0);
+	let startProfit = $derived(first ? first.totalProfit : 0);
 	// Profit change in this period
 	let profitChange = $derived(latest && first ? totalProfit - startProfit : 0);
 	// Profit change %
@@ -359,9 +360,35 @@
 			default:
 				return snapshots;
 		}
+		// Remove time from fromDate for comparison
+		fromDate = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
+		
 		return snapshots.filter((s) => new Date(s.date) >= fromDate);
 	}
 
+	// Filter snapshots to only include quotes that had active positions (amount > 0) during the selected period
+	function filterSnapshotsWithActivePositionsInPeriod(
+		snapshots: PositionSnapshot[],
+		period: typeof selectedPeriod
+	): PositionSnapshot[] {
+		// First filter by period
+		const periodFiltered = filterSnapshotsByPeriod(snapshots, period);
+
+		// Group by quoteId to check which quotes had active positions in this period
+		const quoteGroups: Record<number, PositionSnapshot[]> = {};
+		periodFiltered.forEach((snap) => {
+			if (!quoteGroups[snap.quoteId]) quoteGroups[snap.quoteId] = [];
+			quoteGroups[snap.quoteId].push(snap);
+		});
+
+		// Find quotes that had at least one snapshot with amount > 0 in this period
+		const activeQuoteIds = Object.entries(quoteGroups)
+			.filter(([quoteId, snaps]) => snaps.some((snap) => snap.amount > 0))
+			.map(([quoteId, snaps]) => parseInt(quoteId));
+
+		// Return all snapshots (in the period) for quotes that were active during the period
+		return periodFiltered.filter((snap) => activeQuoteIds.includes(snap.quoteId));
+	}
 	$effect(() => {
 		if (chart && groupedSnapshots) {
 			updateChartData();
@@ -454,7 +481,7 @@
 		</div>
 
 		<div
-			class="chart-options w-80 gap-2 hidden md:grid md:w-full md:grid-cols-[1fr] md:grid-rows-[auto_auto]"
+			class="chart-options hidden w-80 gap-2 md:grid md:w-full md:grid-cols-[1fr] md:grid-rows-[auto_auto]"
 		>
 			<button
 				type="button"

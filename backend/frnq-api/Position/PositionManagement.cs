@@ -62,15 +62,16 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
             - firstInvestmentDate.Value).Days + 1).Select(offset => firstInvestmentDate.Value.AddDays(offset))];
 
         List<PositionSnapshot> allSnapshots = [];
-        IEnumerable<IGrouping<(Guid UserId, int QuoteId), InvestmentModel>> investmentGroups = investments.GroupBy(i => (i.UserId, i.QuoteId));
+        IEnumerable<IGrouping<(Guid UserId, int QuoteId), InvestmentModel>> investmentGroups =
+    investments.GroupBy(i => (i.UserId, i.QuoteId));
 
         foreach (var group in investmentGroups)
         {
-            decimal cumulativeAmount = 0;
-            decimal weightedPriceSum = 0;
-            decimal totalFees = 0;
-            decimal realizedGain = 0;
+            decimal totalFees = 0;           // lifetime fees for info
+            decimal realizedCash = 0;        // dividends + net sell proceeds
+            decimal investedCash = 0;        // buys – net sell proceeds
             Queue<(decimal Amount, decimal PricePerUnit)> lots = new();
+
             int invIndex = 0;
             List<InvestmentModel> invs = group.OrderBy(i => i.Date).ToList();
             QuoteModel quote = invs.First().Quote;
@@ -87,41 +88,52 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 
                     if (inv.Type == InvestmentType.Buy)
                     {
-                        cumulativeAmount += inv.Amount;
-                        weightedPriceSum += inv.Amount * inv.PricePerUnit;
+                        decimal totalCost = inv.Amount * inv.PricePerUnit + inv.TotalFees;
+                        investedCash += totalCost;
                         totalFees += inv.TotalFees;
-                        lots.Enqueue((inv.Amount, inv.PricePerUnit));
+
+                        // track cost basis for remaining shares
+                        decimal effectivePrice = inv.PricePerUnit + (inv.TotalFees / inv.Amount);
+                        lots.Enqueue((inv.Amount, effectivePrice));
                     }
                     else if (inv.Type == InvestmentType.Sell)
                     {
-                        decimal sellAmount = -inv.Amount;
-                        decimal sellProceeds = sellAmount * inv.PricePerUnit - inv.TotalFees;
-                        decimal costBasis = 0;
-                        decimal toSell = sellAmount;
+                        decimal sellAmount = inv.Amount;
+                        decimal grossProceeds = sellAmount * inv.PricePerUnit;
+                        decimal netProceeds = grossProceeds - inv.TotalFees;
 
+                        realizedCash += netProceeds;
+                        investedCash -= netProceeds;   // money you got back reduces "still invested"
+                        totalFees += inv.TotalFees;
+
+                        // update remaining shares (FIFO)
+                        decimal toSell = sellAmount;
                         while (toSell > 0 && lots.Count > 0)
                         {
-                            (decimal Amount, decimal PricePerUnit) lot = lots.Peek();
+                            var lot = lots.Peek();
                             decimal used = Math.Min(lot.Amount, toSell);
-                            costBasis += used * lot.PricePerUnit;
 
                             if (used == lot.Amount)
+                            {
                                 lots.Dequeue();
+                            }
                             else
-                                lots = new Queue<(decimal, decimal)>(lots.Select(l => l == lot ? (l.Amount - used, l.PricePerUnit) : l));
+                            {
+                                lots.Dequeue();
+                                lots = new Queue<(decimal, decimal)>(
+                                    new[] { (lot.Amount - used, lot.PricePerUnit) }
+                                    .Concat(lots)
+                                );
+                            }
+
                             toSell -= used;
                         }
-
-                        realizedGain += sellProceeds - costBasis;
-                        cumulativeAmount += inv.Amount;
-                        weightedPriceSum += inv.Amount * inv.PricePerUnit;
-                        totalFees += inv.TotalFees;
                     }
                     else if (inv.Type == InvestmentType.Dividend)
                     {
-                        // For dividends, add the amount to realized gain only
-                        realizedGain += inv.Amount;
+                        realizedCash += inv.Amount;  // pure cash in
                     }
+
                     invIndex++;
                 }
 
@@ -138,15 +150,13 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
                 else
                     lastKnownPrice = price;
 
-                decimal avgPrice = cumulativeAmount != 0 ? weightedPriceSum / cumulativeAmount : 0m;
                 decimal marketPrice = (price?.AdjustedClose ?? price?.Close) ?? 0m;
-                decimal totalValue = marketPrice * cumulativeAmount;
-                decimal invested = 0;
+                decimal currentShares = lots.Sum(l => l.Amount);
+                decimal marketValue = marketPrice * currentShares;
 
-                foreach (var lot in lots)
-                    invested += lot.Amount * lot.PricePerUnit;
-
-                decimal unrealizedGain = totalValue - invested;
+                // total value = remaining shares value + realized cash (dividends + sells)
+                decimal totalValue = marketValue + realizedCash;
+                decimal profit = totalValue - investedCash;
 
                 allSnapshots.Add(new PositionSnapshot
                 {
@@ -154,18 +164,18 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
                     QuoteId = group.Key.QuoteId,
                     Date = day,
                     Currency = quote.Currency,
-                    Amount = cumulativeAmount,
-                    Invested = invested + totalFees,
-                    MarketPricePerUnit = marketPrice,
+                    Amount = currentShares,
+                    Invested = investedCash,         // total money you still have tied up
                     TotalFees = totalFees,
-                    RealizedGain = realizedGain,
-                    UnrealizedGain = unrealizedGain
+                    MarketPricePerUnit = marketPrice,
+                    RealizedGain = realizedCash,     // NEW: total dividends + net sells
                 });
             }
         }
 
         // Only return snapshots within the requested range
-        List<PositionSnapshot> filteredSnapshots = allSnapshots.Where(s => s.Date >= ((DateTime)from).Date && s.Date <= ((DateTime)to).Date).ToList();
+        List<PositionSnapshot> filteredSnapshots =
+            allSnapshots.Where(s => s.Date >= ((DateTime)from).Date && s.Date <= ((DateTime)to).Date).ToList();
 
         // Get unique quotes used in the investments
         List<QuoteModel> uniqueQuotes = [.. investments

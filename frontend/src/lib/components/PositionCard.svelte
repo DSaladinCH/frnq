@@ -3,7 +3,7 @@
   // If you want to pass 'type' and 'groupName' as props, use them in your logic or markup.
   export let type: 'group' | 'quote';
   export let groupName: string = '';
-  export let summary: { invested: number; totalValue: number; realized: number; unrealized: number } = { invested: 0, totalValue: 0, realized: 0, unrealized: 0 };
+  export let summary: { invested: number; currentValue: number; totalValue: number; realized: number; totalProfit: number } = { invested: 0, currentValue: 0, totalValue: 0, realized: 0, totalProfit: 0 };
   export let title: string = '';
   export let onView: (() => void) | null = null;
   export let isActiveQuote: boolean = false;
@@ -41,10 +41,10 @@
       <div class="invested">Invested: <span class="amount">{summary.invested.toLocaleString(undefined, { style: 'currency', currency: 'CHF' })}</span></div>
       <div class="profit-row">
         <span class="profit {profitClass}">
-          {(summary.realized + summary.unrealized).toLocaleString(undefined, { style: 'currency', currency: 'CHF' })}
+          {(summary.totalProfit).toLocaleString(undefined, { style: 'currency', currency: 'CHF' })}
         </span>
         <span class="profit-percent">
-          ({summary.invested ? ((summary.realized + summary.unrealized) / summary.invested * 100).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '0.00'}%)
+          ({summary.invested ? ((summary.totalProfit) / summary.invested * 100).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '0.00'}%)
         </span>
       </div>
     </div>

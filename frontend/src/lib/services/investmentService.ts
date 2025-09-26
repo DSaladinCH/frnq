@@ -92,6 +92,28 @@ export async function addInvestment(investment: InvestmentModel): Promise<void> 
 	return;
 }
 
+export async function addInvestmentsBulk(investments: InvestmentModel[]): Promise<InvestmentModel[]> {
+	const startTime = Date.now();
+
+	const providerId = 'yahoo-finance';
+	const requests: InvestmentRequest[] = investments.map(investment => ({ ...investment, providerId }));
+
+	const url = `${baseUrl}/api/investments/bulk`;
+	const res = await fetchWithAuth(url, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(requests)
+	});
+
+	// wait at least 1 second, to improve UX
+	await new Promise((resolve) => setTimeout(resolve, Math.max(0, 1000 - (Date.now() - startTime))));
+
+	if (!res.ok) throw new Error('Failed to add investments');
+	return res.json();
+}
+
 export async function updateInvestment(investment: InvestmentModel): Promise<InvestmentModel> {
 	const startTime = Date.now();
 

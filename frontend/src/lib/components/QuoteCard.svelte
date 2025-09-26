@@ -8,7 +8,7 @@
 		snapshot,
 		onAssignGroup
 	}: { quote: QuoteModel; snapshot: PositionSnapshot; onAssignGroup: () => void } = $props();
-	let totalGain = $derived(snapshot.unrealizedGain + snapshot.realizedGain);
+	let totalGain = $derived(snapshot.currentValue + snapshot.realizedGain - snapshot.invested);
 
 	function formatCurrency(value: number): string {
 		return value.toLocaleString(undefined, { style: 'currency', currency: quote.currency });
@@ -43,7 +43,7 @@
 		</div>
 		<div class="grid grid-rows-2">
 			<span class="color-muted">Current Value</span>
-			<span class="font-bold">{formatCurrency(snapshot.totalValue)}</span>
+			<span class="font-bold">{formatCurrency(snapshot.currentValue)}</span>
 		</div>
 		<div class="grid grid-rows-2">
 			<span class="color-muted">Total Fees</span>

@@ -27,18 +27,12 @@ public class PositionSnapshot
     public decimal TotalFees { get; set; }
 
     /// <summary>
-    /// Calculates the total value of the position, which is the market value multiplied by the amount held in the position.
+    /// Calculates the current value of the position, which is the market value multiplied by the amount held in the position.
     /// </summary>
-    public decimal TotalValue => MarketPricePerUnit * Amount;
+    public decimal CurrentValue => MarketPricePerUnit * Amount;
 
-
-    /// <summary>
-    /// The unrealized gain for the current position at the snapshot date.
-    /// </summary>
-    public decimal UnrealizedGain { get; set; }
     /// <summary>
     /// The total realized gain for this symbol up to the snapshot date (all time).
     /// </summary>
     public decimal RealizedGain { get; set; }
-    public decimal TotalGain => UnrealizedGain + RealizedGain;
 }

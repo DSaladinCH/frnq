@@ -14,8 +14,7 @@ export interface PositionSnapshot {
   invested: number;
   marketPricePerUnit: number;
   totalFees: number;
-  totalValue: number;
-  unrealizedGain: number;
+  currentValue: number;
   realizedGain: number;
 }
 

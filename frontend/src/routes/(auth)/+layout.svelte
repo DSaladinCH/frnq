@@ -22,14 +22,11 @@
 	});
 
 	$effect(() => {
-		console.log('Loading effect:', { loading, showLoading, fadeOut });
 		if (!loading && showLoading && !fadeOut) {
 			// Start fade-out when loading completes
-			console.log('Starting fade out...');
 			fadeOut = true;
 		} else if (loading && !showLoading) {
 			// Reset loading screen when loading starts again
-			console.log('Resetting loading screen...');
 			showLoading = true;
 			fadeOut = false;
 		}
@@ -47,7 +44,6 @@
 		class:fade-out={fadeOut}
 		onanimationend={() => {
 			if (fadeOut) {
-				console.log('Animation ended, hiding loading screen');
 				showLoading = false;
 			}
 		}}
