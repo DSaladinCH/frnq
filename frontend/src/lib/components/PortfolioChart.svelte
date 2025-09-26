@@ -441,41 +441,42 @@
 </script>
 
 <div
-	class="portfolio-info m-5 grid max-w-full grid-cols-[1fr] grid-rows-[auto_35px] justify-items-center md:max-w-md
+	class="text-lg m-5 grid max-w-full grid-cols-[1fr] grid-rows-[auto_35px] justify-items-center md:max-w-md
 			md:grid-cols-[auto_120px] md:grid-rows-[1fr] md:justify-items-start"
 >
 	{#if latest}
-		<div class="portfolio-stats">
-			<div class="profit-total w-full justify-center md:justify-start">
-				<span class="profit-value color-default"
+	
+		<div class="flex flex-wrap">
+			<div class="text-4xl font-bold flex w-full justify-center md:justify-start">
+				<span class="text-left color-default"
 					>{totalProfit.toLocaleString(undefined, { style: 'currency', currency: 'CHF' })}</span
 				>
 			</div>
 
-			<div class="profit-change-row w-full justify-center md:justify-start">
-				<span class="profit-change-value" style="color: {profitColor}">
+			<div class="flex items-center gap-3 w-full justify-center md:justify-start">
+				<span class="text-xl font-semibold px-1" style="color: {profitColor}">
 					{profitChange >= 0 ? '+' : ''}{profitChange.toLocaleString(undefined, {
 						style: 'currency',
 						currency: 'CHF'
 					})}
 				</span>
-
-				<div class="profit-divider"></div>
+				
+				<div class="border-l-1 border-button h-3.5"></div>
 
 				{#if profitChangePctDisplay === '+∞' || profitChangePctDisplay === '-∞'}
 					<span
-						class="profit-change-pct"
+						class="text-xl font-semibold px-1"
 						style="color: {profitColor}"
 						title={profitChangePct.toFixed(2) + '%'}>{profitChangePctDisplay}%</span
 					>
 				{:else if profitChangePctDisplay === '+9999' || profitChangePctDisplay === '-9999'}
 					<span
-						class="profit-change-pct"
+						class="text-xl font-semibold px-1"
 						style="color: {profitColor}"
 						title={profitChangePct.toFixed(2) + '%'}>{profitChangePctDisplay}%</span
 					>
 				{:else}
-					<span class="profit-change-pct" style="color: {profitColor}"
+					<span class="text-xl font-semibold px-1" style="color: {profitColor}"
 						>{profitChangePctDisplay}%</span
 					>
 				{/if}
@@ -502,11 +503,11 @@
 </div>
 
 <div style="position: relative; width: 100%; height: 400px;">
-	<canvas bind:this={canvas} style="height: 400px;"></canvas>
+	<canvas bind:this={canvas} class="w-screen max-w-full block" style="height: 400px;"></canvas>
 </div>
 
-<div class="background-fade" style="--fade-color: {fadeColor}">
-	<div class="period-selector">
+<div class="background-fade flex h-20 -mt-2.5 w-full pointer-events-none z-1 relative" style="--fade-color: {fadeColor}">
+	<div class="flex justify-center items-center mt-5 absolute w-full left-0 top-0 z-1 pointer-events-auto">
 		<div class="hidden sm:block">
 			<PillToggle
 				options={periodOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
@@ -529,56 +530,7 @@
 <!-- The tooltip element is created dynamically and appended to body -->
 
 <style>
-	canvas {
-		width: 100vw;
-		max-width: 100%;
-		display: block;
-	}
-
-	.portfolio-info {
-		font-size: 1.1rem;
-	}
-
-	.portfolio-stats {
-		display: flex;
-		flex-wrap: wrap;
-	}
-
-	.profit-total {
-		font-size: 2.1rem;
-		font-weight: 700;
-		display: flex;
-	}
-
-	.profit-value {
-		font-size: 2.1rem;
-		font-weight: 700;
-		text-align: left;
-	}
-
-	.profit-change-row {
-		display: flex;
-		align-items: center;
-		gap: 0.7rem;
-	}
-
-	.profit-change-value,
-	.profit-change-pct {
-		font-size: 1.2rem;
-		font-weight: 600;
-		padding: 0 0.25rem;
-	}
-
-	.profit-divider {
-		border-left: 1px solid gray;
-		height: 15px;
-	}
-
 	.background-fade {
-		display: flex;
-		height: 80px;
-		margin-top: -10px;
-		width: 100%;
 		background: linear-gradient(
 			to bottom,
 			transparent 0px,
@@ -586,24 +538,5 @@
 			var(--fade-color) 40%,
 			transparent 100%
 		);
-		pointer-events: none;
-		z-index: 1;
-		position: relative;
-	}
-
-	.period-selector {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		flex-direction: column;
-		flex: auto;
-		overflow: hidden;
-		margin-top: 20px;
-		position: absolute;
-		width: 100%;
-		left: 0;
-		top: 0;
-		z-index: 1;
-		pointer-events: auto;
 	}
 </style>
