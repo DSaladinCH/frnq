@@ -47,7 +47,7 @@
 			const shouldPositionAbove = spaceBelow < menuHeight && rect.top > menuHeight;
 			
 			dropdownPosition = {
-				top: shouldPositionAbove ? rect.top - menuHeight - 4 : rect.bottom + 4,
+				top: shouldPositionAbove ? rect.top + 18 - menuHeight - 4 : rect.bottom + 4,
 				left: rect.left,
 				width: rect.width
 			};
