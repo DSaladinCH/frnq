@@ -3,6 +3,8 @@
 	import Chart from 'chart.js/auto';
 	import type { PositionSnapshot } from '../services/positionService';
 	import DropDown from './DropDown.svelte';
+	import PillToggle from './PillToggle.svelte';
+	import CustomDropdown from './CustomDropdown.svelte';
 
 	let { snapshots }: { snapshots: PositionSnapshot[] } = $props();
 	let canvas: HTMLCanvasElement;
@@ -362,7 +364,7 @@
 		}
 		// Remove time from fromDate for comparison
 		fromDate = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
-		
+
 		return snapshots.filter((s) => new Date(s.date) >= fromDate);
 	}
 
@@ -480,27 +482,20 @@
 			</div>
 		</div>
 
-		<div
-			class="chart-options hidden w-80 gap-2 md:grid md:w-full md:grid-cols-[1fr] md:grid-rows-[auto_auto]"
-		>
-			<button
-				type="button"
-				class="btn btn-small"
-				class:btn-secondary={chartOption === 'both'}
-				onclick={() => selectChartOption('both')}>Portfolio</button
-			>
-			<button
-				type="button"
-				class="btn btn-small"
-				class:btn-secondary={chartOption === 'profitOnly'}
-				onclick={() => selectChartOption('profitOnly')}>Profit Only</button
-			>
-		</div>
-		<div class="block pt-2 md:hidden">
-			<DropDown
-				options={[...chartOptionOptions]}
+		<div class="chart-options hidden w-80 gap-2 md:grid md:w-full md:grid-cols-[1fr]">
+			<PillToggle
+				options={chartOptionOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
 				selected={chartOption}
 				onSelect={selectChartOption}
+				direction="vertical"
+			/>
+		</div>
+		<div class="pt-2 hidden max-md:block">
+			<PillToggle
+				options={chartOptionOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
+				selected={chartOption}
+				onSelect={selectChartOption}
+				direction="horizontal"
 			/>
 		</div>
 	{/if}
@@ -512,18 +507,21 @@
 
 <div class="background-fade" style="--fade-color: {fadeColor}">
 	<div class="period-selector">
-		<div class="block sm:hidden">
-			<DropDown options={[...periodOptions]} selected={selectedPeriod} onSelect={selectPeriod} />
+		<div class="hidden sm:block">
+			<PillToggle
+				options={periodOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
+				selected={selectedPeriod}
+				onSelect={selectPeriod}
+				direction="horizontal"
+			/>
 		</div>
-		<div class="hidden sm:flex">
-			{#each periodOptions as opt}
-				<button
-					type="button"
-					class="btn btn-small"
-					class:btn-secondary={selectedPeriod === opt.value}
-					onclick={() => selectPeriod(opt.value)}>{opt.label}</button
-				>
-			{/each}
+		<div class="block sm:hidden">
+			<CustomDropdown
+				options={periodOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
+				value={selectedPeriod}
+				onchange={selectPeriod}
+				placeholder="Select period"
+			/>
 		</div>
 	</div>
 </div>
@@ -597,6 +595,9 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
+		flex-direction: column;
+		flex: auto;
+		overflow: hidden;
 		margin-top: 20px;
 		position: absolute;
 		width: 100%;
@@ -604,9 +605,5 @@
 		top: 0;
 		z-index: 1;
 		pointer-events: auto;
-	}
-
-	.period-selector button {
-		margin: 0 0.15rem;
 	}
 </style>
