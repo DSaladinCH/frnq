@@ -20,7 +20,7 @@
 	let isOpen = $state(false);
 	let isLoading = $state(false);
 	let searchResults = $state<QuoteModel[]>([]);
-	let searchTimeout: number | null = null;
+	let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 	let dropdownElement: HTMLDivElement;
 	let inputElement: HTMLInputElement;
 

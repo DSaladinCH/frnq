@@ -6,9 +6,7 @@
 	import {
 		type InvestmentModel,
 		createDefaultInvestment,
-
 		investmentValuesValid
-
 	} from '$lib/services/investmentService';
 	import { dataStore } from '$lib/stores/dataStore';
 	import InvestmentCard from '$lib/components/InvestmentCard.svelte';
@@ -16,19 +14,21 @@
 	import { TextSize } from '$lib/types/TextSize';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import { ContentWidth } from '$lib/types/ContentSize';
-	import InvestmentImport from '$lib/components/InvestmentImport.svelte';
 	import { goto } from '$app/navigation';
+	import InvestmentListItem from '$lib/components/InvestmentListItem.svelte';
 
 	// Reactive values that track the store
 	let investments = $state(dataStore.investments);
 	let quotes = $state(dataStore.quotes);
 	let showInvestmentDialog = $state(false);
+	let secondaryLoading = $state(dataStore.secondaryLoading);
 
 	// Subscribe to store changes
 	$effect(() => {
 		const unsubscribe = dataStore.subscribe(() => {
 			investments = dataStore.investments;
 			quotes = dataStore.quotes;
+			secondaryLoading = dataStore.secondaryLoading;
 		});
 		return unsubscribe;
 	});
@@ -72,6 +72,7 @@
 	}
 
 	async function saveInvestment(investment: InvestmentModel) {
+		if (secondaryLoading) return;
 		// Validate inputs
 		if (!investmentValuesValid(investment)) {
 			// TODO: Implement toast notifications
@@ -95,6 +96,7 @@
 	}
 
 	async function deleteInvestment(investment: InvestmentModel) {
+		if (secondaryLoading) return;
 		onInvestmentDialogClose();
 
 		if (investment.id === 0) {
@@ -152,16 +154,25 @@
 		/>
 	</div>
 
-	<div
-		class="investments-list 3xl:grid-cols-4 grid gap-2 overflow-y-auto py-1 pr-1 lg:grid-cols-2 2xl:grid-cols-3"
-	>
-		{#each investments as investment}
-			<InvestmentCard
-				{investment}
-				quote={quotes.find((q) => q.id === investment.quoteId)!}
-				onclick={() => openInvestmentDialog(investment)}
-				ondelete={() => deleteInvestment(investment)}
-			/>
+	<div class="investments-list grid gap-2 overflow-y-auto py-1">
+		{#each [...investments].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) as investment}
+			<div class="max-lg:hidden">
+				<InvestmentListItem
+					{investment}
+					quote={quotes.find((q) => q.id === investment.quoteId)!}
+					onclick={() => openInvestmentDialog(investment)}
+					ondelete={() => deleteInvestment(investment)}
+				/>
+			</div>
+
+			<div class="lg:hidden">
+				<InvestmentCard
+					{investment}
+					quote={quotes.find((q) => q.id === investment.quoteId)!}
+					onclick={() => openInvestmentDialog(investment)}
+					ondelete={() => deleteInvestment(investment)}
+				/>
+			</div>
 		{/each}
 	</div>
 </div>

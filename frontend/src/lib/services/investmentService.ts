@@ -58,21 +58,14 @@ export function investmentValuesValid(investment: InvestmentModel): boolean {
 }
 
 export async function getInvestments(): Promise<InvestmentModel[]> {
-	const startTime = Date.now();
-
 	const url = `${baseUrl}/api/investments`;
 	const res = await fetchWithAuth(url);
-
-	// wait at least 1 second, to improve UX
-	await new Promise((resolve) => setTimeout(resolve, Math.max(0, 1000 - (Date.now() - startTime))));
 
 	if (!res.ok) throw new Error('Failed to fetch investments');
 	return res.json();
 }
 
 export async function addInvestment(investment: InvestmentModel): Promise<void> {
-	const startTime = Date.now();
-
 	const providerId = 'yahoo-finance';
 	const request: InvestmentRequest = { ...investment, providerId };
 
@@ -85,16 +78,11 @@ export async function addInvestment(investment: InvestmentModel): Promise<void> 
 		body: JSON.stringify(request)
 	});
 
-	// wait at least 1 second, to improve UX
-	await new Promise((resolve) => setTimeout(resolve, Math.max(0, 1000 - (Date.now() - startTime))));
-
 	if (!res.ok) throw new Error('Failed to add investment');
 	return;
 }
 
 export async function addInvestmentsBulk(investments: InvestmentModel[]): Promise<InvestmentModel[]> {
-	const startTime = Date.now();
-
 	const providerId = 'yahoo-finance';
 	const requests: InvestmentRequest[] = investments.map(investment => ({ ...investment, providerId }));
 
@@ -107,16 +95,11 @@ export async function addInvestmentsBulk(investments: InvestmentModel[]): Promis
 		body: JSON.stringify(requests)
 	});
 
-	// wait at least 1 second, to improve UX
-	await new Promise((resolve) => setTimeout(resolve, Math.max(0, 1000 - (Date.now() - startTime))));
-
 	if (!res.ok) throw new Error('Failed to add investments');
 	return res.json();
 }
 
 export async function updateInvestment(investment: InvestmentModel): Promise<InvestmentModel> {
-	const startTime = Date.now();
-
 	investment.quoteId = 0; // ensure quoteId is not sent in the payload
 	console.log('Updating investment:', investment);
 
@@ -129,23 +112,15 @@ export async function updateInvestment(investment: InvestmentModel): Promise<Inv
 		body: JSON.stringify(investment)
 	});
 
-	// wait at least 1 second, to improve UX
-	await new Promise((resolve) => setTimeout(resolve, Math.max(0, 1000 - (Date.now() - startTime))));
-
 	if (!res.ok) throw new Error('Failed to update investment');
 	return res.json();
 }
 
 export async function deleteInvestment(investmentId: number): Promise<void> {
-	const startTime = Date.now();
-
 	const url = `${baseUrl}/api/investments/${investmentId}`;
 	const res = await fetchWithAuth(url, {
 		method: 'DELETE'
 	});
-
-	// wait at least 1 second, to improve UX
-	await new Promise((resolve) => setTimeout(resolve, Math.max(0, 1000 - (Date.now() - startTime))));
 
 	if (!res.ok) throw new Error('Failed to delete investment');
 	return;

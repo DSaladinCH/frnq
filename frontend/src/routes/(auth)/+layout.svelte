@@ -5,27 +5,27 @@
 
 	let { children }: { children: Snippet } = $props();
 
-	let showLoading = $state(true);
+	let primaryLoading = $state(dataStore.primaryLoading);
+	let showLoading = $state(dataStore.primaryLoading);
 	let fadeOut = $state(false);
 
 	// Reactive values that track the store
-	let loading = $state(dataStore.loading);
 	let error = $state(dataStore.error);
 
 	// Subscribe to store changes
 	$effect(() => {
 		const unsubscribe = dataStore.subscribe(() => {
-			loading = dataStore.loading;
+			primaryLoading = dataStore.primaryLoading;
 			error = dataStore.error;
 		});
 		return unsubscribe;
 	});
 
 	$effect(() => {
-		if (!loading && showLoading && !fadeOut) {
+		if (!primaryLoading && showLoading && !fadeOut) {
 			// Start fade-out when loading completes
 			fadeOut = true;
-		} else if (loading && !showLoading) {
+		} else if (primaryLoading && !showLoading) {
 			// Reset loading screen when loading starts again
 			showLoading = true;
 			fadeOut = false;

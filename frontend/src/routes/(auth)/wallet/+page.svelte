@@ -16,6 +16,8 @@
 
 	let assignGroupQuote = $state<QuoteModel | null>(null);
 	let assignGroupModalOpen = $state(false);
+	let assignGroupId = $state<number | null>(null);
+	let secondaryLoading = $state(dataStore.secondaryLoading);
 
 	// Subscribe to store changes
 	$effect(() => {
@@ -23,6 +25,7 @@
 			quotes = dataStore.quotes;
 			snapshots = dataStore.snapshots;
 			groups = dataStore.groups;
+			secondaryLoading = dataStore.secondaryLoading;
 		});
 		return unsubscribe;
 	});
@@ -35,11 +38,20 @@
 	function closeAssignGroup() {
 		assignGroupQuote = null;
 		assignGroupModalOpen = false;
+		assignGroupId = null;
 	}
 
-	function handleAssignGroupToQuote(groupId: number) {
-		if (assignGroupQuote !== null) {
-			dataStore.assignQuoteToGroup(assignGroupQuote, groupId);
+	async function handleAssignGroupToQuote(groupId: number) {
+		if (assignGroupQuote === null) return;
+		if (secondaryLoading) return;
+
+		try {
+			assignGroupId = groupId;
+			await dataStore.assignQuoteToGroup(assignGroupQuote, groupId);
+		} catch (error) {
+			alert('Error updating quote group: ' + error);
+			console.error('Error updating quote group:', error);
+		} finally {
 			closeAssignGroup();
 		}
 	}
@@ -73,6 +85,7 @@
 					textSize={TextSize.Medium}
 					style={ColorStyle.Secondary}
 					width={ContentWidth.Full}
+					isLoading={assignGroupId === 0 ? true : false}
 					onclick={() => handleAssignGroupToQuote(0)}
 				/>
 			</div>
@@ -86,6 +99,7 @@
 					textSize={TextSize.Medium}
 					style={ColorStyle.Secondary}
 					width={ContentWidth.Full}
+					isLoading={assignGroupId === group.id ? true : false}
 					onclick={() => handleAssignGroupToQuote(group.id)}
 				/>
 			</div>

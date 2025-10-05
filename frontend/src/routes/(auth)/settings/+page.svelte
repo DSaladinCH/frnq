@@ -8,7 +8,7 @@
 	import { tick } from 'svelte';
 
 	// Reactive values that track the store
-	let loading = $state(dataStore.loading);
+	let secondaryLoading = $state(dataStore.secondaryLoading);
 	let error = $state(dataStore.error);
 	let groups = $state(dataStore.groups);
 
@@ -17,17 +17,22 @@
 	let groupsElement: HTMLDivElement = $state()!;
 	let editMode: number | null = $state(null);
 
+	let addingGroup = $state(false);
+	let savingGroup = $state(false);
+	let deletingGroup = $state<number | null>(null);
+
 	// Subscribe to store changes
 	$effect(() => {
 		const unsubscribe = dataStore.subscribe(() => {
 			groups = dataStore.groups;
-			loading = dataStore.loading;
+			secondaryLoading = dataStore.secondaryLoading;
 			error = dataStore.error;
 		});
 		return unsubscribe;
 	});
 
 	async function refreshData() {
+		if (secondaryLoading) return;
 		await dataStore.refreshData();
 	}
 
@@ -46,11 +51,15 @@
 	}
 
 	async function saveGroup() {
+		if (secondaryLoading) return;
+
 		try {
 			if (newGroupName.trim() !== '') {
 				if (editMode === 0) {
+					addingGroup = true;
 					await dataStore.addQuoteGroup(newGroupName.trim());
 				} else if (editMode !== null) {
+					savingGroup = true;
 					await dataStore.updateQuoteGroup(editMode, newGroupName.trim());
 				}
 
@@ -62,11 +71,16 @@
 					groupsElement.scrollTop = groupsElement.scrollHeight;
 				}
 			}
-		} catch {}
+		} finally {
+			addingGroup = false;
+			savingGroup = false;
+		}
 	}
 
 	async function deleteGroup(groupId: number) {
+		if (secondaryLoading) return;
 		try {
+			deletingGroup = groupId;
 			await dataStore.deleteQuoteGroup(groupId);
 
 			newGroupName = '';
@@ -76,21 +90,23 @@
 			if (groupsElement) {
 				groupsElement.scrollTop = groupsElement.scrollHeight;
 			}
-		} catch {}
+		} finally {
+			deletingGroup = null;
+		}
 	}
 </script>
 
 <PageHead title="Settings" />
 
-<div class="w-full xs:p-8 p-4">
+<div class="xs:p-8 w-full p-4">
 	<PageTitle title="Settings" icon="fa-solid fa-gear" />
 
 	<div class="bg-card rounded-lg p-6 shadow-lg">
 		<h2 class="mb-4 text-xl font-semibold">Data Management</h2>
 		<p class="mb-4 text-gray-600">Refresh your portfolio data to get the latest information.</p>
 
-		<button class="btn btn-primary" onclick={refreshData} disabled={loading}>
-			{loading ? 'Refreshing...' : 'Refresh Data'}
+		<button class="btn btn-primary" onclick={refreshData} disabled={secondaryLoading}>
+			{secondaryLoading ? 'Refreshing…' : 'Refresh Data'}
 		</button>
 
 		{#if error}
@@ -117,6 +133,7 @@
 										icon="fa-solid fa-plus"
 										tooltip="Add Group"
 										hoverColor={ColorStyle.Success}
+										isLoading={addingGroup}
 										onclick={saveGroup}
 									/>
 								</div>
@@ -133,7 +150,7 @@
 					{:else}
 						<button class="btn-fake flex w-full items-center" onclick={() => toggleEdit(0)}>
 							<span class="">New Group</span>
-							<i class="fa-solid fa-plus color-muted ml-auto text-xs"></i>
+							<i class="fa-solid fa-plus color-muted ml-auto text-base"></i>
 						</button>
 					{/if}
 				</div>
@@ -152,6 +169,7 @@
 											icon="fa-solid fa-check"
 											tooltip="Update Group"
 											hoverColor={ColorStyle.Success}
+											isLoading={savingGroup && editMode === group.id}
 											onclick={saveGroup}
 										/>
 									</div>
@@ -181,6 +199,7 @@
 										icon="fa-solid fa-trash"
 										tooltip="Delete Group"
 										hoverColor={ColorStyle.Error}
+										isLoading={deletingGroup === group.id}
 										onclick={() => deleteGroup(group.id)}
 									/>
 								</div>

@@ -15,7 +15,7 @@
 		disabled = false,
 		isLoading = false
 	}: {
-		onclick: () => void;
+		onclick: (event: MouseEvent) => void;
 		text?: string;
 		icon?: string;
 		textSize?: TextSize;

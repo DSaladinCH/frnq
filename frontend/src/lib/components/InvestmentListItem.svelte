@@ -4,6 +4,7 @@
 	import Button from './Button.svelte';
 	import { ColorStyle } from '$lib/types/ColorStyle';
 	import { TextSize } from '$lib/types/TextSize';
+	import { ContentWidth } from '$lib/types/ContentSize';
 
 	let {
 		investment,
@@ -19,6 +20,8 @@
 
 	const locale = navigator.languages?.[0] || navigator.language || 'en-US';
 	let isDeleting = $state(false);
+
+	let dividendHidden = $derived(investment.type === InvestmentType.Dividend ? 'hidden' : '');
 
 	function getInvestmentType(investment: InvestmentModel): string {
 		switch (investment.type) {
@@ -60,9 +63,11 @@
 </script>
 
 <!-- Type, Name, Date, Market Value, Amount, Fee, Total -->
-<button class="btn-fake text-left w-full" {onclick}>
-	<div class="card card-reactive @container relative grid grid-cols-1 gap-1">
-		<div class="color-muted flex items-center gap-2 text-sm row-1">
+<button class="btn-fake w-full text-left" {onclick}>
+	<div
+		class="card card-reactive relative grid grid-cols-[2fr_100px_130px_100px_130px] grid-rows-[auto_1fr] gap-2 text-sm items-center leading-none"
+	>
+		<div class="row-1 col-1 color-muted flex items-center gap-2">
 			<span class="uppercase">{getInvestmentType(investment)}</span>
 			<span>•</span>
 			<span>{formatDate(investment.date)}</span>
@@ -70,11 +75,35 @@
 			<span>{quote.currency}</span>
 		</div>
 
-		<div class="row-2">
+		<div class="row-2 col-1 text-base leading-none">
 			<span class="font-bold">{quote.name}</span>
 		</div>
 
-		<div class="row-span-2 -col-1 h-10">
+		<span class="row-1 color-muted">Amount</span>
+		<span class="row-2 font-bold">{formatNumber(investment.amount)}</span>
+
+		<span class="row-1 color-muted {dividendHidden}"
+			>Price per Unit</span
+		>
+		<span class="row-2 font-bold {dividendHidden}"
+			>{formatCurrency(investment.pricePerUnit)}</span
+		>
+
+		<span class="row-1 color-muted {dividendHidden}"
+			>Total Fees</span
+		>
+		<span class="row-2 font-bold {dividendHidden}"
+			>{formatCurrency(investment.totalFees)}</span
+		>
+
+		<span class="row-1 color-muted {dividendHidden}"
+			>Total</span
+		>
+		<span class="row-2 font-bold {dividendHidden}"
+			>{formatCurrency(investment.pricePerUnit * investment.amount + investment.totalFees)}</span
+		>
+
+		<div class="row-span-2 -col-1 h-full">
 			<Button
 				onclick={deleteInvestment}
 				disabled={isDeleting}
@@ -82,30 +111,8 @@
 				icon="fa-solid fa-trash"
 				textSize={TextSize.Small}
 				style={ColorStyle.Secondary}
+				width={ContentWidth.Full}
 			/>
-		</div>
-
-		<div class="pt-2 row-3 col-span-2 @md:grid-cols-3 @lg:grid-cols-4 grid grid-cols-2 gap-1 text-sm">
-			<div class="grid grid-rows-2">
-				<span class="color-muted">Amount</span>
-				<span class="font-bold">{formatNumber(investment.amount)}</span>
-			</div>
-			<div class="grid grid-rows-2 {investment.type === InvestmentType.Dividend ? 'hidden' : ''}">
-				<span class="color-muted">Price per Unit</span>
-				<span class="font-bold">{formatCurrency(investment.pricePerUnit)}</span>
-			</div>
-			<div class="grid grid-rows-2 {investment.type === InvestmentType.Dividend ? 'hidden' : ''}">
-				<span class="color-muted">Total Fees</span>
-				<span class="font-bold">{formatCurrency(investment.totalFees)}</span>
-			</div>
-			<div class="grid grid-rows-2 {investment.type === InvestmentType.Dividend ? 'hidden' : ''}">
-				<span class="color-muted">Total</span>
-				<span class="font-bold"
-					>{formatCurrency(
-						investment.pricePerUnit * investment.amount + investment.totalFees
-					)}</span
-				>
-			</div>
 		</div>
 	</div>
 </button>
