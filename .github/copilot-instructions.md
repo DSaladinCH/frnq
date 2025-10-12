@@ -45,6 +45,7 @@ Frontend (SvelteKit) guidelines
   - Centralize HTTP in `src/lib/services` and add Authorization header when a JWT is present.
   - Prefer `load` for data fetching; use `onMount` only for client-only behaviors.
   - Use Tailwind CSS v4 utilities; avoid inline styles when possible.
+  - Use Tailwind’s responsive breakpoints (xs, sm, md, lg, xl, 2xl, 3xl) for layout and component scaling.
 - Accessibility
   - Label form controls and use `aria-*` for errors and descriptions.
 
