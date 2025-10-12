@@ -16,6 +16,7 @@
 	import { ContentWidth } from '$lib/types/ContentSize';
 	import { goto } from '$app/navigation';
 	import InvestmentListItem from '$lib/components/InvestmentListItem.svelte';
+	import { notify } from '$lib/services/notificationService';
 
 	// Reactive values that track the store
 	let investments = $state(dataStore.investments);
@@ -75,8 +76,7 @@
 		if (secondaryLoading) return;
 		// Validate inputs
 		if (!investmentValuesValid(investment)) {
-			// TODO: Implement toast notifications
-			alert('Please fill in all required fields with valid values.');
+			notify.error('Please fill in all required fields with valid values.');
 			return;
 		}
 
@@ -89,9 +89,8 @@
 
 			onInvestmentDialogClose();
 		} catch (error) {
-			// TODO: Implement toast notifications
-			alert('Error saving investment: ' + error);
 			console.error('Error saving investment:', error);
+			notify.error('Error saving investment: ' + error);
 		}
 	}
 
@@ -121,8 +120,7 @@
 			await dataStore.deleteInvestment(investment.id);
 			onInvestmentDialogClose();
 		} catch (error) {
-			// TODO: Implement toast notifications
-			alert('Error deleting investment: ' + error);
+			notify.error('Error deleting investment: ' + error);
 			console.error('Error deleting investment:', error);
 		}
 	}

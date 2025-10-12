@@ -2,7 +2,6 @@
 	import {
 		InvestmentType,
 		investmentValuesValid,
-		updateInvestment,
 		type InvestmentModel
 	} from '$lib/services/investmentService';
 	import { ColorStyle } from '$lib/types/ColorStyle';
@@ -10,6 +9,7 @@
 	import Button from './Button.svelte';
 	import SearchableDropDown from './SearchableDropDown.svelte';
 	import { ContentWidth } from '$lib/types/ContentSize';
+	import { notify } from '$lib/services/notificationService';
 
 	type InvestmentTypeIcon = { type: InvestmentType; faIcon: string };
 	let isLoading = $state(false);
@@ -104,10 +104,9 @@
 
 	async function saveChanges() {
 		if (!investmentValuesValid(investment)) {
-			// TODO: Implement toast notifications
 			let errorMsg = 'Please fix the following issues:\n';
 			if (!investmentValuesValid(investment)) {
-				alert(errorMsg);
+				notify.error(errorMsg);
 				return;
 			}
 		}
