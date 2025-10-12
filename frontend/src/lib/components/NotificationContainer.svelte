@@ -5,7 +5,7 @@
 	import { browser } from '$app/environment';
 
 	let containerRef: HTMLDivElement;
-	let portalTarget: HTMLElement | undefined = $state(browser ? document.body : undefined);
+	let portalTarget: HTMLElement | undefined = $state(undefined);
 	
 	const notifications = $derived(notificationStore.items);
 	const position = $derived(notificationStore.position);
@@ -48,12 +48,43 @@
 		right: { x: 300, duration: 300, opacity: 0 }
 	};
 	
-	// Detect if we're inside a modal/dialog
+	function resolvePortalTarget() {
+		if (!browser) return undefined;
+
+		const openDialogs = Array.from(document.querySelectorAll('dialog[open]')) as HTMLDialogElement[];
+		const topMostDialog = openDialogs.at(-1);
+
+		return topMostDialog ?? document.body;
+	}
+
+	// Always keep notifications in the top-most layer (dialog when present, body otherwise)
 	$effect(() => {
-		if (browser && containerRef) {
-			const dialogElement = containerRef.closest('dialog');
-			portalTarget = dialogElement || document.body;
-		}
+		if (!browser) return;
+
+		const updateTarget = () => {
+			const nextTarget = resolvePortalTarget();
+			if (nextTarget && nextTarget !== portalTarget) {
+				portalTarget = nextTarget;
+			}
+		};
+
+		updateTarget();
+
+		const observer = new MutationObserver(updateTarget);
+		observer.observe(document.body, {
+			subtree: true,
+			attributes: true,
+			childList: true,
+			attributeFilter: ['open']
+		});
+
+		const handleFocus = () => updateTarget();
+		window.addEventListener('focusin', handleFocus, true);
+
+		return () => {
+			observer.disconnect();
+			window.removeEventListener('focusin', handleFocus, true);
+		};
 	});
 	
 	function getTransitionParams() {
