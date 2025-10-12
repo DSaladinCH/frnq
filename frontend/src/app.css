@@ -19,6 +19,7 @@
     --color-accent: #ca261a;
     --color-button: #6c6c6c;
     --color-error: #ff4d4d;
+    --color-warning: #eb9d17;
     --color-success: #4caf50;
 
     color-scheme: dark;
@@ -46,6 +47,10 @@
 
 .color-error {
     color: var(--color-error);
+}
+
+.color-warning {
+    color: var(--color-warning);
 }
 
 .color-success {
@@ -76,12 +81,16 @@
     background-color: var(--color-accent);
 }
 
-.bg-success {
-    background-color: var(--color-success);
-}
-
 .bg-error {
     background-color: var(--color-error);
+}
+
+.bg-warning {
+    background-color: var(--color-warning);
+}
+
+.bg-success {
+    background-color: var(--color-success);
 }
 
 .border-button {
@@ -92,8 +101,20 @@
     border-color: var(--color-secondary);
 }
 
+.border-error {
+    border-color: var(--color-error);
+}
+
+.border-warning {
+    border-color: var(--color-warning);
+}
+
 .border-success {
     border-color: var(--color-success);
+}
+
+.border-primary {
+    border-color: var(--color-primary);
 }
 
 .bg-background-backdrop {

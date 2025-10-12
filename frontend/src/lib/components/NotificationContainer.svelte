@@ -10,6 +10,44 @@
 	const notifications = $derived(notificationStore.items);
 	const position = $derived(notificationStore.position);
 	
+	// Type mappings
+	const ICON_MAP: Record<NotificationType, string> = {
+		info: 'fa-circle-info',
+		success: 'fa-circle-check',
+		warning: 'fa-triangle-exclamation',
+		error: 'fa-circle-xmark'
+	};
+	
+	const BORDER_COLOR_MAP: Record<NotificationType, string> = {
+		info: 'border-primary',
+		success: 'border-success',
+		warning: 'border-warning',
+		error: 'border-error'
+	};
+	
+	const ICON_COLOR_MAP: Record<NotificationType, string> = {
+		info: 'color-primary',
+		success: 'color-success',
+		warning: 'color-warning',
+		error: 'color-error'
+	};
+	
+	// Position mappings
+	const POSITION_CLASS_MAP = {
+		'top-right': 'top-0 right-0 items-end',
+		'top-left': 'top-0 left-0 items-start',
+		'top-center': 'top-0 left-1/2 -translate-x-1/2 items-center',
+		'bottom-right': 'bottom-0 right-0 items-end flex-col-reverse',
+		'bottom-left': 'bottom-0 left-0 items-start flex-col-reverse',
+		'bottom-center': 'bottom-0 left-1/2 -translate-x-1/2 items-center flex-col-reverse'
+	} as const;
+	
+	const TRANSITION_PARAMS_MAP = {
+		left: { x: -300, duration: 300, opacity: 0 },
+		center: { y: -50, duration: 300, opacity: 0 }, // will be adjusted for bottom
+		right: { x: 300, duration: 300, opacity: 0 }
+	};
+	
 	// Detect if we're inside a modal/dialog
 	$effect(() => {
 		if (browser && containerRef) {
@@ -18,43 +56,17 @@
 		}
 	});
 	
-	function getIcon(type: NotificationType): string {
-		switch (type) {
-			case 'success':
-				return 'fa-circle-check';
-			case 'error':
-				return 'fa-circle-xmark';
-			case 'warning':
-				return 'fa-triangle-exclamation';
-			case 'info':
-			default:
-				return 'fa-circle-info';
-		}
-	}
-	
-	function getColorClass(type: NotificationType): string {
-		switch (type) {
-			case 'success':
-				return 'notification-success';
-			case 'error':
-				return 'notification-error';
-			case 'warning':
-				return 'notification-warning';
-			case 'info':
-			default:
-				return 'notification-info';
-		}
-	}
-	
 	function getTransitionParams() {
 		// Determine transition direction based on position
 		if (position.includes('left')) {
-			return { x: -300, duration: 300, opacity: 0 };
+			return TRANSITION_PARAMS_MAP.left;
 		} else if (position.includes('center')) {
-			return { y: position.includes('top') ? -50 : 50, duration: 300, opacity: 0 };
+			return { 
+				...TRANSITION_PARAMS_MAP.center, 
+				y: position.includes('bottom') ? 50 : -50 
+			};
 		} else {
-			// right or default
-			return { x: 300, duration: 300, opacity: 0 };
+			return TRANSITION_PARAMS_MAP.right;
 		}
 	}
 	
@@ -64,30 +76,37 @@
 </script>
 
 <!-- Hidden reference element for portal detection -->
-<div bind:this={containerRef} style="display: none;"></div>
+<div bind:this={containerRef} class="hidden"></div>
 
 {#if portalTarget}
 	<div 
-		class="notification-container notification-{position}"
+		class="fixed z-[9999] flex flex-col gap-3 p-4 pointer-events-none max-w-full box-border
+			{POSITION_CLASS_MAP[position]}
+			max-md:p-2 max-md:left-0 max-md:right-0 max-md:!translate-x-0 max-md:items-stretch"
 		use:createPortal={portalTarget}
 	>
 		{#each notifications as notification (notification.id)}
 			{@const transitionParams = getTransitionParams()}
 			<div 
-				class="notification {getColorClass(notification.type)}"
+				class="notification flex items-center gap-3.5 min-w-[320px] max-w-[500px] p-4 px-5 bg-card 
+					rounded-xl pointer-events-auto border-l-4 rounded-tl-sm rounded-bl-sm
+					max-md:min-w-0 max-md:w-full max-md:max-w-none
+					{BORDER_COLOR_MAP[notification.type]}"
 				role="alert"
 				aria-live="polite"
 				in:fly={transitionParams}
 				out:fly={{ ...transitionParams, duration: 250 }}
 			>
-				<div class="notification-icon">
-					<i class="fa-solid {getIcon(notification.type)}"></i>
+				<div class="notification-icon shrink-0 text-2xl leading-none flex items-center justify-center
+					{ICON_COLOR_MAP[notification.type]}">
+					<i class="fa-solid {ICON_MAP[notification.type]}"></i>
 				</div>
-				<div class="notification-content">
-					<p class="notification-message">{notification.message}</p>
+				<div class="flex-1 min-w-0">
+					<p class="m-0 color-default text-[0.95rem] leading-6 break-words">{notification.message}</p>
 				</div>
 				<button 
-					class="notification-close"
+					class="notification-close shrink-0 bg-transparent border-none color-muted cursor-pointer p-1 
+						text-xl leading-none flex items-center justify-center rounded w-7 h-7"
 					onclick={() => handleDismiss(notification.id)}
 					aria-label="Close notification"
 				>
@@ -99,75 +118,10 @@
 {/if}
 
 <style>
-	.notification-container {
-		position: fixed;
-		z-index: 9999;
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-		padding: 1rem;
-		pointer-events: none;
-		max-width: 100%;
-		box-sizing: border-box;
-	}
-	
-	/* Position variants */
-	.notification-top-right {
-		top: 0;
-		right: 0;
-		align-items: flex-end;
-	}
-	
-	.notification-top-left {
-		top: 0;
-		left: 0;
-		align-items: flex-start;
-	}
-	
-	.notification-top-center {
-		top: 0;
-		left: 50%;
-		transform: translateX(-50%);
-		align-items: center;
-	}
-	
-	.notification-bottom-right {
-		bottom: 0;
-		right: 0;
-		align-items: flex-end;
-		flex-direction: column-reverse;
-	}
-	
-	.notification-bottom-left {
-		bottom: 0;
-		left: 0;
-		align-items: flex-start;
-		flex-direction: column-reverse;
-	}
-	
-	.notification-bottom-center {
-		bottom: 0;
-		left: 50%;
-		transform: translateX(-50%);
-		align-items: center;
-		flex-direction: column-reverse;
-	}
-	
+	/* Notification base styles with complex shadows and transitions */
 	.notification {
-		display: flex;
-		align-items: center;
-		gap: 0.875rem;
-		min-width: 320px;
-		max-width: 500px;
-		padding: 1rem 1.25rem;
-		background-color: var(--color-card);
-		border-radius: 0.75rem;
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.2);
-		pointer-events: auto;
-		border-left: 4px solid;
-		border-top-left-radius: 0;
-		border-bottom-left-radius: 0;
-		transition: all 0.2s ease;
+		transition: all 0.2s ease-in-out;
 	}
 	
 	.notification:hover {
@@ -175,94 +129,9 @@
 		transform: translateY(-2px);
 	}
 	
-	/* Mobile responsive */
-	@media (max-width: 640px) {
-		.notification-container {
-			padding: 0.5rem;
-			left: 0 !important;
-			right: 0 !important;
-			transform: none !important;
-			align-items: stretch !important;
-		}
-		
-		.notification {
-			min-width: auto;
-			width: 100%;
-			max-width: none;
-		}
-	}
-	
-	/* Type-specific colors */
-	.notification-info {
-		border-left-color: #3b82f6;
-	}
-	
-	.notification-success {
-		border-left-color: var(--color-success);
-	}
-	
-	.notification-warning {
-		border-left-color: #f59e0b;
-	}
-	
-	.notification-error {
-		border-left-color: var(--color-error);
-	}
-	
-	.notification-icon {
-		flex-shrink: 0;
-		font-size: 1.5rem;
-		line-height: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-	
-	.notification-info .notification-icon {
-		color: #3b82f6;
-	}
-	
-	.notification-success .notification-icon {
-		color: var(--color-success);
-	}
-	
-	.notification-warning .notification-icon {
-		color: #f59e0b;
-	}
-	
-	.notification-error .notification-icon {
-		color: var(--color-error);
-	}
-	
-	.notification-content {
-		flex: 1;
-		min-width: 0;
-	}
-	
-	.notification-message {
-		margin: 0;
-		color: var(--color-text);
-		font-size: 0.95rem;
-		line-height: 1.5;
-		word-wrap: break-word;
-	}
-	
+	/* Close button transitions */
 	.notification-close {
-		flex-shrink: 0;
-		background: none;
-		border: none;
-		color: var(--color-muted);
-		cursor: pointer;
-		padding: 0.25rem;
-		font-size: 1.25rem;
-		line-height: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 0.25rem;
-		transition: all 0.15s ease;
-		width: 28px;
-		height: 28px;
+		transition: all 0.15s ease-in-out;
 	}
 	
 	.notification-close:hover {
@@ -276,8 +145,17 @@
 	
 	/* Respect reduced motion preferences */
 	@media (prefers-reduced-motion: reduce) {
-		.notification {
+		.notification,
+		.notification-close {
 			transition: none;
+		}
+		
+		.notification:hover {
+			transform: none;
+		}
+		
+		.notification-close:active {
+			transform: none;
 		}
 	}
 </style>
