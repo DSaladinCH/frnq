@@ -4,6 +4,7 @@
 	import Input from '$lib/components/Input.svelte';
 	import PasswordInput from '$lib/components/PasswordInput.svelte';
 	import { login } from '$lib/services/authService';
+	import { notify } from '$lib/services/notificationService';
 	import { ContentWidth } from '$lib/types/ContentSize';
 
 	let email = $state('');
@@ -14,11 +15,12 @@
 		try {
 			isLoading = true;
 			await login(email, password);
-
+			
+			notify.success('Successfully logged in!');
 			goto('/portfolio');
 		} catch (error) {
 			console.error('Login failed:', error);
-			// Show error message to user
+			notify.error('Login failed. Please check your credentials and try again.');
 		} finally {
 			isLoading = false;
 		}

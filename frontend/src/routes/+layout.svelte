@@ -5,6 +5,7 @@
 	import { goto } from '$app/navigation';
 	import { dataStore } from '$lib/stores/dataStore';
 	import { isLoggedIn } from '$lib/services/authService';
+	import NotificationContainer from '$lib/components/NotificationContainer.svelte';
 	import type { Snippet } from 'svelte';
 
 	let { children }: { children: Snippet } = $props();
@@ -172,6 +173,9 @@
 		{@render children?.()}
 	</div>
 </div>
+
+<!-- Notification Container -->
+<NotificationContainer />
 
 <style>
 	.nav-item.active {
