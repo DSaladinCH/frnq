@@ -44,8 +44,10 @@ Frontend (SvelteKit) guidelines
   - Strong TypeScript typing; export clear interfaces for API data and forms.
   - Centralize HTTP in `src/lib/services` and add Authorization header when a JWT is present.
   - Prefer `load` for data fetching; use `onMount` only for client-only behaviors.
-  - Use Tailwind CSS v4 utilities; avoid inline styles when possible.
-  - Use Tailwind’s responsive breakpoints (xs, sm, md, lg, xl, 2xl, 3xl) for layout and component scaling.
+  - Use Tailwind CSS v4 utilities for standard styling and responsive design.
+  - Use Tailwind’s breakpoints (xs, sm, md, lg, xl, 2xl, 3xl) for layout and scaling.
+  - For complex CSS rules (e.g., multi-layer shadows, gradients, animations, transforms), use plain CSS in a <style> block or external stylesheet instead of unreadable Tailwind expressions like shadow-[0_6px_16px_rgba(0,0,0,0.5),0_3px_8px_rgba(0,0,0,0.3)].
+  - Use TypeScript mappings (e.g., enums or objects) to map states or types to Tailwind/CSS classes instead of inline ternaries — for example:
 - Accessibility
   - Label form controls and use `aria-*` for errors and descriptions.
 
