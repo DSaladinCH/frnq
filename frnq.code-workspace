@@ -9,7 +9,10 @@
 	],
 	"settings": {
 		"dotnet.defaultSolution": "frnq-api.sln",
-		"powershell.cwd": "frnq-api"
+		"powershell.cwd": "frnq-api",
+		"chat.instructionsFilesLocations": {
+			"../.github/instructions": true
+		}
 	},
 	"tasks": {
 		"version": "2.0.0",
