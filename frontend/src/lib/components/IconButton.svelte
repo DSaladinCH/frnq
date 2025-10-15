@@ -17,7 +17,7 @@
 </script>
 
 <button
-	class="icon-button h-full w-full cursor-pointer"
+	class="icon-button h-full w-full cursor-pointer rounded-sm"
 	{onclick}
 	title={tooltip}
 	aria-label={tooltip}
@@ -47,5 +47,6 @@
 <style>
 	.icon-button:hover {
 		color: var(--hover-color);
+		background-color: hsl(from var(--color-button) h s l / 0.3);
 	}
 </style>

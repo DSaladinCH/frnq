@@ -10,4 +10,5 @@ export interface QuoteModel {
   currency: string;
   lastUpdatedPrices: string;
   group: QuoteGroup;
+  customName?: string;
 }
