@@ -25,6 +25,8 @@ public class QuoteModel
     public virtual ICollection<QuotePrice> Prices { get; set; } = [];
     [JsonIgnore]
     public virtual ICollection<QuoteGroupMapping> Mappings { get; set; } = [];
+    [JsonIgnore]
+    public virtual ICollection<QuoteName> Names { get; set; } = [];
 
     public static string GetSenatizedName(string name)
     {

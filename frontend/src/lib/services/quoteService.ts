@@ -17,3 +17,28 @@ export async function searchQuotes(query: string, providerId: string = 'yahoo-fi
 	if (!res.ok) throw new Error('Failed to search quotes');
 	return res.json();
 }
+
+export async function updateQuoteCustomName(quoteId: number, customName: string): Promise<boolean> {
+	const url = `${baseUrl}/api/quote/${quoteId}/customName`;
+	console.log('Updating quote custom name:', url, customName);
+
+	const res = await fetchWithAuth(url, {
+		method: 'PUT',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({ customName })
+	});
+
+	return res.ok;
+}
+
+export async function removeQuoteCustomName(quoteId: number): Promise<boolean> {
+	const url = `${baseUrl}/api/quote/${quoteId}/customName`;
+
+	const res = await fetchWithAuth(url, {
+		method: 'DELETE'
+	});
+
+	return res.ok;
+}

@@ -112,7 +112,7 @@
 >
 	<div bind:this={buttonWrapperRef} class="h-7 w-7 {buttonClass}">
 		<IconButton 
-			icon="fa-solid fa-bars"
+			icon="fa-solid fa-ellipsis"
 			tooltip="Open menu"
 			hoverColor={ColorStyle.Primary}
 			onclick={toggleMenu}

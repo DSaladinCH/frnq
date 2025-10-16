@@ -32,4 +32,27 @@ public class QuoteController(QuoteManagement quoteManagement, ProviderRegistry r
     {
         return Ok(await quoteManagement.GetHistoricalPricesAsync(providerId, symbol, from, to));
     }
+
+    [HttpPut("{quoteId}/customName")]
+    public async Task<IActionResult> UpdateCustomName([FromRoute] int quoteId, [FromBody] CustomNameDto customName)
+    {
+        if (string.IsNullOrWhiteSpace(customName.CustomName))
+            return BadRequest("Custom name cannot be empty.");
+
+        bool result = await quoteManagement.UpdateCustomNameAsync(quoteId, customName.CustomName);
+        if (!result)
+            return NotFound();
+
+        return NoContent();
+    }
+
+    [HttpDelete("{quoteId}/customName")]
+    public async Task<IActionResult> DeleteCustomName([FromRoute] int quoteId)
+    {
+        bool result = await quoteManagement.DeleteCustomNameAsync(quoteId);
+        if (!result)
+            return NotFound();
+
+        return NoContent();
+    }
 }

@@ -1,22 +1,25 @@
 <script lang="ts">
-	import { InvestmentType, type InvestmentModel } from '$lib/services/investmentService';
 	import type { QuoteModel } from '$lib/Models/QuoteModel';
 	import type { PositionSnapshot } from '$lib/services/positionService';
 	import MenuButton from './MenuButton.svelte';
 	import MenuItem from './MenuItem.svelte';
-	import MenuDivider from './MenuDivider.svelte';
-	import Modal from './Modal.svelte';
+
+	let isRemoving = $state(false);
 
 	let {
 		quote,
 		snapshot,
-		onAssignGroup
-	}: { quote: QuoteModel; snapshot: PositionSnapshot; onAssignGroup: () => void } = $props();
+		onAssignGroup,
+		onUpdateCustomName,
+		onRemoveCustomName
+	}: {
+		quote: QuoteModel;
+		snapshot: PositionSnapshot;
+		onAssignGroup: () => void;
+		onUpdateCustomName: () => void;
+		onRemoveCustomName: () => void;
+	} = $props();
 	let totalGain = $derived(snapshot.currentValue + snapshot.realizedGain - snapshot.invested);
-
-	let showCustomNameModal = $state(false);
-	let customNameInput = $state('');
-	let menuButtonRef: any;
 
 	function formatCurrency(value: number): string {
 		return value.toLocaleString(undefined, { style: 'currency', currency: quote.currency });
@@ -26,35 +29,10 @@
 		return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 });
 	}
 
-	function openSetCustomNameModal() {
-		customNameInput = quote.customName || '';
-		showCustomNameModal = true;
-		menuButtonRef?.closeMenu();
-	}
-
-	function openChangeCustomNameModal() {
-		customNameInput = quote.customName || '';
-		showCustomNameModal = true;
-		menuButtonRef?.closeMenu();
-	}
-
 	function removeCustomName() {
-		quote.customName = undefined;
-		menuButtonRef?.closeMenu();
-		// Here you would typically also save to backend
-	}
-
-	function saveCustomName() {
-		if (customNameInput.trim()) {
-			quote.customName = customNameInput.trim();
-			// Here you would typically also save to backend
-		}
-		showCustomNameModal = false;
-	}
-
-	function closeCustomNameModal() {
-		showCustomNameModal = false;
-		customNameInput = '';
+		isRemoving = true;
+		onRemoveCustomName();
+		isRemoving = false;
 	}
 </script>
 
@@ -62,26 +40,27 @@
 <div class="card card-reactive no-click @container relative grid gap-1">
 	<!-- Menu button in top-right corner -->
 	<div class="absolute right-2 top-2">
-		<MenuButton bind:this={menuButtonRef}>
-			{#if quote.customName}
-				<MenuItem 
-					icon="fa-solid fa-pen"
-					text="Change Custom Name"
-					onclick={openChangeCustomNameModal}
-				/>
-				<MenuItem 
-					icon="fa-solid fa-trash"
-					text="Remove Custom Name"
-					onclick={removeCustomName}
-					danger={true}
-				/>
-			{:else}
-				<MenuItem 
-					icon="fa-solid fa-tag"
-					text="Set Custom Name"
-					onclick={openSetCustomNameModal}
-				/>
-			{/if}
+		<MenuButton>
+			<MenuItem
+				icon="fa-solid fa-pen"
+				text="Change Custom Name"
+				onclick={onUpdateCustomName}
+				visible={quote.customName !== undefined}
+			/>
+			<MenuItem
+				icon="fa-solid fa-trash"
+				text="Remove Custom Name"
+				onclick={onRemoveCustomName}
+				danger={true}
+				visible={quote.customName !== undefined}
+				isLoading={isRemoving}
+			/>
+			<MenuItem
+				icon="fa-solid fa-tag"
+				text="Set Custom Name"
+				onclick={onUpdateCustomName}
+				visible={quote.customName === undefined}
+			/>
 		</MenuButton>
 	</div>
 
@@ -96,7 +75,7 @@
 		<div class="leading-none">
 			<span class="font-bold">{quote.customName || quote.name}</span>
 			{#if quote.customName}
-				<span class="color-muted text-sm ml-2">({quote.name})</span>
+				<span class="color-muted ml-2 text-sm">({quote.name})</span>
 			{/if}
 		</div>
 		<div>
@@ -124,30 +103,3 @@
 		</div>
 	</div>
 </div>
-
-<!-- Custom Name Modal -->
-<Modal bind:showModal={showCustomNameModal} onClose={closeCustomNameModal} title="Custom Name">
-	<div class="flex flex-col gap-4 min-w-[300px]">
-		<div>
-			<label for="customName" class="block text-sm font-medium color-muted mb-2">
-				Enter a custom name for {quote.name}
-			</label>
-			<input
-				type="text"
-				id="customName"
-				class="textbox"
-				bind:value={customNameInput}
-				placeholder="Enter custom name..."
-				onkeydown={(e) => e.key === 'Enter' && saveCustomName()}
-			/>
-		</div>
-		<div class="flex gap-2 justify-end">
-			<button type="button" class="btn btn-secondary" onclick={closeCustomNameModal}>
-				Cancel
-			</button>
-			<button type="button" class="btn btn-success" onclick={saveCustomName} disabled={!customNameInput.trim()}>
-				Save
-			</button>
-		</div>
-	</div>
-</Modal>

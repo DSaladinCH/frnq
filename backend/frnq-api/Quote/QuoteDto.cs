@@ -8,6 +8,7 @@ public class QuoteDto
     public string ProviderId { get; set; } = string.Empty;
     public string Symbol { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public string CustomName { get; set; } = string.Empty;
     public string ExchangeDisposition { get; set; } = string.Empty;
     public string TypeDisposition { get; set; } = string.Empty;
     public string Currency { get; set; } = string.Empty;
@@ -22,6 +23,7 @@ public class QuoteDto
             ProviderId = model.ProviderId,
             Symbol = model.Symbol,
             Name = model.Name,
+            CustomName = model.Names.FirstOrDefault()?.CustomName ?? string.Empty,
             ExchangeDisposition = model.ExchangeDisposition,
             TypeDisposition = model.TypeDisposition,
             Currency = model.Currency,

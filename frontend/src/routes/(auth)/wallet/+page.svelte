@@ -14,10 +14,15 @@
 	let snapshots = $state(dataStore.snapshots);
 	let groups = $state(dataStore.groups);
 
+	let secondaryLoading = $state(dataStore.secondaryLoading);
+
 	let assignGroupQuote = $state<QuoteModel | null>(null);
 	let assignGroupModalOpen = $state(false);
 	let assignGroupId = $state<number | null>(null);
-	let secondaryLoading = $state(dataStore.secondaryLoading);
+
+	let customNameInput = $state('');
+	let customNameModalOpen = $state(false);
+	let customNameQuote = $state<QuoteModel | null>(null);
 
 	// Subscribe to store changes
 	$effect(() => {
@@ -30,6 +35,7 @@
 		return unsubscribe;
 	});
 
+	//#region Group Assignment Handlers
 	function handleAssignGroup(quote: QuoteModel) {
 		assignGroupQuote = quote;
 		assignGroupModalOpen = true;
@@ -55,6 +61,36 @@
 			closeAssignGroup();
 		}
 	}
+	//#endregion
+
+	//#region Custom Name Handlers
+	function handleUpdateCustomName(quote: QuoteModel) {
+		customNameInput = quote.customName || '';
+		customNameModalOpen = true;
+		customNameQuote = quote;
+	}
+
+	function closeCustomNameModal() {
+		customNameModalOpen = false;
+		customNameInput = '';
+		customNameQuote = null;
+	}
+
+	async function handleSaveCustomName() {
+		if (customNameInput.trim() && customNameQuote) {
+			customNameQuote.customName = customNameInput.trim();
+			await dataStore.updateQuoteCustomName(customNameQuote.id, customNameInput.trim());
+		}
+
+		customNameModalOpen = false;
+		customNameInput = '';
+	}
+
+	function removeCustomName(quote: QuoteModel) {
+		quote.customName = undefined;
+		dataStore.removeQuoteCustomName(quote.id);
+	}
+	//#endregion
 </script>
 
 <PageHead title="Wallet" />
@@ -70,6 +106,8 @@
 				{quote}
 				snapshot={snapshots.filter((s) => s.quoteId === quote.id).slice(-1)[0]}
 				onAssignGroup={() => handleAssignGroup(quote)}
+				onUpdateCustomName={() => handleUpdateCustomName(quote)}
+				onRemoveCustomName={() => removeCustomName(quote)}
 			/>
 		{/each}
 	</div>
@@ -104,5 +142,43 @@
 				/>
 			</div>
 		{/each}
+	</div>
+</Modal>
+
+<Modal bind:showModal={customNameModalOpen} onClose={closeCustomNameModal} title="Custom Name">
+	<div class="flex min-w-[300px] flex-col gap-4">
+		<div>
+			<label for="customName" class="color-muted mb-2 block text-sm font-medium">
+				Enter a custom name for {customNameQuote?.name}
+			</label>
+			<input
+				type="text"
+				id="customName"
+				class="textbox"
+				bind:value={customNameInput}
+				placeholder="Enter custom name..."
+				onkeydown={(e) => e.key === 'Enter' && handleSaveCustomName()}
+			/>
+		</div>
+		<div class="flex justify-end gap-2">
+			<Button
+				text="Cancel"
+				icon=""
+				textSize={TextSize.Medium}
+				style={ColorStyle.Secondary}
+				width={ContentWidth.Full}
+				onclick={closeCustomNameModal}
+			/>
+
+			<Button
+				text="Save"
+				icon=""
+				textSize={TextSize.Medium}
+				style={ColorStyle.Success}
+				width={ContentWidth.Full}
+				isLoading={secondaryLoading}
+				onclick={handleSaveCustomName}
+			/>
+		</div>
 	</div>
 </Modal>

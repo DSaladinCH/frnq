@@ -189,6 +189,26 @@ export class DataStore {
 			await this.fetchAllData();
 		});
 	}
+
+	async updateQuoteCustomName(quoteId: number, customName: string) {
+		await this.runWithSecondaryLoading(async () => {
+			const { updateQuoteCustomName: updateCustomQuoteNameAPI } = await import(
+				'$lib/services/quoteService'
+			);
+			await updateCustomQuoteNameAPI(quoteId, customName);
+			await this.fetchAllData();
+		});
+	}
+
+	async removeQuoteCustomName(quoteId: number) {
+		await this.runWithSecondaryLoading(async () => {
+			const { removeQuoteCustomName: removeCustomQuoteNameAPI } = await import(
+				'$lib/services/quoteService'
+			);
+			await removeCustomQuoteNameAPI(quoteId);
+			await this.fetchAllData();
+		});
+	}
 }
 
 // Export a singleton instance

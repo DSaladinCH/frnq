@@ -14,6 +14,7 @@ public class DatabaseContext : DbContext
     public DbSet<QuotePrice> QuotePrices { get; set; } = null!;
     public DbSet<QuoteGroup> QuoteGroups { get; set; } = null!;
     public DbSet<QuoteGroupMapping> QuoteGroupMappings { get; set; } = null!;
+    public DbSet<QuoteName> QuoteNames { get; set; } = null!;
     public DbSet<InvestmentModel> Investments { get; set; } = null!;
     public DbSet<UserModel> Users { get; set; } = null!;
     public DbSet<RefreshTokenSession> RefreshTokenSessions { get; set; } = null!;
@@ -65,6 +66,14 @@ public class DatabaseContext : DbContext
             .HasOne(qgm => qgm.Group)
             .WithMany(g => g.Mappings)
             .HasForeignKey(qgm => qgm.GroupId);
+
+        modelBuilder.Entity<QuoteName>()
+            .HasKey(qn => new { qn.UserId, qn.QuoteId });
+
+        modelBuilder.Entity<QuoteName>()
+            .HasOne(qn => qn.Quote)
+            .WithMany(q => q.Names)
+            .HasForeignKey(qn => qn.QuoteId);
 
         base.OnModelCreating(modelBuilder);
     }

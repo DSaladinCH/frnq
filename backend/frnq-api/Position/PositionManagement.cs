@@ -22,8 +22,10 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
             .Where(i => userId == i.UserId && i.Date <= to)
             .OrderBy(i => i.Date)
             .Include(i => i.Quote)
-            .ThenInclude(q => q.Mappings.Where(m => m.UserId == userId))
-                .ThenInclude(m => m.Group)
+                .ThenInclude(q => q.Mappings.Where(m => m.UserId == userId))
+                    .ThenInclude(m => m.Group)
+            .Include(i => i.Quote)
+                .ThenInclude(q => q.Names.Where(n => n.UserId == userId))
             .ToListAsync();
 
         // Get all quotes that have been invested in
@@ -63,7 +65,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 
         List<PositionSnapshot> allSnapshots = [];
         IEnumerable<IGrouping<(Guid UserId, int QuoteId), InvestmentModel>> investmentGroups =
-    investments.GroupBy(i => (i.UserId, i.QuoteId));
+        investments.GroupBy(i => (i.UserId, i.QuoteId));
 
         foreach (var group in investmentGroups)
         {

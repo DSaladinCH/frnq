@@ -1,11 +1,14 @@
+using DSaladin.Frnq.Api.Auth;
 using DSaladin.Frnq.Api.Investment;
 using DSaladin.Frnq.Api.Quote.Providers;
 using Microsoft.EntityFrameworkCore;
 
 namespace DSaladin.Frnq.Api.Quote;
 
-public class QuoteManagement(DatabaseContext databaseContext, ProviderRegistry registry, DatabaseProvider databaseProvider)
+public class QuoteManagement(AuthManagement authManagement, DatabaseContext databaseContext, ProviderRegistry registry, DatabaseProvider databaseProvider)
 {
+    private readonly Guid userId = authManagement.GetCurrentUserId();
+
     public async Task<QuoteModel?> GetQuoteAsync(int quoteId)
     {
         return await databaseContext.Quotes.FirstOrDefaultAsync(q => q.Id == quoteId);
@@ -121,11 +124,54 @@ public class QuoteManagement(DatabaseContext databaseContext, ProviderRegistry r
 
             foreach (QuotePrice p in fetched)
                 p.QuoteId = quote.Id;
-            
+
             await databaseProvider.AddOrUpdateQuotePricesAsync(fetched.ToList());
             return fetched;
         }
 
         return [];
+    }
+
+    public async Task<bool> UpdateCustomNameAsync(int quoteId, string customName)
+    {
+        QuoteModel? quote = await databaseContext.Quotes.FirstOrDefaultAsync(q => q.Id == quoteId);
+
+        if (quote is null)
+            return false;
+
+        QuoteName? existingName = await databaseContext.QuoteNames.FirstOrDefaultAsync(n => n.UserId == userId && n.QuoteId == quoteId);
+        if (existingName is null)
+        {
+            existingName = new QuoteName
+            {
+                UserId = userId,
+                QuoteId = quoteId,
+                CustomName = customName
+            };
+            databaseContext.QuoteNames.Add(existingName);
+        }
+        else
+            existingName.CustomName = customName;
+
+        await databaseContext.SaveChangesAsync();
+        return true;
+    }
+    
+    public async Task<bool> DeleteCustomNameAsync(int quoteId)
+    {
+        QuoteModel? quote = await databaseContext.Quotes.FirstOrDefaultAsync(q => q.Id == quoteId);
+
+        if (quote is null)
+            return false;
+
+        QuoteName? existingName = await databaseContext.QuoteNames.FirstOrDefaultAsync(n => n.UserId == userId && n.QuoteId == quoteId);
+
+        if (existingName is not null)
+        {
+            databaseContext.QuoteNames.Remove(existingName);
+            await databaseContext.SaveChangesAsync();
+        }
+
+        return true;
     }
 }
