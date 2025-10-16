@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Button from '$lib/components/Button.svelte';
+	import Input from '$lib/components/Input.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import PageHead from '$lib/components/PageHead.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
@@ -148,16 +149,13 @@
 <Modal bind:showModal={customNameModalOpen} onClose={closeCustomNameModal} title="Custom Name">
 	<div class="flex min-w-[300px] flex-col gap-4">
 		<div>
-			<label for="customName" class="color-muted mb-2 block text-sm font-medium">
-				Enter a custom name for {customNameQuote?.name}
-			</label>
-			<input
+			<Input
 				type="text"
 				id="customName"
-				class="textbox"
-				bind:value={customNameInput}
 				placeholder="Enter custom name..."
-				onkeydown={(e) => e.key === 'Enter' && handleSaveCustomName()}
+				title="Enter a custom name for {customNameQuote?.name}"
+				onkeypress={(e) => e.key === 'Enter' && handleSaveCustomName()}
+				bind:value={customNameInput}
 			/>
 		</div>
 		<div class="flex justify-end gap-2">
