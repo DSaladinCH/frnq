@@ -1,6 +1,13 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { FullAutoFill } from 'svelte/elements';
+	import AirDatepicker from 'air-datepicker';
+	import 'air-datepicker/air-datepicker.css';
+	import localeEn from 'air-datepicker/locale/en';
+	import localeDe from 'air-datepicker/locale/de';
+	import localeFr from 'air-datepicker/locale/fr';
+	import localeIt from 'air-datepicker/locale/it';
+	import { onMount } from 'svelte';
 
 	let {
 		type = 'text',
@@ -15,6 +22,10 @@
 		checked = $bindable(),
 		files = $bindable(),
 		disabled = false,
+		locale = 'de-CH',
+		step,
+		min,
+		max,
 		onchange = $bindable(),
 		onkeypress
 	}: {
@@ -30,6 +41,10 @@
 		checked?: boolean;
 		files?: FileList | null;
 		disabled?: boolean;
+		locale?: string;
+		step?: string | number;
+		min?: string | number;
+		max?: string | number;
 		onchange?: (event: Event) => void;
 		onkeypress?: (event: KeyboardEvent) => void;
 	} = $props();
@@ -37,6 +52,186 @@
 	id = id || `textbox-${Math.random().toString(36).slice(2, 11)}`;
 	const isCheckbox = type === 'checkbox';
 	const isFileInput = type === 'file';
+	const isDateTimeInput = type === 'datetime-local' || type === 'date' || type === 'time';
+
+	let dateInputRef: HTMLInputElement | null = $state(null);
+	let datepicker: AirDatepicker<HTMLInputElement> | null = null;
+
+	// Map locale strings to air-datepicker locale objects
+	function getDatepickerLocale(localeStr: string) {
+		const localeLower = localeStr.toLowerCase();
+		if (localeLower.startsWith('de')) return localeDe;
+		if (localeLower.startsWith('fr')) return localeFr;
+		if (localeLower.startsWith('it')) return localeIt;
+		return localeEn; // Default to English
+	}
+
+	// Initialize air-datepicker when component mounts
+	onMount(() => {
+		if (isDateTimeInput && dateInputRef) {
+			// Parse initial value
+			let initialDate: Date | undefined = undefined;
+			if (value) {
+				if (value instanceof Date) {
+					initialDate = value;
+				} else if (typeof value === 'string') {
+					const parsed = new Date(value);
+					if (!isNaN(parsed.getTime())) {
+						initialDate = parsed;
+					}
+				}
+			}
+
+			// Find if input is inside a modal dialog
+			const modalDialog = dateInputRef.closest('dialog');
+			const containerElement = modalDialog || document.body;
+
+			// Configure datepicker based on type
+			const options: any = {
+				locale: getDatepickerLocale(locale),
+				timepicker: type === 'datetime-local',
+				onlyTimepicker: type === 'time',
+				autoClose: type === 'date',
+				selectedDates: initialDate ? [initialDate] : [],
+				container: containerElement, // Render in modal or body
+				visible: true,
+				position({ $datepicker, $target, $pointer }: { 
+					$datepicker: HTMLDivElement; 
+					$target: HTMLInputElement; 
+					$pointer: HTMLElement;
+					isViewChange: boolean;
+					done: () => void;
+				}) {
+					// Get target element position
+					const coords = $target.getBoundingClientRect();
+					const dpHeight = $datepicker.clientHeight;
+					const dpWidth = $datepicker.clientWidth;
+
+					// Check if we're inside a modal
+					const isInModal = !!modalDialog;
+					
+					let top: number;
+					let left: number;
+
+					if (isInModal && modalDialog) {
+						// Calculate position relative to modal's viewport (no scroll offset needed)
+						// Modal dialog is fixed, so use coords directly
+						top = coords.bottom + 4; // 4px gap
+						left = coords.left;
+
+						// Check if datepicker would go off the bottom of the modal viewport
+						if (coords.bottom + dpHeight + 4 > window.innerHeight) {
+							// Position above the input instead
+							top = coords.top - dpHeight - 4;
+						}
+
+						// Check if datepicker would go off the right of the viewport
+						if (coords.left + dpWidth > window.innerWidth) {
+							// Align to the right edge of the input
+							left = coords.right - dpWidth;
+						}
+
+						// Ensure it doesn't go off the left edge
+						if (left < 0) {
+							left = 4; // Small margin from left edge
+						}
+
+						// Ensure it doesn't go off the top
+						if (top < 0) {
+							top = 4;
+						}
+					} else {
+						// Calculate position relative to document (with scroll offset)
+						top = coords.bottom + window.scrollY + 4; // 4px gap
+						left = coords.left + window.scrollX;
+
+						// Check if datepicker would go off the bottom of the viewport
+						if (coords.bottom + dpHeight + 4 > window.innerHeight) {
+							// Position above the input instead
+							top = coords.top + window.scrollY - dpHeight - 4;
+						}
+
+						// Check if datepicker would go off the right of the viewport
+						if (coords.left + dpWidth > window.innerWidth) {
+							// Align to the right edge of the input
+							left = coords.right + window.scrollX - dpWidth;
+						}
+
+						// Ensure it doesn't go off the left edge
+						if (left < 0) {
+							left = 4; // Small margin from left edge
+						}
+					}
+
+					$datepicker.style.left = `${left}px`;
+					$datepicker.style.top = `${top}px`;
+
+					// Position the pointer arrow
+					const pointerLeft = coords.left + coords.width / 2 - left - 10;
+					$pointer.style.left = `${pointerLeft}px`;
+				},
+				onSelect({ date, formattedDate }: { date: Date | Date[]; formattedDate: string | string[] }) {
+					if (date) {
+						// Convert to ISO string format expected by the backend
+						if (Array.isArray(date)) {
+							const selectedDate = date[0];
+							if (selectedDate instanceof Date) {
+								// Format as YYYY-MM-DDTHH:mm for datetime-local
+								const pad = (n: number) => n.toString().padStart(2, '0');
+								if (type === 'datetime-local') {
+									value = `${selectedDate.getFullYear()}-${pad(selectedDate.getMonth() + 1)}-${pad(selectedDate.getDate())}T${pad(selectedDate.getHours())}:${pad(selectedDate.getMinutes())}`;
+								} else if (type === 'date') {
+									value = `${selectedDate.getFullYear()}-${pad(selectedDate.getMonth() + 1)}-${pad(selectedDate.getDate())}`;
+								} else if (type === 'time') {
+									value = `${pad(selectedDate.getHours())}:${pad(selectedDate.getMinutes())}`;
+								}
+								
+								// Trigger onchange if provided
+								if (onchange && dateInputRef) {
+									const event = new Event('change', { bubbles: true });
+									onchange(event);
+								}
+							}
+						}
+					}
+				}
+			};
+
+			// Add min/max constraints if provided
+			if (min) {
+				options.minDate = new Date(min as string);
+			}
+			if (max) {
+				options.maxDate = new Date(max as string);
+			}
+
+			datepicker = new AirDatepicker(dateInputRef, options);
+
+			return () => {
+				if (datepicker) {
+					datepicker.destroy();
+				}
+			};
+		}
+	});
+
+	// Update datepicker when value changes externally
+	$effect(() => {
+		if (datepicker && value && isDateTimeInput) {
+			let newDate: Date | undefined = undefined;
+			if (value instanceof Date) {
+				newDate = value;
+			} else if (typeof value === 'string') {
+				const parsed = new Date(value);
+				if (!isNaN(parsed.getTime())) {
+					newDate = parsed;
+				}
+			}
+			if (newDate) {
+				datepicker.selectDate(newDate, { silent: true });
+			}
+		}
+	});
 
 	export function setFile(file: File) {
 		const dataTransfer = new DataTransfer();
@@ -91,6 +286,17 @@
 				{files && files.length > 0 ? files[0].name : 'Select a file...'}
 			</label>
 		</div>
+	{:else if isDateTimeInput}
+		<input
+			bind:this={dateInputRef}
+			class="textbox grow"
+			type="text"
+			{id}
+			{required}
+			{disabled}
+			{placeholder}
+			readonly
+		/>
 	{:else}
 		<input
 			class="textbox grow"
@@ -104,6 +310,9 @@
 			{onkeypress}
 			{accept}
 			{disabled}
+			{step}
+			{min}
+			{max}
 		/>
 	{/if}
 </div>
@@ -159,5 +368,17 @@
 
 	.checkbox:focus {
 		box-shadow: none !important;
+	}
+
+	/* Air Datepicker theme customization - Colors only */
+	:global(.air-datepicker) {
+		z-index: 10000 !important;
+		position: fixed !important;
+	}
+
+	/* When datepicker is inside a dialog, ensure it's on top */
+	:global(dialog .air-datepicker) {
+		z-index: 99999 !important;
+		position: fixed !important;
 	}
 </style>

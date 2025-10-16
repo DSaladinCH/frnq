@@ -8,6 +8,7 @@
 	import type { QuoteModel } from '$lib/Models/QuoteModel';
 	import Button from './Button.svelte';
 	import SearchableDropDown from './SearchableDropDown.svelte';
+	import Input from './Input.svelte';
 	import { ContentWidth } from '$lib/types/ContentSize';
 	import { notify } from '$lib/services/notificationService';
 
@@ -55,26 +56,6 @@
 			investment.quoteSymbol = undefined;
 		}
 	});
-
-	// Helper to normalize date string for datetime-local input
-	function normalizeDateForInput(dateStr: string): string {
-		if (!dateStr) return '';
-		// Remove timezone (Z or +00:00) and seconds if present
-		// Accepts: 2025-05-14T00:00:00Z or 2025-05-14T00:00:00+00:00
-		let match = dateStr.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/);
-		if (match) return match[1];
-		// If already correct format, return as is
-		if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(dateStr)) return dateStr;
-		return '';
-	}
-
-	// Derived value for input (Svelte runes mode)
-	let dateInputValue = $derived(normalizeDateForInput(investment.date));
-
-	function onDateInput(e: Event) {
-		const val = (e.target as HTMLInputElement).value;
-		investment.date = val;
-	}
 
 	function getLocalDateTimeString(date: Date): string {
 		// Returns YYYY-MM-DDTHH:MM
@@ -146,46 +127,42 @@
 
 	<div class="xs:grid-cols-2 xs:gap-3 grid grid-cols-1 gap-1 sm:grid-cols-3">
 		<div class="flex flex-col {investment.type === InvestmentType.Dividend ? 'hidden' : ''}">
-			<span class="text-lg font-bold">Market</span>
-			<input
-				class="textbox"
+			<Input
+				title="Market"
 				type="number"
 				step="any"
-				min="0"
+				min={0}
 				required
 				bind:value={investment.pricePerUnit}
 			/>
 		</div>
 		<div class="flex flex-col">
-			<span class="text-lg font-bold">Amount</span>
-			<input
-				class="textbox"
+			<Input
+				title="Amount"
 				type="number"
 				step="any"
-				min="0"
+				min={0}
 				required
 				bind:value={investment.amount}
 			/>
 		</div>
 		<div class="flex flex-col {investment.type === InvestmentType.Dividend ? 'hidden' : ''}">
-			<span class="text-lg font-bold">Fees</span>
-			<input
-				class="textbox"
+			<Input
+				title="Fees"
 				type="number"
 				step="any"
-				min="0"
+				min={0}
 				required
 				bind:value={investment.totalFees}
 			/>
 		</div>
 		<div class="flex flex-col">
-			<span class="text-lg font-bold">Date</span>
-			<input
-				class="textbox"
+			<Input
+				title="Date"
 				type="datetime-local"
+				locale="de-CH"
 				required
-				value={dateInputValue}
-				oninput={onDateInput}
+				bind:value={investment.date}
 			/>
 		</div>
 		<!-- Empty placeholder -->

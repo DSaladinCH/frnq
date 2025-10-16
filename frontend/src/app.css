@@ -374,3 +374,50 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--color-secondary);
 }
+
+/************************/
+/**** Air Datepicker ****/
+/************************/
+.air-datepicker {
+    --adp-background-color-in-range: rgba(92, 196, 239, .1);
+    --adp-background-color-in-range-focused: rgba(92, 196, 239, .2);
+    --adp-color-secondary: #9c9c9c;
+    --adp-color-other-month: #dedede;
+    --adp-color-other-month-hover: #c5c5c5;
+    --adp-border-color-inline: #d7d7d7;
+    --adp-cell-background-color-in-range: rgba(92, 196, 239, 0.1);
+    --adp-cell-background-color-in-range-hover: rgba(92, 196, 239, 0.2);
+
+    --adp-background-color-active: var(--color-secondary) !important;
+    --adp-background-color: var(--color-card) !important;
+    --adp-color: var(--color-text) !important;
+    --adp-color-hover: var(--color-primary) !important;
+    --adp-color-disabled: var(--color-muted) !important;
+    --adp-color-disabled-in-range: var(--color-muted) !important;
+    --adp-border-color: var(--color-button) !important;
+    --adp-border-color-inner: var(--color-button) !important;
+    --adp-day-name-color: var(--color-primary) !important;
+    --adp-day-name-color-hover: var(--color-secondary) !important;
+    --adp-accent-color: var(--color-accent) !important;
+    --adp-cell-background-color-selected: var(--color-secondary) !important;
+    --adp-cell-background-color-selected-hover: var(--color-secondary) !important;
+    --adp-background-color-selected-other-month-focused: var(--color-secondary) !important;
+    --adp-background-color-selected-other-month: var(--color-secondary) !important;
+    --adp-time-track-color: var(--color-button) !important;
+    --adp-time-track-color-hover: var(--color-primary) !important;
+    --adp-background-color-hover: hsl(from var(--color-button) h s l / 0.5) !important;
+}
+
+.air-datepicker-time--row input[type='range']::-webkit-slider-thumb {
+    background-color: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+}
+
+.air-datepicker-time--row input[type='range']::-moz-range-thumb {
+    background-color: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+}
+
+.air-datepicker--pointer {
+    display: none !important;
+}
