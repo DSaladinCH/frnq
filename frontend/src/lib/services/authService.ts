@@ -112,11 +112,25 @@ export async function refreshToken(): Promise<boolean> {
  * Logout user
  */
 export async function logout(): Promise<void> {
-	await fetch(`${baseUrl}/api/auth/logout`, {
-		method: 'POST',
-		credentials: 'include'
-	});
+	// Get current token for the logout request
+	let token: string | null = null;
+	accessToken.subscribe((v) => (token = v))();
 
+	// Call backend to invalidate refresh token session
+	try {
+		await fetch(`${baseUrl}/api/auth/logout`, {
+			method: 'POST',
+			credentials: 'include',
+			headers: {
+				Authorization: token ? `Bearer ${token}` : ''
+			}
+		});
+	} catch (error) {
+		// Ignore errors - we'll clear local state anyway
+		console.warn('Logout request failed, but clearing local state:', error);
+	}
+
+	// Clear local state
 	accessToken.set(null);
 	expiresAt.set(null);
 
