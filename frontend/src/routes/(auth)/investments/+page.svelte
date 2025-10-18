@@ -17,21 +17,43 @@
 	import { goto } from '$app/navigation';
 	import InvestmentListItem from '$lib/components/InvestmentListItem.svelte';
 	import { notify } from '$lib/services/notificationService';
+	import { InfiniteInvestmentsList } from '$lib/stores/infiniteInvestmentsList';
+	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
+	import { onMount } from 'svelte';
+
+	// Create infinite scroll list
+	const investmentsList = new InfiniteInvestmentsList();
 
 	// Reactive values that track the store
-	let investments = $state(dataStore.investments);
+	let investments = $state(investmentsList.items);
 	let quotes = $state(dataStore.quotes);
 	let showInvestmentDialog = $state(false);
 	let secondaryLoading = $state(dataStore.secondaryLoading);
+	let listLoading = $state(investmentsList.loading);
+	let hasMore = $state(investmentsList.hasMore);
 
 	// Subscribe to store changes
 	$effect(() => {
-		const unsubscribe = dataStore.subscribe(() => {
-			investments = dataStore.investments;
+		const unsubscribeData = dataStore.subscribe(() => {
 			quotes = dataStore.quotes;
 			secondaryLoading = dataStore.secondaryLoading;
 		});
-		return unsubscribe;
+
+		const unsubscribeList = investmentsList.subscribe(() => {
+			investments = investmentsList.items;
+			listLoading = investmentsList.loading;
+			hasMore = investmentsList.hasMore;
+		});
+
+		return () => {
+			unsubscribeData();
+			unsubscribeList();
+		};
+	});
+
+	onMount(async () => {
+		// Initialize the infinite scroll list
+		await investmentsList.initialize(25);
 	});
 
 	let currentInvestment = $state<InvestmentModel>(createDefaultInvestment());
@@ -84,8 +106,12 @@
 		try {
 			if (investment.id === 0) {
 				await dataStore.addInvestment(investment);
+				// Refresh the list to include the new investment
+				await investmentsList.refresh();
 			} else {
 				await dataStore.updateInvestment(investment);
+				// Refresh the list to update the investment
+				await investmentsList.refresh();
 			}
 
 			onInvestmentDialogClose();
@@ -119,11 +145,17 @@
 
 		try {
 			await dataStore.deleteInvestment(investment.id);
+			// Refresh the list to remove the deleted investment
+			await investmentsList.refresh();
 			onInvestmentDialogClose();
 		} catch (error) {
 			notify.error('Error deleting investment: ' + error);
 			console.error('Error deleting investment:', error);
 		}
+	}
+
+	async function loadMoreInvestments() {
+		await investmentsList.loadMore();
 	}
 
 	function importInvestment() {
@@ -133,28 +165,29 @@
 
 <PageHead title="Investments" />
 
-<div class="xs:p-8 p-4">
-	<PageTitle title="Investments" icon="fa-solid fa-coins" />
-
-	<div class="mb-3 grid w-full max-w-md grid-cols-2 gap-2">
-		<Button
-			onclick={newInvestment}
-			text="Add Investment"
-			icon="fa fa-plus"
-			textSize={TextSize.Medium}
-			width={ContentWidth.Full}
-		/>
-		<Button
-			onclick={importInvestment}
-			text="Import Investment"
-			icon="fa fa-file-import"
-			textSize={TextSize.Medium}
-			width={ContentWidth.Full}
-		/>
+<div class="flex flex-col h-screen">
+	<div class="px-4 pt-4 xs:px-8 xs:pt-8">
+		<PageTitle title="Investments" icon="fa-solid fa-coins" />
+		<div class="mb-3 grid w-full max-w-md grid-cols-2 gap-2">
+			<Button
+				onclick={newInvestment}
+				text="Add Investment"
+				icon="fa fa-plus"
+				textSize={TextSize.Medium}
+				width={ContentWidth.Full}
+			/>
+			<Button
+				onclick={importInvestment}
+				text="Import Investment"
+				icon="fa fa-file-import"
+				textSize={TextSize.Medium}
+				width={ContentWidth.Full}
+			/>
+		</div>
 	</div>
 
-	<div class="investments-list grid gap-2 overflow-y-auto py-1">
-		{#each [...investments].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) as investment}
+	<div class="investments-list flex-1 grid gap-2 overflow-y-auto py-1 min-h-0 px-8">
+		{#each investments as investment}
 			<div class="max-lg:hidden">
 				<InvestmentListItem
 					{investment}
@@ -173,6 +206,14 @@
 				/>
 			</div>
 		{/each}
+		
+		<!-- Infinite scroll component -->
+		<InfiniteScroll 
+			onLoadMore={loadMoreInvestments} 
+			{hasMore} 
+			loading={listLoading}
+			threshold={300}
+		/>
 	</div>
 </div>
 

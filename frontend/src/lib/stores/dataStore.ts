@@ -1,4 +1,4 @@
-import type { InvestmentModel } from '$lib/services/investmentService';
+import type { InvestmentModel, PaginatedInvestmentsResponse } from '$lib/services/investmentService';
 import type { PositionSnapshot } from '$lib/services/positionService';
 import type { QuoteModel } from '$lib/Models/QuoteModel';
 import { getInvestments } from '$lib/services/investmentService';
@@ -11,6 +11,7 @@ export class DataStore {
 	private _snapshots: PositionSnapshot[] = [];
 	private _quotes: QuoteModel[] = [];
 	private _investments: InvestmentModel[] = [];
+	private _investmentsTotalCount = 0;
 	private _groups: QuoteGroup[] = [];
 	private _primaryLoading = true;
 	private _secondaryLoading = false;
@@ -27,6 +28,9 @@ export class DataStore {
 	}
 	get investments() {
 		return this._investments;
+	}
+	get investmentsTotalCount() {
+		return this._investmentsTotalCount;
 	}
 	get groups() {
 		return this._groups;
@@ -60,13 +64,14 @@ export class DataStore {
 	private async fetchAllData() {
 		const [positionsData, investmentsData, groupsData] = await Promise.all([
 			getPositionSnapshots(null, null),
-			getInvestments(),
+			getInvestments(0, 25), // Get all investments for initial load
 			getQuoteGroups()
 		]);
 
 		this._snapshots = positionsData.snapshots;
 		this._quotes = positionsData.quotes;
-		this._investments = investmentsData;
+		this._investments = investmentsData.items;
+		this._investmentsTotalCount = investmentsData.totalCount;
 		this._groups = groupsData;
 		this._error = null;
 		this.notify();
@@ -118,6 +123,18 @@ export class DataStore {
 		} catch (e) {
 			console.log('DataStore: refreshData failed:', e);
 		}
+	}
+
+	// Method to load more investments for infinite scrolling
+	async loadMoreInvestments(skip: number, take: number = 25): Promise<PaginatedInvestmentsResponse> {
+		const investmentsData = await getInvestments(skip, take);
+		return investmentsData;
+	}
+
+	// Method to append investments (for infinite scroll)
+	appendInvestments(newInvestments: InvestmentModel[]) {
+		this._investments = [...this._investments, ...newInvestments];
+		this.notify();
 	}
 
 	// Method to add new investment and refresh data

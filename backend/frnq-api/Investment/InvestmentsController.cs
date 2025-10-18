@@ -12,9 +12,10 @@ namespace DSaladin.Frnq.Api.Controllers;
 public class InvestmentsController(InvestmentManagement investmentManagement) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> GetInvestments()
+    public async Task<IActionResult> GetInvestments([FromQuery] int skip = 0, [FromQuery] int take = 25)
     {
-        return Ok(await investmentManagement.GetInvestmentsAsync());
+        var result = await investmentManagement.GetInvestmentsAsync(skip, take);
+        return Ok(result);
     }
 
     [HttpGet("{id}")]

@@ -29,6 +29,13 @@ export interface InvestmentModel {
 	totalFees: number;
 }
 
+export interface PaginatedInvestmentsResponse {
+	items: InvestmentModel[];
+	totalCount: number;
+	skip: number;
+	take: number;
+}
+
 export enum InvestmentType {
 	Buy = 0,
 	Sell = 1,
@@ -57,8 +64,8 @@ export function investmentValuesValid(investment: InvestmentModel): boolean {
 	return hasValidQuote && validNumber && hasValidDate;
 }
 
-export async function getInvestments(): Promise<InvestmentModel[]> {
-	const url = `${baseUrl}/api/investments`;
+export async function getInvestments(skip: number = 0, take: number = 25): Promise<PaginatedInvestmentsResponse> {
+	const url = `${baseUrl}/api/investments?skip=${skip}&take=${take}`;
 	const res = await fetchWithAuth(url);
 
 	if (!res.ok) throw new Error('Failed to fetch investments');

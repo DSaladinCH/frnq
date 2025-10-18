@@ -8,10 +8,24 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 {
     private readonly Guid userId = authManagement.GetCurrentUserId();
     
-    public async Task<IEnumerable<InvestmentModel>> GetInvestmentsAsync()
+    public async Task<PaginatedInvestmentsResponse> GetInvestmentsAsync(int skip = 0, int take = 50)
     {
-        // TODO: Filter investments by user ID
-        return await databaseContext.Investments.Where(i => i.UserId == userId).OrderBy(i => i.Date).ToListAsync();
+        var query = databaseContext.Investments.Where(i => i.UserId == userId);
+        
+        var totalCount = await query.CountAsync();
+        var investments = await query
+            .OrderByDescending(i => i.Date)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync();
+        
+        return new PaginatedInvestmentsResponse
+        {
+            Items = investments,
+            TotalCount = totalCount,
+            Skip = skip,
+            Take = take
+        };
     }
 
     public async Task<InvestmentModel?> GetInvestmentByIdAsync(int id)

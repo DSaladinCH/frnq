@@ -3,17 +3,12 @@
 	import PortfolioChart from '$lib/components/PortfolioChart.svelte';
 	import PositionCard from '$lib/components/PositionCard.svelte';
 	import { type PositionSnapshot } from '$lib/services/positionService';
-	import type { QuoteModel } from '$lib/Models/QuoteModel';
-	import { type InvestmentModel } from '$lib/services/investmentService';
 	import { dataStore } from '$lib/stores/dataStore';
 	import PageHead from '$lib/components/PageHead.svelte';
-
-	let error = $state<string | null>(null);
 
 	// Reactive values that track the store
 	let snapshots = $state(dataStore.snapshots);
 	let quotes = $state(dataStore.quotes);
-	let investments = $state(dataStore.investments);
 	let loading = $state(dataStore.loading);
 
 	// Subscribe to store changes
@@ -21,7 +16,6 @@
 		const unsubscribe = dataStore.subscribe(() => {
 			snapshots = dataStore.snapshots;
 			quotes = dataStore.quotes;
-			investments = dataStore.investments;
 			loading = dataStore.loading;
 		});
 		return unsubscribe;
