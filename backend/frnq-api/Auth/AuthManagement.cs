@@ -23,6 +23,11 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 
     public async Task<ApiResponse> SignupUserAsync(SignupModel signup)
     {
+        // Check if signup is enabled
+        bool signupEnabled = configuration.GetValue<bool>("Features:SignupEnabled", true);
+        if (!signupEnabled)
+            return ApiResponse.Create(ResponseCodes.Signup.SignupDisabled, System.Net.HttpStatusCode.Forbidden);
+
         // Validate required fields
         if (string.IsNullOrWhiteSpace(signup.Email))
             return ApiResponse.Create(ResponseCodes.Signup.EmailRequired, System.Net.HttpStatusCode.BadRequest);

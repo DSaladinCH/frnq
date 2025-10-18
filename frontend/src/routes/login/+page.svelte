@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Input from '$lib/components/Input.svelte';
 	import PasswordInput from '$lib/components/PasswordInput.svelte';
@@ -7,12 +8,27 @@
 	import { notify } from '$lib/services/notificationService';
 	import { ContentWidth } from '$lib/types/ContentSize';
 
+	const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+
 	let email = $state('');
 	let password = $state('');
 	let isLoading = $state(false);
+	let signupEnabled = $state(true);
 	let errors = $state({
 		email: '',
 		password: ''
+	});
+
+	onMount(async () => {
+		try {
+			const response = await fetch(`${baseUrl}/api/auth/signup-enabled`);
+			if (response.ok) {
+				const data = await response.json();
+				signupEnabled = data.signupEnabled;
+			}
+		} catch (error) {
+			console.error('Failed to check signup status:', error);
+		}
 	});
 
 	function validateForm(): boolean {
@@ -127,17 +143,19 @@
 			</div>
 
 			<!-- Footer Section -->
-			<div class="p-4 text-center border-t border-button">
-				<p class="text-sm color-muted">
-					Don't have an account?
-					<a 
-						href="/signup"
-						class="link-button font-bold ml-1"
-					>
-						Sign up
-					</a>
-				</p>
-			</div>
+			{#if signupEnabled}
+				<div class="p-4 text-center border-t border-button">
+					<p class="text-sm color-muted">
+						Don't have an account?
+						<a 
+							href="/signup"
+							class="link-button font-bold ml-1"
+						>
+							Sign up
+						</a>
+					</p>
+				</div>
+			{/if}
 		</div>
 
 		<!-- Additional Info -->

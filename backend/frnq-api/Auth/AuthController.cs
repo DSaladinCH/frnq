@@ -6,8 +6,15 @@ namespace DSaladin.Frnq.Api.Auth;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController(AuthManagement authManagement) : ControllerBase
+public class AuthController(AuthManagement authManagement, IConfiguration configuration) : ControllerBase
 {
+    [HttpGet("signup-enabled")]
+    public IActionResult GetSignupEnabled()
+    {
+        bool signupEnabled = configuration.GetValue<bool>("Features:SignupEnabled", true);
+        return Ok(new { signupEnabled });
+    }
+
     [HttpPost("signup")]
     public async Task<IActionResult> Signup([FromBody] SignupModel signup)
     {
