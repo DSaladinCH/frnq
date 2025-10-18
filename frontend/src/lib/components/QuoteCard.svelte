@@ -3,6 +3,7 @@
 	import type { PositionSnapshot } from '$lib/services/positionService';
 	import MenuButton from './MenuButton.svelte';
 	import MenuItem from './MenuItem.svelte';
+	import MenuSeparator from './MenuSeparator.svelte';
 
 	let isGroupRemoving = $state(false);
 	let isCustomNameRemoving = $state(false);
@@ -59,6 +60,8 @@
 				visible={quote.customName !== ''}
 				isLoading={isCustomNameRemoving}
 			/>
+
+			<MenuSeparator />
 
 			<MenuItem icon="fa-solid fa-tag" text="Set Group" onclick={onAssignGroup} />
 			<MenuItem
