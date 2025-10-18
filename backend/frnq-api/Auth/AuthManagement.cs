@@ -95,7 +95,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
             SameSite = SameSiteMode.None,
             Secure = true,
 #if !DEBUG
-            Domain = ".frnq.dsaladin.dev"
+            Domain = configuration.GetValue<string>("Cookies:Domain"),
 #endif
         };
 
