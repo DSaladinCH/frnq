@@ -77,7 +77,7 @@
 	}
 </script>
 
-<div class="min-h-screen flex items-center justify-center p-4 login-background">
+<div class="min-h-screen flex md:items-center justify-center p-4 login-background">
 	<div class="w-full max-w-md">
 		<!-- Card Container with enhanced styling -->
 		<div class="bg-card backdrop-blur-sm rounded-2xl shadow-2xl border border-button overflow-hidden login-card">

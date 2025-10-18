@@ -62,6 +62,11 @@
 			closeAssignGroup();
 		}
 	}
+
+	async function removeGroup(quote: QuoteModel) {
+		assignGroupQuote = quote;
+		await handleAssignGroupToQuote(0);
+	}
 	//#endregion
 
 	//#region Custom Name Handlers
@@ -90,10 +95,6 @@
 	async function removeCustomName(quote: QuoteModel) {
 		quote.customName = undefined;
 		await dataStore.removeQuoteCustomName(quote.id);
-	}
-
-	async function removeGroup(quote: QuoteModel) {
-		await handleAssignGroupToQuote(0);
 	}
 	//#endregion
 </script>

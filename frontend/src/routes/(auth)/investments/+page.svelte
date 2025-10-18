@@ -186,7 +186,7 @@
 		</div>
 	</div>
 
-	<div class="investments-list flex-1 grid gap-2 overflow-y-auto py-1 min-h-0 px-8">
+	<div class="investments-list flex-1 grid gap-2 overflow-y-auto py-1 min-h-0 px-4 xs:px-8">
 		{#each investments as investment}
 			<div class="max-lg:hidden">
 				<InvestmentListItem
