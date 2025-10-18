@@ -71,7 +71,7 @@
 		</div>
 
 		<div class="row-2">
-			<span class="font-bold">{quote.name}</span>
+			<span class="font-bold">{quote.customName || quote.name}</span>
 		</div>
 
 		<div class="row-span-2 -col-1 h-10">

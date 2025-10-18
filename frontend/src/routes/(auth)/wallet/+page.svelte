@@ -87,9 +87,13 @@
 		customNameInput = '';
 	}
 
-	function removeCustomName(quote: QuoteModel) {
+	async function removeCustomName(quote: QuoteModel) {
 		quote.customName = undefined;
-		dataStore.removeQuoteCustomName(quote.id);
+		await dataStore.removeQuoteCustomName(quote.id);
+	}
+
+	async function removeGroup(quote: QuoteModel) {
+		await handleAssignGroupToQuote(0);
 	}
 	//#endregion
 </script>
@@ -107,6 +111,7 @@
 				{quote}
 				snapshot={snapshots.filter((s) => s.quoteId === quote.id).slice(-1)[0]}
 				onAssignGroup={() => handleAssignGroup(quote)}
+				onRemoveGroup={() => removeGroup(quote)}
 				onUpdateCustomName={() => handleUpdateCustomName(quote)}
 				onRemoveCustomName={() => removeCustomName(quote)}
 			/>
@@ -116,20 +121,6 @@
 
 <Modal showModal={assignGroupModalOpen} onClose={closeAssignGroup} title="Assign Group">
 	<div class="flex flex-col gap-4">
-		{#if assignGroupQuote?.group && assignGroupQuote.group.id}
-			<div class="group-item h-10">
-				<Button
-					text="No Group"
-					icon=""
-					textSize={TextSize.Medium}
-					style={ColorStyle.Secondary}
-					width={ContentWidth.Full}
-					isLoading={assignGroupId === 0 ? true : false}
-					onclick={() => handleAssignGroupToQuote(0)}
-				/>
-			</div>
-		{/if}
-
 		{#each groups.filter((g) => g.id !== assignGroupQuote?.group?.id) as group}
 			<div class="group-item h-10">
 				<Button

@@ -39,7 +39,8 @@
 	const locale = navigator.languages?.[0] || navigator.language || 'en-US';
 
 	function getQuoteName(investment: InvestmentModel): string | undefined {
-		return quotes.find((quote) => quote.id === investment.quoteId)?.name;
+		const quote = quotes.find((quote) => quote.id === investment.quoteId);
+		return quote?.customName || quote?.name;
 	}
 
 	function formatDate(date: string): string {

@@ -76,7 +76,7 @@
 		</div>
 
 		<div class="row-2 col-1 text-base leading-none">
-			<span class="font-bold">{quote.name}</span>
+			<span class="font-bold">{quote.customName || quote.name}</span>
 		</div>
 
 		<span class="row-1 color-muted">Amount</span>

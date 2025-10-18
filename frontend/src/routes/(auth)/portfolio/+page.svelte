@@ -88,7 +88,8 @@
 	// Helper to get display name for a quoteId
 	function getQuoteDisplayName(quoteId: number) {
 		const quote = getQuoteById(quoteId);
-		return quote ? quote.name : `Quote #${quoteId}`;
+		if (!quote) return 'Unknown Quote';
+		return quote?.customName ? quote.customName : quote?.name;
 	}
 
 	// State for filtering (use Svelte runes for reactivity)

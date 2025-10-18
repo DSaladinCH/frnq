@@ -4,20 +4,23 @@
 	import MenuButton from './MenuButton.svelte';
 	import MenuItem from './MenuItem.svelte';
 
-	let isRemoving = $state(false);
+	let isGroupRemoving = $state(false);
+	let isCustomNameRemoving = $state(false);
 
 	let {
 		quote,
 		snapshot,
 		onAssignGroup,
+		onRemoveGroup,
 		onUpdateCustomName,
 		onRemoveCustomName
 	}: {
 		quote: QuoteModel;
 		snapshot: PositionSnapshot;
 		onAssignGroup: () => void;
+		onRemoveGroup: () => Promise<void>;
 		onUpdateCustomName: () => void;
-		onRemoveCustomName: () => void;
+		onRemoveCustomName: () => Promise<void>;
 	} = $props();
 	let totalGain = $derived(snapshot.currentValue + snapshot.realizedGain - snapshot.invested);
 
@@ -29,10 +32,16 @@
 		return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 });
 	}
 
-	function removeCustomName() {
-		isRemoving = true;
-		onRemoveCustomName();
-		isRemoving = false;
+	async function removeGroup() {
+		isGroupRemoving = true;
+		await onRemoveGroup();
+		isGroupRemoving = false;
+	}
+
+	async function removeCustomName() {
+		isCustomNameRemoving = true;
+		await onRemoveCustomName();
+		isCustomNameRemoving = false;
 	}
 </script>
 
@@ -41,33 +50,30 @@
 	<!-- Menu button in top-right corner -->
 	<div class="absolute right-2 top-2">
 		<MenuButton>
-			<MenuItem
-				icon="fa-solid fa-pen"
-				text="Change Custom Name"
-				onclick={onUpdateCustomName}
-				visible={quote.customName !== undefined}
-			/>
+			<MenuItem icon="fa-solid fa-heading" text="Set Custom Name" onclick={onUpdateCustomName} />
 			<MenuItem
 				icon="fa-solid fa-trash"
 				text="Remove Custom Name"
-				onclick={onRemoveCustomName}
+				onclick={removeCustomName}
 				danger={true}
-				visible={quote.customName !== undefined}
-				isLoading={isRemoving}
+				visible={quote.customName !== ''}
+				isLoading={isCustomNameRemoving}
 			/>
+
+			<MenuItem icon="fa-solid fa-tag" text="Set Group" onclick={onAssignGroup} />
 			<MenuItem
-				icon="fa-solid fa-tag"
-				text="Set Custom Name"
-				onclick={onUpdateCustomName}
-				visible={quote.customName === undefined}
+				icon="fa-solid fa-trash"
+				text="Remove Group"
+				onclick={removeGroup}
+				danger={true}
+				visible={quote.group !== null}
+				isLoading={isGroupRemoving}
 			/>
 		</MenuButton>
 	</div>
 
 	<div class="color-muted flex items-center gap-2 text-sm">
-		<button class="link-button" onclick={onAssignGroup}>
-			<span class="uppercase">{quote.group ? quote.group.name : 'No Group'}</span>
-		</button>
+		<span class="uppercase color-secondary">{quote.group ? quote.group.name : 'No Group'}</span>
 		<span>•</span>
 		<span class="uppercase">{quote.typeDisposition}</span>
 	</div>
