@@ -72,6 +72,23 @@ export async function bootstrapAuth(fetchFn: typeof fetch) {
 }
 
 /**
+ * Signup with email/password/firstname
+ */
+export async function signup(email: string, password: string, firstname: string): Promise<void> {
+	const res = await fetch(`${baseUrl}/api/auth/signup`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ email, password, firstname }),
+		credentials: 'include'
+	});
+
+	if (!res.ok) throw new Error('Signup failed');
+
+	const data: AuthResponse = await res.json();
+	setAuth(data.accessToken, data.expiresAt);
+}
+
+/**
  * Login with email/password
  */
 export async function login(email: string, password: string): Promise<void> {

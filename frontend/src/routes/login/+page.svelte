@@ -10,8 +10,36 @@
 	let email = $state('');
 	let password = $state('');
 	let isLoading = $state(false);
+	let errors = $state({
+		email: '',
+		password: ''
+	});
+
+	function validateForm(): boolean {
+		errors = { email: '', password: '' };
+		let isValid = true;
+
+		// Validate email
+		if (!email.trim()) {
+			errors.email = 'Email is required';
+			isValid = false;
+		}
+
+		// Validate password
+		if (!password) {
+			errors.password = 'Password is required';
+			isValid = false;
+		}
+
+		return isValid;
+	}
 
 	async function loginAsync() {
+		if (!validateForm()) {
+			notify.error('Please fill in all fields');
+			return;
+		}
+
 		try {
 			isLoading = true;
 			await login(email, password);
@@ -49,20 +77,31 @@
 			<!-- Form Section -->
 			<div class="p-4 sm:p-8">
 				<div class="grid gap-5">
-					<Input 
-						bind:value={email} 
-						type="text" 
-						autocomplete="email" 
-						title="Email" 
-						placeholder="Enter your email" 
-					/>
-					<PasswordInput 
-						bind:value={password} 
-						onkeypress={handleKeyPress} 
-						autocomplete="current-password" 
-						title="Password" 
-						placeholder="Enter your password" 
-					/>
+					<div>
+						<Input 
+							bind:value={email} 
+							type="text" 
+							autocomplete="email" 
+							title="Email" 
+							placeholder="Enter your email"
+						/>
+						{#if errors.email}
+							<p class="text-xs color-error mt-1">{errors.email}</p>
+						{/if}
+					</div>
+
+					<div>
+						<PasswordInput 
+							bind:value={password} 
+							onkeypress={handleKeyPress} 
+							autocomplete="current-password" 
+							title="Password" 
+							placeholder="Enter your password"
+						/>
+						{#if errors.password}
+							<p class="text-xs color-error mt-1">{errors.password}</p>
+						{/if}
+					</div>
 					
 					<!-- Forgot Password Link -->
 					<div class="text-right">
@@ -91,12 +130,12 @@
 			<div class="p-4 text-center border-t border-button">
 				<p class="text-sm color-muted">
 					Don't have an account?
-					<button 
+					<a 
+						href="/signup"
 						class="link-button font-bold ml-1"
-						onclick={() => notify.info('Sign up functionality coming soon!')}
 					>
 						Sign up
-					</button>
+					</a>
 				</p>
 			</div>
 		</div>
@@ -141,10 +180,5 @@
 	.login-card:hover {
 		box-shadow: 0 25px 50px -12px color-mix(in srgb, var(--color-primary) 15%, transparent);
 		transition: box-shadow 0.3s ease;
-	}
-
-	/* Hover effect for links */
-	.hover-link:hover {
-		color: var(--color-accent);
 	}
 </style>

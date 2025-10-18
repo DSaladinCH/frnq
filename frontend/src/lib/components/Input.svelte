@@ -252,7 +252,7 @@
 >
 	{#if title}
 		<!-- Check if title is string or snippet -->
-		<label for={id}>
+		<label for={id} class="leading-none">
 			{#if typeof title === 'string'}
 				{title}
 			{:else}

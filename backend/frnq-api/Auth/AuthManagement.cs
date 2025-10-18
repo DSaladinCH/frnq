@@ -23,17 +23,29 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 
     public async Task<ApiResponse> SignupUserAsync(SignupModel signup)
     {
+        // Validate required fields
+        if (string.IsNullOrWhiteSpace(signup.Email))
+            return ApiResponse.Create(ResponseCodes.Signup.EmailRequired, System.Net.HttpStatusCode.BadRequest);
+
+        if (string.IsNullOrWhiteSpace(signup.Password))
+            return ApiResponse.Create(ResponseCodes.Signup.PasswordRequired, System.Net.HttpStatusCode.BadRequest);
+
+        if (string.IsNullOrWhiteSpace(signup.Firstname))
+            return ApiResponse.Create(ResponseCodes.Signup.FirstnameRequired, System.Net.HttpStatusCode.BadRequest);
+
+        // Check if user already exists
         if (await GetUserByEmailAsync(signup.Email) != null)
             return ApiResponses.Conflict409;
 
+        // Validate password strength
         if (!IsValidPassword(signup.Password))
             return ApiResponse.Create(ResponseCodes.Signup.PasswordWeak, System.Net.HttpStatusCode.BadRequest);
 
         UserModel user = new()
         {
-            Email = signup.Email,
+            Email = signup.Email.ToLowerInvariant(),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(signup.Password),
-            Firstname = signup.Firstname
+            Firstname = signup.Firstname.Trim()
         };
 
         databaseContext.Users.Add(user);
@@ -44,6 +56,10 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 
     public async Task<ApiResponse<LoginResponseModel>> LoginUserAsync(LoginModel login)
     {
+        // Validate required fields
+        if (string.IsNullOrWhiteSpace(login.Email) || string.IsNullOrWhiteSpace(login.Password))
+            return ApiResponse<LoginResponseModel>.Create(null, ResponseCodes.Login.UserInvalid, System.Net.HttpStatusCode.Unauthorized);
+
         UserModel? user = await GetUserByEmailAsync(login.Email);
 
         if (user is null || !BCrypt.Net.BCrypt.Verify(login.Password, user.PasswordHash))
