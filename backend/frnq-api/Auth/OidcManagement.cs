@@ -74,7 +74,7 @@ public class OidcManagement(
         // Build redirect URL
         var baseUrl = configuration.GetValue<string>("ApiBaseUrl") ?? 
                      $"{httpContextAccessor.HttpContext!.Request.Scheme}://{httpContextAccessor.HttpContext.Request.Host}";
-        var redirectUri = $"{baseUrl}/api/auth/oidc/callback/{provider.ProviderId}";
+        var redirectUri = $"{baseUrl}/api/authoidc/callback/{provider.ProviderId}";
 
         var authUrl = BuildAuthorizationUrl(provider, redirectUri, state, nonce);
 
@@ -201,7 +201,7 @@ public class OidcManagement(
     {
         var baseUrl = configuration.GetValue<string>("ApiBaseUrl") ?? 
                      $"{httpContextAccessor.HttpContext!.Request.Scheme}://{httpContextAccessor.HttpContext.Request.Host}";
-        var redirectUri = $"{baseUrl}/api/auth/oidc/callback/{provider.ProviderId}";
+        var redirectUri = $"{baseUrl}/api/authoidc/callback/{provider.ProviderId}";
 
         var tokenRequest = new Dictionary<string, string>
         {
