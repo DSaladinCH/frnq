@@ -3,6 +3,7 @@
 	import Input from '$lib/components/Input.svelte';
 	import PageHead from '$lib/components/PageHead.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
+	import ExternalAccountsSection from '$lib/components/ExternalAccountsSection.svelte';
 	import { dataStore } from '$lib/stores/dataStore';
 	import { ColorStyle } from '$lib/types/ColorStyle';
 	import { tick } from 'svelte';
@@ -100,21 +101,6 @@
 
 <div class="xs:p-8 w-full p-4">
 	<PageTitle title="Settings" icon="fa-solid fa-gear" />
-
-	<div class="bg-card rounded-lg p-6 shadow-lg">
-		<h2 class="mb-4 text-xl font-semibold">Data Management</h2>
-		<p class="mb-4 text-gray-600">Refresh your portfolio data to get the latest information.</p>
-
-		<button class="btn btn-primary" onclick={refreshData} disabled={secondaryLoading}>
-			{secondaryLoading ? 'Refreshing…' : 'Refresh Data'}
-		</button>
-
-		{#if error}
-			<div class="mt-4 rounded border border-red-400 bg-red-100 p-3 text-red-700">
-				Error: {error}
-			</div>
-		{/if}
-	</div>
 
 	<div class="bg-card mt-6 rounded-lg p-6 shadow-lg">
 		<h2 class="mb-2 text-xl font-semibold">Groups</h2>
@@ -214,13 +200,7 @@
 		</div>
 	</div>
 
-	<div class="bg-card mt-6 rounded-lg p-6 shadow-lg">
-		<h2 class="mb-4 text-xl font-semibold">About</h2>
-		<p class="text-gray-600">FRNQ Portfolio Management System</p>
-		<p class="mt-2 text-sm text-gray-500">
-			Data is cached and persists across navigation for better performance.
-		</p>
-	</div>
+	<ExternalAccountsSection />
 </div>
 
 <style>

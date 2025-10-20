@@ -3,6 +3,7 @@ using System;
 using DSaladin.Frnq.Api;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DSaladin.Frnq.Api.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20251020172137_OidcSupport")]
+    partial class OidcSupport
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -99,9 +102,9 @@ namespace DSaladin.Frnq.Api.Migrations
                     b.Property<int>("DisplayOrder")
                         .HasColumnType("integer");
 
-                    b.Property<string>("FaviconUrl")
-                        .HasMaxLength(50000)
-                        .HasColumnType("character varying(50000)");
+                    b.Property<string>("IconClass")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<bool>("IsEnabled")
                         .HasColumnType("boolean");
@@ -150,9 +153,6 @@ namespace DSaladin.Frnq.Api.Migrations
 
                     b.Property<bool>("IsUsed")
                         .HasColumnType("boolean");
-
-                    b.Property<Guid?>("LinkingUserId")
-                        .HasColumnType("uuid");
 
                     b.Property<string>("Nonce")
                         .HasMaxLength(200)
@@ -229,8 +229,10 @@ namespace DSaladin.Frnq.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsOidcUser")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("PasswordHash")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");

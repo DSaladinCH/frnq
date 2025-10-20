@@ -37,6 +37,33 @@ services:
       - JwtSettings__Audience=frnq-client
       - JwtSettings__AccessTokenExpiryInMinutes=15
       - Features__SignupEnabled=true
+      - ApiBaseUrl=http://localhost:8080
+      - FrontendUrl=http://localhost:3000
+      # OIDC Configuration Examples (uncomment and configure to enable)
+      # Google OAuth2 Example:
+      # - OidcProviders__google__Enabled=true
+      # - OidcProviders__google__DisplayName=Google
+      # - OidcProviders__google__AuthorizationEndpoint=https://accounts.google.com/o/oauth2/v2/auth
+      # - OidcProviders__google__TokenEndpoint=https://oauth2.googleapis.com/token
+      # - OidcProviders__google__UserInfoEndpoint=https://www.googleapis.com/oauth2/v3/userinfo
+      # - OidcProviders__google__ClientId=${GOOGLE_CLIENT_ID}
+      # - OidcProviders__google__ClientSecret=${GOOGLE_CLIENT_SECRET}
+      # - OidcProviders__google__Scopes=openid profile email
+      # - OidcProviders__google__IconClass=fa-brands fa-google
+      # - OidcProviders__google__AutoRedirect=false
+      # - OidcProviders__google__DisplayOrder=0
+      # Azure AD / Entra ID Example:
+      # - OidcProviders__azure__Enabled=true
+      # - OidcProviders__azure__DisplayName=Microsoft
+      # - OidcProviders__azure__AuthorizationEndpoint=https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/authorize
+      # - OidcProviders__azure__TokenEndpoint=https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/token
+      # - OidcProviders__azure__UserInfoEndpoint=https://graph.microsoft.com/oidc/userinfo
+      # - OidcProviders__azure__ClientId=${AZURE_CLIENT_ID}
+      # - OidcProviders__azure__ClientSecret=${AZURE_CLIENT_SECRET}
+      # - OidcProviders__azure__Scopes=openid profile email
+      # - OidcProviders__azure__IconClass=fa-brands fa-microsoft
+      # - OidcProviders__azure__AutoRedirect=false
+      # - OidcProviders__azure__DisplayOrder=1
     ports:
       - "8080:8080"
     depends_on:

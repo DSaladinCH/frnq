@@ -1,35 +1,53 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
 	import Button from '$lib/components/Button.svelte';
 	import Input from '$lib/components/Input.svelte';
 	import PasswordInput from '$lib/components/PasswordInput.svelte';
-	import { login } from '$lib/services/authService';
+	import {
+		login,
+		checkSignupEnabled,
+		getOidcProviders,
+		initiateOidcLogin,
+		type OidcProvider
+	} from '$lib/services/authService';
 	import { notify } from '$lib/services/notificationService';
 	import { ContentWidth } from '$lib/types/ContentSize';
-
-	const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
 
 	let email = $state('');
 	let password = $state('');
 	let isLoading = $state(false);
 	let signupEnabled = $state(true);
+	let oidcProviders = $state<OidcProvider[]>([]);
 	let errors = $state({
 		email: '',
 		password: ''
 	});
 
 	onMount(async () => {
-		try {
-			const response = await fetch(`${baseUrl}/api/auth/signup-enabled`);
-			if (response.ok) {
-				const data = await response.json();
-				signupEnabled = data.signupEnabled;
-			}
-		} catch (error) {
-			console.error('Failed to check signup status:', error);
+		// Check for error in URL
+		const error = $page.url.searchParams.get('error');
+		if (error) {
+			notify.error(decodeURIComponent(error));
+		}
+
+		// Check if signup is enabled
+		signupEnabled = await checkSignupEnabled();
+
+		// Load OIDC providers
+		oidcProviders = await getOidcProviders();
+
+		// Auto-redirect if only one provider and it has autoRedirect enabled
+		const autoRedirectProvider = oidcProviders.find((p) => p.autoRedirect);
+		if (autoRedirectProvider && oidcProviders.length === 1) {
+			initiateOidcLogin(autoRedirectProvider.providerId);
 		}
 	});
+
+	function handleOidcLogin(providerId: string) {
+		initiateOidcLogin(providerId);
+	}
 
 	function validateForm(): boolean {
 		errors = { email: '', password: '' };
@@ -59,7 +77,7 @@
 		try {
 			isLoading = true;
 			await login(email, password);
-			
+
 			notify.success('Successfully logged in!');
 			goto('/portfolio');
 		} catch (error) {
@@ -77,16 +95,18 @@
 	}
 </script>
 
-<div class="min-h-screen flex md:items-center justify-center p-4 login-background">
+<div class="login-background flex min-h-screen justify-center p-4 md:items-center">
 	<div class="w-full max-w-md">
 		<!-- Card Container with enhanced styling -->
-		<div class="bg-card backdrop-blur-sm rounded-2xl shadow-2xl border border-button overflow-hidden login-card">
+		<div
+			class="bg-card border-button login-card overflow-hidden rounded-2xl border shadow-2xl backdrop-blur-sm"
+		>
 			<!-- Header Section with gradient -->
-			<div class="login-header p-4 sm:p-8 text-center border-b border-button">
+			<div class="login-header border-button border-b p-4 text-center sm:p-8">
 				<div class="mb-4">
-					<img src="/banner.png" alt="Portfolio Logo" class="h-12 mx-auto" />
+					<img src="/banner.png" alt="Portfolio Logo" class="mx-auto h-12" />
 				</div>
-				<h1 class="text-3xl font-bold color-default mb-2">Welcome Back</h1>
+				<h1 class="color-default mb-2 text-3xl font-bold">Welcome Back</h1>
 				<p class="color-muted text-sm">Sign in to access your portfolio</p>
 			</div>
 
@@ -94,36 +114,36 @@
 			<div class="p-4 sm:p-8">
 				<div class="grid gap-5">
 					<div>
-						<Input 
-							bind:value={email} 
-							type="text" 
-							autocomplete="email" 
-							title="Email" 
+						<Input
+							bind:value={email}
+							type="text"
+							autocomplete="email"
+							title="Email"
 							placeholder="Enter your email"
 						/>
 						{#if errors.email}
-							<p class="text-xs color-error mt-1">{errors.email}</p>
+							<p class="color-error mt-1 text-xs">{errors.email}</p>
 						{/if}
 					</div>
 
 					<div>
-						<PasswordInput 
-							bind:value={password} 
-							onkeypress={handleKeyPress} 
-							autocomplete="current-password" 
-							title="Password" 
+						<PasswordInput
+							bind:value={password}
+							onkeypress={handleKeyPress}
+							autocomplete="current-password"
+							title="Password"
 							placeholder="Enter your password"
 						/>
 						{#if errors.password}
-							<p class="text-xs color-error mt-1">{errors.password}</p>
+							<p class="color-error mt-1 text-xs">{errors.password}</p>
 						{/if}
 					</div>
-					
+
 					<!-- Forgot Password Link -->
 					<div class="text-right">
-						<button 
+						<button
 							type="button"
-							class="text-sm link-button font-bold"
+							class="link-button text-sm font-bold"
 							onclick={() => notify.info('Password reset functionality coming soon!')}
 						>
 							Forgot password?
@@ -131,28 +151,57 @@
 					</div>
 
 					<div>
-						<Button 
-							{isLoading} 
-							onclick={loginAsync} 
-							text="Sign In" 
-							icon="fa-solid fa-sign-in-alt" 
-							width={ContentWidth.Full} 
+						<Button
+							{isLoading}
+							onclick={loginAsync}
+							text="Sign In"
+							icon="fa-solid fa-sign-in-alt"
+							width={ContentWidth.Full}
 						/>
 					</div>
+
+					<!-- OIDC Providers -->
+					{#if oidcProviders.length > 0}
+						<div class="relative">
+							<div class="absolute inset-0 flex items-center">
+								<div class="border-button w-full border-t"></div>
+							</div>
+							<div class="relative flex justify-center text-xs uppercase">
+								<span class="bg-card color-muted px-2">Or continue with</span>
+							</div>
+						</div>
+
+						<div class="grid gap-3">
+							{#each oidcProviders as provider}
+								<!-- TODO: Implement with Button component -->
+								<button
+									type="button"
+									onclick={() => handleOidcLogin(provider.providerId)}
+									class="oidc-button border-button hover:bg-button-hover flex items-center justify-center gap-3 rounded-lg border px-4 py-3 transition-colors"
+								>
+									{#if provider.faviconUrl}
+										<img
+											src={provider.faviconUrl}
+											alt={provider.displayName}
+											class="h-5 w-5 object-contain"
+										/>
+									{:else}
+										<i class="fas fa-building"></i>
+									{/if}
+									<span>Continue with {provider.displayName}</span>
+								</button>
+							{/each}
+						</div>
+					{/if}
 				</div>
 			</div>
 
 			<!-- Footer Section -->
 			{#if signupEnabled}
-				<div class="p-4 text-center border-t border-button">
-					<p class="text-sm color-muted">
+				<div class="border-button border-t p-4 text-center">
+					<p class="color-muted text-sm">
 						Don't have an account?
-						<a 
-							href="/signup"
-							class="link-button font-bold ml-1"
-						>
-							Sign up
-						</a>
+						<a href="/signup" class="link-button ml-1 font-bold"> Sign up </a>
 					</p>
 				</div>
 			{/if}
@@ -160,7 +209,7 @@
 
 		<!-- Additional Info -->
 		<div class="mt-6 text-center">
-			<p class="text-xs color-muted opacity-70">
+			<p class="color-muted text-xs opacity-70">
 				By signing in, you agree to our Terms of Service and Privacy Policy
 			</p>
 		</div>
@@ -169,12 +218,18 @@
 
 <style>
 	.login-background {
-		background: linear-gradient(135deg, var(--color-background) 0%, var(--color-background) 50%, var(--color-card) 100%);
+		background: linear-gradient(
+			135deg,
+			var(--color-background) 0%,
+			var(--color-background) 50%,
+			var(--color-card) 100%
+		);
 	}
 
 	.login-header {
-		background: linear-gradient(to right, 
-			color-mix(in srgb, var(--color-primary) 20%, transparent), 
+		background: linear-gradient(
+			to right,
+			color-mix(in srgb, var(--color-primary) 20%, transparent),
 			color-mix(in srgb, var(--color-accent) 20%, transparent)
 		);
 	}
@@ -198,5 +253,14 @@
 	.login-card:hover {
 		box-shadow: 0 25px 50px -12px color-mix(in srgb, var(--color-primary) 15%, transparent);
 		transition: box-shadow 0.3s ease;
+	}
+
+	.oidc-button {
+		font-weight: 500;
+		cursor: pointer;
+	}
+
+	.oidc-button:hover {
+		background: color-mix(in srgb, var(--color-button) 80%, transparent);
 	}
 </style>

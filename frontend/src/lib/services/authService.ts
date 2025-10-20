@@ -202,3 +202,110 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
 
 	return res;
 }
+
+/**
+ * Check if signup is enabled
+ */
+export async function checkSignupEnabled(): Promise<boolean> {
+	try {
+		const res = await fetch(`${baseUrl}/api/auth/signup-enabled`);
+		if (!res.ok) return false;
+		const data = await res.json();
+		return data.signupEnabled ?? false;
+	} catch (error) {
+		console.error('Failed to check signup status:', error);
+		return false;
+	}
+}
+
+/**
+ * OIDC Provider interface
+ */
+export interface OidcProvider {
+	providerId: string;
+	displayName: string;
+	faviconUrl?: string;
+	autoRedirect: boolean;
+}
+
+/**
+ * External Link interface
+ */
+export interface ExternalLink {
+	id: string;
+	providerId: string;
+	providerDisplayName: string;
+	providerEmail: string | null;
+	linkedAt: string;
+	lastLoginAt: string;
+}
+
+/**
+ * Get list of enabled OIDC providers
+ */
+export async function getOidcProviders(): Promise<OidcProvider[]> {
+	try {
+		const res = await fetch(`${baseUrl}/api/authoidc/providers`);
+		if (!res.ok) return [];
+		return await res.json();
+	} catch (error) {
+		console.error('Failed to load OIDC providers:', error);
+		return [];
+	}
+}
+
+/**
+ * Initiate OIDC login by redirecting to provider
+ */
+export function initiateOidcLogin(providerId: string, returnUrl?: string): void {
+	const url = returnUrl 
+		? `${baseUrl}/api/authoidc/login/${providerId}?returnUrl=${encodeURIComponent(returnUrl)}`
+		: `${baseUrl}/api/authoidc/login/${providerId}`;
+	window.location.href = url;
+}
+
+/**
+ * Get all external account links for the current user
+ */
+export async function getExternalLinks(): Promise<ExternalLink[]> {
+	try {
+		const res = await fetchWithAuth(`${baseUrl}/api/authexternallinks`);
+		if (!res.ok) return [];
+		return await res.json();
+	} catch (error) {
+		console.error('Failed to load external links:', error);
+		return [];
+	}
+}
+
+/**
+ * Initiate linking of an external OIDC account
+ * Returns the authorization URL for the frontend to redirect to
+ */
+export async function linkExternalAccount(providerId: string): Promise<{ authorizationUrl: string } | null> {
+	try {
+		const res = await fetchWithAuth(`${baseUrl}/api/authexternallinks/link/${providerId}`, {
+			method: 'POST'
+		});
+		if (!res.ok) return null;
+		return await res.json();
+	} catch (error) {
+		console.error('Failed to initiate linking:', error);
+		return null;
+	}
+}
+
+/**
+ * Unlink an external account
+ */
+export async function unlinkExternalAccount(linkId: string): Promise<boolean> {
+	try {
+		const res = await fetchWithAuth(`${baseUrl}/api/authexternallinks/${linkId}`, {
+			method: 'DELETE'
+		});
+		return res.ok;
+	} catch (error) {
+		console.error('Failed to unlink account:', error);
+		return false;
+	}
+}

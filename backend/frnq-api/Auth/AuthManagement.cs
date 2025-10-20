@@ -70,6 +70,14 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
         if (user is null || !BCrypt.Net.BCrypt.Verify(login.Password, user.PasswordHash))
             return ApiResponse<LoginResponseModel>.Create(null, ResponseCodes.Login.UserInvalid, System.Net.HttpStatusCode.Unauthorized);
 
+        return await LoginUserByUserModelAsync(user);
+    }
+
+    /// <summary>
+    /// Internal method to log in a user that has already been authenticated (used by both password and OIDC login)
+    /// </summary>
+    public async Task<ApiResponse<LoginResponseModel>> LoginUserByUserModelAsync(UserModel user)
+    {
         var accessToken = GenerateAccessToken(user);
         var refreshToken = GenerateRefreshToken();
         var expiresAt = DateTime.UtcNow.AddMinutes(double.Parse(configuration.GetSection("JwtSettings")["AccessTokenExpiryInMinutes"]!));

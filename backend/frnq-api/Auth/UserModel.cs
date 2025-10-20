@@ -23,4 +23,5 @@ public class UserModel
     public string Firstname { get; set; } = string.Empty;
 
     public virtual ICollection<InvestmentModel> Investments { get; set; } = [];
+    public virtual ICollection<ExternalUserLink> ExternalLinks { get; set; } = [];
 }

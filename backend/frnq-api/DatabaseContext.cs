@@ -18,6 +18,9 @@ public class DatabaseContext : DbContext
     public DbSet<InvestmentModel> Investments { get; set; } = null!;
     public DbSet<UserModel> Users { get; set; } = null!;
     public DbSet<RefreshTokenSession> RefreshTokenSessions { get; set; } = null!;
+    public DbSet<OidcProvider> OidcProviders { get; set; } = null!;
+    public DbSet<OidcState> OidcStates { get; set; } = null!;
+    public DbSet<ExternalUserLink> ExternalUserLinks { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -74,6 +77,35 @@ public class DatabaseContext : DbContext
             .HasOne(qn => qn.Quote)
             .WithMany(q => q.Names)
             .HasForeignKey(qn => qn.QuoteId);
+
+        // OIDC Provider configuration
+        modelBuilder.Entity<OidcProvider>()
+            .HasIndex(p => p.ProviderId)
+            .IsUnique();
+
+        // External user links
+        modelBuilder.Entity<ExternalUserLink>()
+            .HasOne(eul => eul.User)
+            .WithMany(u => u.ExternalLinks)
+            .HasForeignKey(eul => eul.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ExternalUserLink>()
+            .HasOne(eul => eul.Provider)
+            .WithMany()
+            .HasForeignKey(eul => eul.ProviderId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // OIDC state
+        modelBuilder.Entity<OidcState>()
+            .HasOne(os => os.Provider)
+            .WithMany()
+            .HasForeignKey(os => os.ProviderId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<OidcState>()
+            .HasIndex(os => os.State)
+            .IsUnique();
 
         base.OnModelCreating(modelBuilder);
     }

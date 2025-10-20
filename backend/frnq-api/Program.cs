@@ -23,9 +23,13 @@ builder.Services.AddScoped<PositionManagement>();
 builder.Services.AddScoped<QuoteManagement>();
 builder.Services.AddScoped<GroupManagement>();
 builder.Services.AddScoped<AuthManagement>();
+builder.Services.AddScoped<OidcManagement>();
 
 // Add HTTP context accessor for AuthManagement
 builder.Services.AddHttpContextAccessor();
+
+// Add OIDC initialization service
+builder.Services.AddHostedService<OidcInitializationService>();
 
 builder.Services.AddScoped<DatabaseProvider>();
 builder.Services.AddScoped<YahooFinanceProvider>();
