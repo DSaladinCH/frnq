@@ -94,7 +94,7 @@
 				autoClose: type === 'date',
 				selectedDates: initialDate ? [initialDate] : [],
 				container: containerElement, // Render in modal or body
-				visible: true,
+				visible: false,
 				position({ $datepicker, $target, $pointer }: { 
 					$datepicker: HTMLDivElement; 
 					$target: HTMLInputElement; 
