@@ -6,7 +6,7 @@
 	import PillToggle from './PillToggle.svelte';
 	import CustomDropdown from './CustomDropdown.svelte';
 
-	let { snapshots }: { snapshots: PositionSnapshot[] } = $props();
+	let { snapshots, onPeriodChange }: { snapshots: PositionSnapshot[], onPeriodChange?: (period: string) => void } = $props();
 	let canvas: HTMLCanvasElement;
 	let chart: Chart;
 	let tooltipEl: HTMLDivElement;
@@ -411,6 +411,10 @@
 		try {
 			localStorage.setItem(PERIOD_STORAGE_KEY, selectedPeriod);
 		} catch {}
+		// Notify parent component
+		if (onPeriodChange) {
+			onPeriodChange(selectedPeriod);
+		}
 	}
 
 	function selectChartOption(val: string) {
@@ -437,6 +441,10 @@
 				selectedPeriod = storedPeriod as Period;
 			}
 		} catch {}
+		// Notify parent component of initial period
+		if (onPeriodChange) {
+			onPeriodChange(selectedPeriod);
+		}
 	});
 </script>
 

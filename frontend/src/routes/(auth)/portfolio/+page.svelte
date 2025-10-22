@@ -51,9 +51,9 @@
 		return {
 			invested: last?.invested ?? 0,
 			currentValue: last?.currentValue ?? 0,
-			totalValue: last?.currentValue ?? 0 + (last?.realizedGain ?? 0),
+			totalValue: (last?.currentValue ?? 0) + (last?.realizedGain ?? 0),
 			realized: last?.realizedGain ?? 0,
-			totalProfit: (last?.currentValue ?? 0 + (last?.realizedGain ?? 0)) - (last?.invested ?? 0)
+			totalProfit: ((last?.currentValue ?? 0) + (last?.realizedGain ?? 0)) - (last?.invested ?? 0)
 		};
 	}
 
@@ -90,6 +90,7 @@
 	let filterMode = $state<'full' | 'group' | 'quote'>('full');
 	let filterGroupId = $state<string | null>(null);
 	let filterQuoteId = $state<number | null>(null);
+	let chartPeriod = $state<string>('3m'); // Track the chart's selected period
 
 	// Compute filtered snapshots for the chart
 	function filterLeadingZeroSnapshots(snaps: PositionSnapshot[]): PositionSnapshot[] {
@@ -148,6 +149,10 @@
 		tick();
 	}
 
+	function handlePeriodChange(period: string) {
+		chartPeriod = period;
+	}
+
 	// Helper to get all quote cards to render based on filter
 	interface GroupCard {
 		type: 'group';
@@ -164,17 +169,44 @@
 	}
 	type Card = GroupCard | QuoteCard;
 
-	// Helper to check if a quote has any active positions in recent history
+	// Helper to check if a quote has any active positions based on the chart's selected period
 	function hasActivePosition(snapshots: PositionSnapshot[]): boolean {
 		if (snapshots.length === 0) return false;
-		// Check if the quote had any active positions in its recent history (last 3 months by default)
-		// This aligns with the chart's default period of 3m
-		const now = new Date();
-		const threeMonthsAgo = new Date(now);
-		threeMonthsAgo.setMonth(now.getMonth() - 3);
 		
-		const recentSnapshots = snapshots.filter(snap => new Date(snap.date) >= threeMonthsAgo);
-		return recentSnapshots.some(snap => snap.amount > 0);
+		// Calculate the date range based on the chart's selected period
+		const now = new Date();
+		let fromDate: Date;
+		
+		switch (chartPeriod) {
+			case '1w':
+				fromDate = new Date(now);
+				fromDate.setDate(now.getDate() - 7);
+				break;
+			case '1m':
+				fromDate = new Date(now);
+				fromDate.setMonth(now.getMonth() - 1);
+				break;
+			case '3m':
+				fromDate = new Date(now);
+				fromDate.setMonth(now.getMonth() - 3);
+				break;
+			case 'ytd':
+				fromDate = new Date(now.getFullYear(), 0, 1);
+				break;
+			case 'all':
+				// For 'all', include all snapshots
+				return snapshots.some(snap => snap.amount > 0);
+			default:
+				// Default to 3 months
+				fromDate = new Date(now);
+				fromDate.setMonth(now.getMonth() - 3);
+		}
+		
+		// Remove time from fromDate for comparison
+		fromDate = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
+		
+		const periodSnapshots = snapshots.filter(snap => new Date(snap.date) >= fromDate);
+		return periodSnapshots.some(snap => snap.amount > 0);
 	}
 
 	// Helper to check if a group has any currently active positions
@@ -260,7 +292,14 @@
 
 	function getCardProps(card: Card): PositionCardProps {
 		if (card.type === 'group') {
-			const summary = getGroupSummaryLast(card.quotes);
+			// Filter quotes to only include those with active positions in the selected period
+			const filteredQuotes: Record<number, PositionSnapshot[]> = {};
+			Object.entries(card.quotes).forEach(([quoteKey, snaps]) => {
+				if (hasActivePosition(snaps)) {
+					filteredQuotes[+quoteKey] = snaps;
+				}
+			});
+			const summary = getGroupSummaryLast(filteredQuotes);
 			const profit = summary.totalProfit;
 			return {
 				type: 'group',
@@ -304,7 +343,7 @@
 {#if snapshots.length === 0}
 	<p>No data available.</p>
 {:else if snapshots.length}
-	<PortfolioChart snapshots={filteredSnapshots()} />
+	<PortfolioChart snapshots={filteredSnapshots()} onPeriodChange={handlePeriodChange} />
 
 	<div
 		class="quote-groups mx-auto mb-3 mt-4 grid w-full grid-cols-[repeat(auto-fit,_minmax(300px,_450px))] justify-center gap-5 px-3 xl:w-4/5"

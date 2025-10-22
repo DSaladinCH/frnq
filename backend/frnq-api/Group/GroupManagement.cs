@@ -73,8 +73,15 @@ public class GroupManagement(DatabaseContext databaseContext, AuthManagement aut
         if (!await databaseContext.Quotes.AnyAsync(q => q.Id == quoteId))
             return ApiResponses.NotFound404;
 
-        if (await databaseContext.QuoteGroupMappings.AnyAsync(m => m.UserId == userId && m.QuoteId == quoteId))
-            return ApiResponses.Conflict409;
+        QuoteGroupMapping? quoteGroupMapping = await databaseContext.QuoteGroupMappings.FirstOrDefaultAsync(m => m.UserId == userId && m.QuoteId == quoteId);
+
+        if (quoteGroupMapping is not null)
+        {
+            if (quoteGroupMapping.GroupId == groupId)
+                return ApiResponses.Created201;
+
+            databaseContext.QuoteGroupMappings.Remove(quoteGroupMapping);
+        }
 
         QuoteGroupMapping mapping = new() { UserId = userId, QuoteId = quoteId, GroupId = groupId };
 
