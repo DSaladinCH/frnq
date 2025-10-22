@@ -10,11 +10,11 @@ namespace DSaladin.Frnq.Api.Position;
 [Authorize]
 public class PositionsController(PositionManagement positionManagement) : ControllerBase
 {
-    [HttpGet]
-    public async Task<IActionResult> GetPositions(
-        [ModelBinder(BinderType = typeof(FlexibleDateTimeBinder))] DateTime? from,
-        [ModelBinder(BinderType = typeof(FlexibleDateTimeBinder))] DateTime? to)
-    {
-        return Ok(await positionManagement.GetPositionsAsync(from, to));
-    }
+	[HttpGet]
+	public async Task<IActionResult> GetPositions(
+		[ModelBinder(BinderType = typeof(FlexibleDateTimeBinder))] DateTime? from,
+		[ModelBinder(BinderType = typeof(FlexibleDateTimeBinder))] DateTime? to)
+	{
+		return Ok(await positionManagement.GetPositionsAsync(from, to));
+	}
 }

@@ -1,27 +1,42 @@
 <script lang="ts">
-export let options: { value: string; label: string }[];
-export let selected: string;
-export let onSelect: (val: string) => void;
-let open = false;
-function label(val: string) {
-  return options && options.find((o) => o.value === val)?.label || val;
-}
-function select(val: string) {
-  if (onSelect) onSelect(val);
-  open = false;
-}
-function handleDropdownKey(e: KeyboardEvent, val: string) {
-  if (e.key === 'Enter' || e.key === ' ') {
-	select(val);
-	e.preventDefault();
-  } else if (e.key === 'Escape') {
-	open = false;
-  }
-}
+	export let options: { value: string; label: string }[];
+	export let selected: string;
+	export let onSelect: (val: string) => void;
+	let open = false;
+	function label(val: string) {
+		return (options && options.find((o) => o.value === val)?.label) || val;
+	}
+	function select(val: string) {
+		if (onSelect) onSelect(val);
+		open = false;
+	}
+	function handleDropdownKey(e: KeyboardEvent, val: string) {
+		if (e.key === 'Enter' || e.key === ' ') {
+			select(val);
+			e.preventDefault();
+		} else if (e.key === 'Escape') {
+			open = false;
+		}
+	}
 </script>
 
 <div class="custom-dropdown">
-	<button type="button" class="dropdown-toggle" aria-haspopup="listbox" aria-expanded={open} on:click={() => open = !open} on:keydown={(e) => { if (e.key === 'ArrowDown' && open) { const first = document.querySelector('.dropdown-list li'); first && (first as HTMLElement).focus(); } else if (e.key === 'Escape') { open = false; } }} tabindex="0">
+	<button
+		type="button"
+		class="dropdown-toggle"
+		aria-haspopup="listbox"
+		aria-expanded={open}
+		on:click={() => (open = !open)}
+		on:keydown={(e) => {
+			if (e.key === 'ArrowDown' && open) {
+				const first = document.querySelector('.dropdown-list li');
+				first && (first as HTMLElement).focus();
+			} else if (e.key === 'Escape') {
+				open = false;
+			}
+		}}
+		tabindex="0"
+	>
 		{label(selected)}
 		<span class="dropdown-arrow">▼</span>
 	</button>
@@ -59,7 +74,9 @@ function handleDropdownKey(e: KeyboardEvent, val: string) {
 		font-size: 1rem;
 		font-weight: 500;
 		cursor: pointer;
-		transition: background 0.2s, color 0.2s;
+		transition:
+			background 0.2s,
+			color 0.2s;
 		outline: none;
 		display: flex;
 		align-items: center;
@@ -92,13 +109,15 @@ function handleDropdownKey(e: KeyboardEvent, val: string) {
 		padding: 0.5rem 1rem;
 		color: #fff;
 		cursor: pointer;
-		transition: background 0.15s, color 0.15s;
+		transition:
+			background 0.15s,
+			color 0.15s;
 		font-size: 1rem;
 		border: none;
 		background: none;
 	}
 	.dropdown-list li.selected,
-	.dropdown-list li[aria-selected="true"] {
+	.dropdown-list li[aria-selected='true'] {
 		background: #18181b;
 		color: var(--color-primary);
 	}

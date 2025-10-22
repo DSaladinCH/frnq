@@ -95,9 +95,13 @@
 				selectedDates: initialDate ? [initialDate] : [],
 				container: containerElement, // Render in modal or body
 				visible: false,
-				position({ $datepicker, $target, $pointer }: { 
-					$datepicker: HTMLDivElement; 
-					$target: HTMLInputElement; 
+				position({
+					$datepicker,
+					$target,
+					$pointer
+				}: {
+					$datepicker: HTMLDivElement;
+					$target: HTMLInputElement;
 					$pointer: HTMLElement;
 					isViewChange: boolean;
 					done: () => void;
@@ -109,7 +113,7 @@
 
 					// Check if we're inside a modal
 					const isInModal = !!modalDialog;
-					
+
 					let top: number;
 					let left: number;
 
@@ -170,7 +174,13 @@
 					const pointerLeft = coords.left + coords.width / 2 - left - 10;
 					$pointer.style.left = `${pointerLeft}px`;
 				},
-				onSelect({ date, formattedDate }: { date: Date | Date[]; formattedDate: string | string[] }) {
+				onSelect({
+					date,
+					formattedDate
+				}: {
+					date: Date | Date[];
+					formattedDate: string | string[];
+				}) {
 					if (date) {
 						// Convert to ISO string format expected by the backend
 						if (Array.isArray(date)) {
@@ -185,7 +195,7 @@
 								} else if (type === 'time') {
 									value = `${pad(selectedDate.getHours())}:${pad(selectedDate.getMinutes())}`;
 								}
-								
+
 								// Trigger onchange if provided
 								if (onchange && dateInputRef) {
 									const event = new Event('change', { bubbles: true });
@@ -343,13 +353,13 @@
 	}
 
 	.textbox:hover {
-        border-color: var(--color-primary) !important;
+		border-color: var(--color-primary) !important;
 	}
 
 	.textbox:focus,
 	.textbox:-webkit-autofill:focus {
-        box-shadow: none !important;
-        border-color: var(--color-secondary) !important;
+		box-shadow: none !important;
+		border-color: var(--color-secondary) !important;
 	}
 
 	.checkbox {

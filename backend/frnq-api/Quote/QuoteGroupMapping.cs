@@ -10,11 +10,11 @@ namespace DSaladin.Frnq.Api.Quote;
 [Index(nameof(UserId), nameof(QuoteId), IsUnique = true)]
 public class QuoteGroupMapping
 {
-    public Guid UserId { get; set; }
-    public int QuoteId { get; set; }
-    public int GroupId { get; set; }
+	public Guid UserId { get; set; }
+	public int QuoteId { get; set; }
+	public int GroupId { get; set; }
 
-    public virtual UserModel User { get; set; } = null!;
-    public virtual QuoteModel Quote { get; set; } = null!;
-    public virtual QuoteGroup Group { get; set; } = null!;
+	public virtual UserModel User { get; set; } = null!;
+	public virtual QuoteModel Quote { get; set; } = null!;
+	public virtual QuoteGroup Group { get; set; } = null!;
 }

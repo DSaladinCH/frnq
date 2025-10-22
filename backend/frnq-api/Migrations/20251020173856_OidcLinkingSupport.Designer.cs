@@ -11,575 +11,575 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace DSaladin.Frnq.Api.Migrations
 {
-    [DbContext(typeof(DatabaseContext))]
-    [Migration("20251020173856_OidcLinkingSupport")]
-    partial class OidcLinkingSupport
-    {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
-        {
+	[DbContext(typeof(DatabaseContext))]
+	[Migration("20251020173856_OidcLinkingSupport")]
+	partial class OidcLinkingSupport
+	{
+		/// <inheritdoc />
+		protected override void BuildTargetModel(ModelBuilder modelBuilder)
+		{
 #pragma warning disable 612, 618
-            modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.6")
-                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+			modelBuilder
+				.HasAnnotation("ProductVersion", "9.0.6")
+				.HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+			NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Auth.ExternalUserLink", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+			modelBuilder.Entity("DSaladin.Frnq.Api.Auth.ExternalUserLink", b =>
+				{
+					b.Property<Guid>("Id")
+						.ValueGeneratedOnAdd()
+						.HasColumnType("uuid");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+					b.Property<DateTime>("CreatedAt")
+						.HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime>("LastLoginAt")
-                        .HasColumnType("timestamp with time zone");
+					b.Property<DateTime>("LastLoginAt")
+						.HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("ProviderEmail")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
+					b.Property<string>("ProviderEmail")
+						.HasMaxLength(255)
+						.HasColumnType("character varying(255)");
 
-                    b.Property<Guid>("ProviderId")
-                        .HasColumnType("uuid");
+					b.Property<Guid>("ProviderId")
+						.HasColumnType("uuid");
 
-                    b.Property<string>("ProviderUserId")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+					b.Property<string>("ProviderUserId")
+						.IsRequired()
+						.HasMaxLength(500)
+						.HasColumnType("character varying(500)");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
+					b.Property<Guid>("UserId")
+						.HasColumnType("uuid");
 
-                    b.HasKey("Id");
+					b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+					b.HasIndex("UserId");
 
-                    b.HasIndex("ProviderId", "ProviderUserId")
-                        .IsUnique();
+					b.HasIndex("ProviderId", "ProviderUserId")
+						.IsUnique();
 
-                    b.ToTable("external_user_link");
-                });
+					b.ToTable("external_user_link");
+				});
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Auth.OidcProvider", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+			modelBuilder.Entity("DSaladin.Frnq.Api.Auth.OidcProvider", b =>
+				{
+					b.Property<Guid>("Id")
+						.ValueGeneratedOnAdd()
+						.HasColumnType("uuid");
 
-                    b.Property<string>("AuthorizationEndpoint")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+					b.Property<string>("AuthorizationEndpoint")
+						.IsRequired()
+						.HasMaxLength(500)
+						.HasColumnType("character varying(500)");
 
-                    b.Property<bool>("AutoRedirect")
-                        .HasColumnType("boolean");
+					b.Property<bool>("AutoRedirect")
+						.HasColumnType("boolean");
 
-                    b.Property<string>("ClaimMappings")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+					b.Property<string>("ClaimMappings")
+						.IsRequired()
+						.HasMaxLength(2000)
+						.HasColumnType("character varying(2000)");
 
-                    b.Property<string>("ClientId")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+					b.Property<string>("ClientId")
+						.IsRequired()
+						.HasMaxLength(500)
+						.HasColumnType("character varying(500)");
 
-                    b.Property<string>("ClientSecret")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+					b.Property<string>("ClientSecret")
+						.IsRequired()
+						.HasMaxLength(500)
+						.HasColumnType("character varying(500)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+					b.Property<DateTime>("CreatedAt")
+						.HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("DisplayName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+					b.Property<string>("DisplayName")
+						.IsRequired()
+						.HasMaxLength(200)
+						.HasColumnType("character varying(200)");
 
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("integer");
+					b.Property<int>("DisplayOrder")
+						.HasColumnType("integer");
 
-                    b.Property<string>("IconClass")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+					b.Property<string>("IconClass")
+						.HasMaxLength(200)
+						.HasColumnType("character varying(200)");
 
-                    b.Property<bool>("IsEnabled")
-                        .HasColumnType("boolean");
+					b.Property<bool>("IsEnabled")
+						.HasColumnType("boolean");
 
-                    b.Property<string>("ProviderId")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+					b.Property<string>("ProviderId")
+						.IsRequired()
+						.HasMaxLength(100)
+						.HasColumnType("character varying(100)");
 
-                    b.Property<string>("Scopes")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+					b.Property<string>("Scopes")
+						.IsRequired()
+						.HasMaxLength(500)
+						.HasColumnType("character varying(500)");
 
-                    b.Property<string>("TokenEndpoint")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+					b.Property<string>("TokenEndpoint")
+						.IsRequired()
+						.HasMaxLength(500)
+						.HasColumnType("character varying(500)");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+					b.Property<DateTime>("UpdatedAt")
+						.HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("UserInfoEndpoint")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+					b.Property<string>("UserInfoEndpoint")
+						.HasMaxLength(500)
+						.HasColumnType("character varying(500)");
 
-                    b.HasKey("Id");
+					b.HasKey("Id");
 
-                    b.HasIndex("ProviderId")
-                        .IsUnique();
+					b.HasIndex("ProviderId")
+						.IsUnique();
 
-                    b.ToTable("oidc_provider");
-                });
+					b.ToTable("oidc_provider");
+				});
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Auth.OidcState", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+			modelBuilder.Entity("DSaladin.Frnq.Api.Auth.OidcState", b =>
+				{
+					b.Property<Guid>("Id")
+						.ValueGeneratedOnAdd()
+						.HasColumnType("uuid");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+					b.Property<DateTime>("CreatedAt")
+						.HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone");
+					b.Property<DateTime>("ExpiresAt")
+						.HasColumnType("timestamp with time zone");
 
-                    b.Property<bool>("IsUsed")
-                        .HasColumnType("boolean");
+					b.Property<bool>("IsUsed")
+						.HasColumnType("boolean");
 
-                    b.Property<Guid?>("LinkingUserId")
-                        .HasColumnType("uuid");
+					b.Property<Guid?>("LinkingUserId")
+						.HasColumnType("uuid");
 
-                    b.Property<string>("Nonce")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+					b.Property<string>("Nonce")
+						.HasMaxLength(200)
+						.HasColumnType("character varying(200)");
 
-                    b.Property<Guid>("ProviderId")
-                        .HasColumnType("uuid");
+					b.Property<Guid>("ProviderId")
+						.HasColumnType("uuid");
 
-                    b.Property<string>("ReturnUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+					b.Property<string>("ReturnUrl")
+						.HasMaxLength(500)
+						.HasColumnType("character varying(500)");
 
-                    b.Property<string>("State")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+					b.Property<string>("State")
+						.IsRequired()
+						.HasMaxLength(200)
+						.HasColumnType("character varying(200)");
 
-                    b.HasKey("Id");
+					b.HasKey("Id");
 
-                    b.HasIndex("ProviderId");
+					b.HasIndex("ProviderId");
 
-                    b.HasIndex("State")
-                        .IsUnique();
+					b.HasIndex("State")
+						.IsUnique();
 
-                    b.ToTable("oidc_state");
-                });
+					b.ToTable("oidc_state");
+				});
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Auth.RefreshTokenSession", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+			modelBuilder.Entity("DSaladin.Frnq.Api.Auth.RefreshTokenSession", b =>
+				{
+					b.Property<Guid>("Id")
+						.ValueGeneratedOnAdd()
+						.HasColumnType("uuid");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+					b.Property<DateTime>("CreatedAt")
+						.HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("DeviceInfo")
-                        .HasColumnType("text");
+					b.Property<string>("DeviceInfo")
+						.HasColumnType("text");
 
-                    b.Property<DateTime>("ExpiryTime")
-                        .HasColumnType("timestamp with time zone");
+					b.Property<DateTime>("ExpiryTime")
+						.HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("IpAddress")
-                        .HasColumnType("text");
+					b.Property<string>("IpAddress")
+						.HasColumnType("text");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
+					b.Property<bool>("IsActive")
+						.HasColumnType("boolean");
 
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasColumnType("text");
+					b.Property<string>("Token")
+						.IsRequired()
+						.HasColumnType("text");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
+					b.Property<Guid>("UserId")
+						.HasColumnType("uuid");
 
-                    b.HasKey("Id");
+					b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+					b.HasIndex("UserId");
 
-                    b.ToTable("refresh_token_session");
-                });
+					b.ToTable("refresh_token_session");
+				});
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Auth.UserModel", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+			modelBuilder.Entity("DSaladin.Frnq.Api.Auth.UserModel", b =>
+				{
+					b.Property<Guid>("Id")
+						.ValueGeneratedOnAdd()
+						.HasColumnType("uuid");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("text");
+					b.Property<string>("Email")
+						.IsRequired()
+						.HasColumnType("text");
 
-                    b.Property<string>("Firstname")
-                        .IsRequired()
-                        .HasColumnType("text");
+					b.Property<string>("Firstname")
+						.IsRequired()
+						.HasColumnType("text");
 
-                    b.Property<bool>("IsOidcUser")
-                        .HasColumnType("boolean");
+					b.Property<bool>("IsOidcUser")
+						.HasColumnType("boolean");
 
-                    b.Property<string>("PasswordHash")
-                        .HasColumnType("text");
+					b.Property<string>("PasswordHash")
+						.HasColumnType("text");
 
-                    b.HasKey("Id");
+					b.HasKey("Id");
 
-                    b.HasIndex("Email")
-                        .IsUnique();
+					b.HasIndex("Email")
+						.IsUnique();
 
-                    b.ToTable("user");
-                });
+					b.ToTable("user");
+				});
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Group.QuoteGroup", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+			modelBuilder.Entity("DSaladin.Frnq.Api.Group.QuoteGroup", b =>
+				{
+					b.Property<int>("Id")
+						.ValueGeneratedOnAdd()
+						.HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+					NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
+					b.Property<string>("Name")
+						.IsRequired()
+						.HasColumnType("text");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
+					b.Property<Guid>("UserId")
+						.HasColumnType("uuid");
 
-                    b.HasKey("Id");
+					b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+					b.HasIndex("UserId");
 
-                    b.ToTable("quote_group");
-                });
+					b.ToTable("quote_group");
+				});
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Investment.InvestmentModel", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+			modelBuilder.Entity("DSaladin.Frnq.Api.Investment.InvestmentModel", b =>
+				{
+					b.Property<int>("Id")
+						.ValueGeneratedOnAdd()
+						.HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+					NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("numeric");
+					b.Property<decimal>("Amount")
+						.HasColumnType("numeric");
 
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone");
+					b.Property<DateTime>("Date")
+						.HasColumnType("timestamp with time zone");
 
-                    b.Property<decimal>("PricePerUnit")
-                        .HasColumnType("numeric");
+					b.Property<decimal>("PricePerUnit")
+						.HasColumnType("numeric");
 
-                    b.Property<int>("QuoteId")
-                        .HasColumnType("integer");
+					b.Property<int>("QuoteId")
+						.HasColumnType("integer");
 
-                    b.Property<decimal>("TotalFees")
-                        .HasColumnType("numeric");
+					b.Property<decimal>("TotalFees")
+						.HasColumnType("numeric");
 
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
+					b.Property<int>("Type")
+						.HasColumnType("integer");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
+					b.Property<Guid>("UserId")
+						.HasColumnType("uuid");
 
-                    b.HasKey("Id");
+					b.HasKey("Id");
 
-                    b.HasIndex("QuoteId");
+					b.HasIndex("QuoteId");
 
-                    b.HasIndex("UserId");
+					b.HasIndex("UserId");
 
-                    b.ToTable("investment");
-                });
+					b.ToTable("investment");
+				});
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteGroupMapping", b =>
-                {
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
+			modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteGroupMapping", b =>
+				{
+					b.Property<Guid>("UserId")
+						.HasColumnType("uuid");
 
-                    b.Property<int>("QuoteId")
-                        .HasColumnType("integer");
+					b.Property<int>("QuoteId")
+						.HasColumnType("integer");
 
-                    b.Property<int>("GroupId")
-                        .HasColumnType("integer");
+					b.Property<int>("GroupId")
+						.HasColumnType("integer");
 
-                    b.HasKey("UserId", "QuoteId");
+					b.HasKey("UserId", "QuoteId");
 
-                    b.HasIndex("GroupId");
+					b.HasIndex("GroupId");
 
-                    b.HasIndex("QuoteId");
+					b.HasIndex("QuoteId");
 
-                    b.HasIndex("UserId", "QuoteId")
-                        .IsUnique();
+					b.HasIndex("UserId", "QuoteId")
+						.IsUnique();
 
-                    b.ToTable("quote_group_mapping");
-                });
+					b.ToTable("quote_group_mapping");
+				});
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteModel", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+			modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteModel", b =>
+				{
+					b.Property<int>("Id")
+						.ValueGeneratedOnAdd()
+						.HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+					NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Currency")
-                        .IsRequired()
-                        .HasColumnType("text");
+					b.Property<string>("Currency")
+						.IsRequired()
+						.HasColumnType("text");
 
-                    b.Property<string>("ExchangeDisposition")
-                        .IsRequired()
-                        .HasColumnType("text");
+					b.Property<string>("ExchangeDisposition")
+						.IsRequired()
+						.HasColumnType("text");
 
-                    b.Property<DateTime>("LastUpdatedPrices")
-                        .HasColumnType("timestamp with time zone");
+					b.Property<DateTime>("LastUpdatedPrices")
+						.HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
+					b.Property<string>("Name")
+						.IsRequired()
+						.HasColumnType("text");
 
-                    b.Property<string>("ProviderId")
-                        .IsRequired()
-                        .HasColumnType("text");
+					b.Property<string>("ProviderId")
+						.IsRequired()
+						.HasColumnType("text");
 
-                    b.Property<string>("Symbol")
-                        .IsRequired()
-                        .HasColumnType("text");
+					b.Property<string>("Symbol")
+						.IsRequired()
+						.HasColumnType("text");
 
-                    b.Property<string>("TypeDisposition")
-                        .IsRequired()
-                        .HasColumnType("text");
+					b.Property<string>("TypeDisposition")
+						.IsRequired()
+						.HasColumnType("text");
 
-                    b.HasKey("Id");
+					b.HasKey("Id");
 
-                    b.HasIndex("ProviderId", "Symbol")
-                        .IsUnique();
+					b.HasIndex("ProviderId", "Symbol")
+						.IsUnique();
 
-                    b.ToTable("quote");
-                });
+					b.ToTable("quote");
+				});
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteName", b =>
-                {
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
+			modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteName", b =>
+				{
+					b.Property<Guid>("UserId")
+						.HasColumnType("uuid");
 
-                    b.Property<int>("QuoteId")
-                        .HasColumnType("integer");
+					b.Property<int>("QuoteId")
+						.HasColumnType("integer");
 
-                    b.Property<string>("CustomName")
-                        .IsRequired()
-                        .HasColumnType("text");
+					b.Property<string>("CustomName")
+						.IsRequired()
+						.HasColumnType("text");
 
-                    b.HasKey("UserId", "QuoteId");
+					b.HasKey("UserId", "QuoteId");
 
-                    b.HasIndex("QuoteId");
+					b.HasIndex("QuoteId");
 
-                    b.HasIndex("UserId", "QuoteId")
-                        .IsUnique();
+					b.HasIndex("UserId", "QuoteId")
+						.IsUnique();
 
-                    b.ToTable("quote_name");
-                });
+					b.ToTable("quote_name");
+				});
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuotePrice", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+			modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuotePrice", b =>
+				{
+					b.Property<int>("Id")
+						.ValueGeneratedOnAdd()
+						.HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+					NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal?>("AdjustedClose")
-                        .HasColumnType("numeric");
+					b.Property<decimal?>("AdjustedClose")
+						.HasColumnType("numeric");
 
-                    b.Property<decimal>("Close")
-                        .HasColumnType("numeric");
+					b.Property<decimal>("Close")
+						.HasColumnType("numeric");
 
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone");
+					b.Property<DateTime>("Date")
+						.HasColumnType("timestamp with time zone");
 
-                    b.Property<decimal>("High")
-                        .HasColumnType("numeric");
+					b.Property<decimal>("High")
+						.HasColumnType("numeric");
 
-                    b.Property<decimal>("Low")
-                        .HasColumnType("numeric");
+					b.Property<decimal>("Low")
+						.HasColumnType("numeric");
 
-                    b.Property<decimal>("Open")
-                        .HasColumnType("numeric");
+					b.Property<decimal>("Open")
+						.HasColumnType("numeric");
 
-                    b.Property<int>("QuoteId")
-                        .HasColumnType("integer");
+					b.Property<int>("QuoteId")
+						.HasColumnType("integer");
 
-                    b.HasKey("Id");
+					b.HasKey("Id");
 
-                    b.HasIndex("QuoteId", "Date")
-                        .IsUnique();
+					b.HasIndex("QuoteId", "Date")
+						.IsUnique();
 
-                    b.ToTable("quote_price");
-                });
+					b.ToTable("quote_price");
+				});
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Auth.ExternalUserLink", b =>
-                {
-                    b.HasOne("DSaladin.Frnq.Api.Auth.OidcProvider", "Provider")
-                        .WithMany()
-                        .HasForeignKey("ProviderId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+			modelBuilder.Entity("DSaladin.Frnq.Api.Auth.ExternalUserLink", b =>
+				{
+					b.HasOne("DSaladin.Frnq.Api.Auth.OidcProvider", "Provider")
+						.WithMany()
+						.HasForeignKey("ProviderId")
+						.OnDelete(DeleteBehavior.Restrict)
+						.IsRequired();
 
-                    b.HasOne("DSaladin.Frnq.Api.Auth.UserModel", "User")
-                        .WithMany("ExternalLinks")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+					b.HasOne("DSaladin.Frnq.Api.Auth.UserModel", "User")
+						.WithMany("ExternalLinks")
+						.HasForeignKey("UserId")
+						.OnDelete(DeleteBehavior.Cascade)
+						.IsRequired();
 
-                    b.Navigation("Provider");
+					b.Navigation("Provider");
 
-                    b.Navigation("User");
-                });
+					b.Navigation("User");
+				});
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Auth.OidcState", b =>
-                {
-                    b.HasOne("DSaladin.Frnq.Api.Auth.OidcProvider", "Provider")
-                        .WithMany()
-                        .HasForeignKey("ProviderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+			modelBuilder.Entity("DSaladin.Frnq.Api.Auth.OidcState", b =>
+				{
+					b.HasOne("DSaladin.Frnq.Api.Auth.OidcProvider", "Provider")
+						.WithMany()
+						.HasForeignKey("ProviderId")
+						.OnDelete(DeleteBehavior.Cascade)
+						.IsRequired();
 
-                    b.Navigation("Provider");
-                });
+					b.Navigation("Provider");
+				});
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Auth.RefreshTokenSession", b =>
-                {
-                    b.HasOne("DSaladin.Frnq.Api.Auth.UserModel", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+			modelBuilder.Entity("DSaladin.Frnq.Api.Auth.RefreshTokenSession", b =>
+				{
+					b.HasOne("DSaladin.Frnq.Api.Auth.UserModel", "User")
+						.WithMany()
+						.HasForeignKey("UserId")
+						.OnDelete(DeleteBehavior.Cascade)
+						.IsRequired();
 
-                    b.Navigation("User");
-                });
+					b.Navigation("User");
+				});
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Group.QuoteGroup", b =>
-                {
-                    b.HasOne("DSaladin.Frnq.Api.Auth.UserModel", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+			modelBuilder.Entity("DSaladin.Frnq.Api.Group.QuoteGroup", b =>
+				{
+					b.HasOne("DSaladin.Frnq.Api.Auth.UserModel", "User")
+						.WithMany()
+						.HasForeignKey("UserId")
+						.OnDelete(DeleteBehavior.Cascade)
+						.IsRequired();
 
-                    b.Navigation("User");
-                });
+					b.Navigation("User");
+				});
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Investment.InvestmentModel", b =>
-                {
-                    b.HasOne("DSaladin.Frnq.Api.Quote.QuoteModel", "Quote")
-                        .WithMany()
-                        .HasForeignKey("QuoteId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+			modelBuilder.Entity("DSaladin.Frnq.Api.Investment.InvestmentModel", b =>
+				{
+					b.HasOne("DSaladin.Frnq.Api.Quote.QuoteModel", "Quote")
+						.WithMany()
+						.HasForeignKey("QuoteId")
+						.OnDelete(DeleteBehavior.Cascade)
+						.IsRequired();
 
-                    b.HasOne("DSaladin.Frnq.Api.Auth.UserModel", "User")
-                        .WithMany("Investments")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+					b.HasOne("DSaladin.Frnq.Api.Auth.UserModel", "User")
+						.WithMany("Investments")
+						.HasForeignKey("UserId")
+						.OnDelete(DeleteBehavior.Cascade)
+						.IsRequired();
 
-                    b.Navigation("Quote");
+					b.Navigation("Quote");
 
-                    b.Navigation("User");
-                });
+					b.Navigation("User");
+				});
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteGroupMapping", b =>
-                {
-                    b.HasOne("DSaladin.Frnq.Api.Group.QuoteGroup", "Group")
-                        .WithMany("Mappings")
-                        .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+			modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteGroupMapping", b =>
+				{
+					b.HasOne("DSaladin.Frnq.Api.Group.QuoteGroup", "Group")
+						.WithMany("Mappings")
+						.HasForeignKey("GroupId")
+						.OnDelete(DeleteBehavior.Cascade)
+						.IsRequired();
 
-                    b.HasOne("DSaladin.Frnq.Api.Quote.QuoteModel", "Quote")
-                        .WithMany("Mappings")
-                        .HasForeignKey("QuoteId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+					b.HasOne("DSaladin.Frnq.Api.Quote.QuoteModel", "Quote")
+						.WithMany("Mappings")
+						.HasForeignKey("QuoteId")
+						.OnDelete(DeleteBehavior.Cascade)
+						.IsRequired();
 
-                    b.HasOne("DSaladin.Frnq.Api.Auth.UserModel", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+					b.HasOne("DSaladin.Frnq.Api.Auth.UserModel", "User")
+						.WithMany()
+						.HasForeignKey("UserId")
+						.OnDelete(DeleteBehavior.Cascade)
+						.IsRequired();
 
-                    b.Navigation("Group");
+					b.Navigation("Group");
 
-                    b.Navigation("Quote");
+					b.Navigation("Quote");
 
-                    b.Navigation("User");
-                });
+					b.Navigation("User");
+				});
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteName", b =>
-                {
-                    b.HasOne("DSaladin.Frnq.Api.Quote.QuoteModel", "Quote")
-                        .WithMany("Names")
-                        .HasForeignKey("QuoteId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+			modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteName", b =>
+				{
+					b.HasOne("DSaladin.Frnq.Api.Quote.QuoteModel", "Quote")
+						.WithMany("Names")
+						.HasForeignKey("QuoteId")
+						.OnDelete(DeleteBehavior.Cascade)
+						.IsRequired();
 
-                    b.HasOne("DSaladin.Frnq.Api.Auth.UserModel", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+					b.HasOne("DSaladin.Frnq.Api.Auth.UserModel", "User")
+						.WithMany()
+						.HasForeignKey("UserId")
+						.OnDelete(DeleteBehavior.Cascade)
+						.IsRequired();
 
-                    b.Navigation("Quote");
+					b.Navigation("Quote");
 
-                    b.Navigation("User");
-                });
+					b.Navigation("User");
+				});
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuotePrice", b =>
-                {
-                    b.HasOne("DSaladin.Frnq.Api.Quote.QuoteModel", "Quote")
-                        .WithMany("Prices")
-                        .HasForeignKey("QuoteId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+			modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuotePrice", b =>
+				{
+					b.HasOne("DSaladin.Frnq.Api.Quote.QuoteModel", "Quote")
+						.WithMany("Prices")
+						.HasForeignKey("QuoteId")
+						.OnDelete(DeleteBehavior.Cascade)
+						.IsRequired();
 
-                    b.Navigation("Quote");
-                });
+					b.Navigation("Quote");
+				});
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Auth.UserModel", b =>
-                {
-                    b.Navigation("ExternalLinks");
+			modelBuilder.Entity("DSaladin.Frnq.Api.Auth.UserModel", b =>
+				{
+					b.Navigation("ExternalLinks");
 
-                    b.Navigation("Investments");
-                });
+					b.Navigation("Investments");
+				});
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Group.QuoteGroup", b =>
-                {
-                    b.Navigation("Mappings");
-                });
+			modelBuilder.Entity("DSaladin.Frnq.Api.Group.QuoteGroup", b =>
+				{
+					b.Navigation("Mappings");
+				});
 
-            modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteModel", b =>
-                {
-                    b.Navigation("Mappings");
+			modelBuilder.Entity("DSaladin.Frnq.Api.Quote.QuoteModel", b =>
+				{
+					b.Navigation("Mappings");
 
-                    b.Navigation("Names");
+					b.Navigation("Names");
 
-                    b.Navigation("Prices");
-                });
+					b.Navigation("Prices");
+				});
 #pragma warning restore 612, 618
-        }
-    }
+		}
+	}
 }

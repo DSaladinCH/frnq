@@ -1,4 +1,4 @@
 export enum StylePadding {
-    Default,
-    Reduced
+	Default,
+	Reduced
 }

@@ -1,9 +1,9 @@
 <script lang="ts">
-    let { title } : { title?: string } = $props();
+	let { title }: { title?: string } = $props();
 
-    let fullTitle = $derived(title ? `${title} - FRNQ` : "FRNQ");
+	let fullTitle = $derived(title ? `${title} - FRNQ` : 'FRNQ');
 </script>
 
 <svelte:head>
-    <title>{fullTitle}</title>
+	<title>{fullTitle}</title>
 </svelte:head>

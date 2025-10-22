@@ -13,6 +13,9 @@
 	"settings": {
 		"dotnet.defaultSolution": "frnq-api.sln",
 		"powershell.cwd": "frnq-api",
+		"editor.insertSpaces": false,
+		"editor.tabSize": 4,
+		"editor.detectIndentation": false,
 		"chat.instructionsFilesLocations": {
 			"../.github/instructions": true
 		}

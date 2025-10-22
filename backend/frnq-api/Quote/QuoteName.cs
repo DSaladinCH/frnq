@@ -8,10 +8,10 @@ namespace DSaladin.Frnq.Api.Quote;
 [Index(nameof(UserId), nameof(QuoteId), IsUnique = true)]
 public class QuoteName
 {
-    public Guid UserId { get; set; }
-    public int QuoteId { get; set; }
-    public string CustomName { get; set; } = string.Empty;
+	public Guid UserId { get; set; }
+	public int QuoteId { get; set; }
+	public string CustomName { get; set; } = string.Empty;
 
-    public virtual UserModel User { get; set; } = null!;
-    public virtual QuoteModel Quote { get; set; } = null!;
+	public virtual UserModel User { get; set; } = null!;
+	public virtual QuoteModel Quote { get; set; } = null!;
 }

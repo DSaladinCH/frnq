@@ -1,97 +1,97 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:16-alpine
-    container_name: frnq-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: frnq
-      POSTGRES_PASSWORD: frnq_password
-      POSTGRES_DB: frnq
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - frnq-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U frnq"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+	# PostgreSQL Database
+	postgres:
+		image: postgres:16-alpine
+		container_name: frnq-postgres
+		restart: unless-stopped
+		environment:
+			POSTGRES_USER: frnq
+			POSTGRES_PASSWORD: frnq_password
+			POSTGRES_DB: frnq
+		ports:
+			- "5432:5432"
+		volumes:
+			- postgres_data:/var/lib/postgresql/data
+		networks:
+			- frnq-network
+		healthcheck:
+			test: ["CMD-SHELL", "pg_isready -U frnq"]
+			interval: 10s
+			timeout: 5s
+			retries: 5
 
-  # Backend API (.NET)
-  api:
-    image: frnq-api:latest
-    container_name: frnq-api
-    restart: unless-stopped
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ASPNETCORE_URLS=http://+:8080
-      - Cookies__Domain=localhost
-      - ConnectionStrings__DatabaseConnection=Server=postgres;Port=5432;Database=frnq;User Id=frnq;Password=frnq_password;
-      - JwtSettings__SecretKey=your-super-secret-key-that-should-be-at-least-256-bits-long-for-security-purposes-and-stored-securely
-      - JwtSettings__Issuer=frnq-api
-      - JwtSettings__Audience=frnq-client
-      - JwtSettings__AccessTokenExpiryInMinutes=15
-      - Features__SignupEnabled=true
-      - ApiBaseUrl=http://localhost:8080
-      - FrontendUrl=http://localhost:3000
-      # OIDC Configuration Examples (uncomment and configure to enable)
-      # Google OAuth2 Example:
-      # - OidcProviders__google__Enabled=true
-      # - OidcProviders__google__DisplayName=Google
-      # - OidcProviders__google__AuthorizationEndpoint=https://accounts.google.com/o/oauth2/v2/auth
-      # - OidcProviders__google__TokenEndpoint=https://oauth2.googleapis.com/token
-      # - OidcProviders__google__UserInfoEndpoint=https://www.googleapis.com/oauth2/v3/userinfo
-      # - OidcProviders__google__ClientId=${GOOGLE_CLIENT_ID}
-      # - OidcProviders__google__ClientSecret=${GOOGLE_CLIENT_SECRET}
-      # - OidcProviders__google__Scopes=openid profile email
-      # - OidcProviders__google__IconClass=fa-brands fa-google
-      # - OidcProviders__google__AutoRedirect=false
-      # - OidcProviders__google__DisplayOrder=0
-      # Azure AD / Entra ID Example:
-      # - OidcProviders__azure__Enabled=true
-      # - OidcProviders__azure__DisplayName=Microsoft
-      # - OidcProviders__azure__AuthorizationEndpoint=https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/authorize
-      # - OidcProviders__azure__TokenEndpoint=https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/token
-      # - OidcProviders__azure__UserInfoEndpoint=https://graph.microsoft.com/oidc/userinfo
-      # - OidcProviders__azure__ClientId=${AZURE_CLIENT_ID}
-      # - OidcProviders__azure__ClientSecret=${AZURE_CLIENT_SECRET}
-      # - OidcProviders__azure__Scopes=openid profile email
-      # - OidcProviders__azure__IconClass=fa-brands fa-microsoft
-      # - OidcProviders__azure__AutoRedirect=false
-      # - OidcProviders__azure__DisplayOrder=1
-    ports:
-      - "8080:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - frnq-network
+	# Backend API (.NET)
+	api:
+		image: frnq-api:latest
+		container_name: frnq-api
+		restart: unless-stopped
+		environment:
+			- ASPNETCORE_ENVIRONMENT=Production
+			- ASPNETCORE_URLS=http://+:8080
+			- Cookies__Domain=localhost
+			- ConnectionStrings__DatabaseConnection=Server=postgres;Port=5432;Database=frnq;User Id=frnq;Password=frnq_password;
+			- JwtSettings__SecretKey=your-super-secret-key-that-should-be-at-least-256-bits-long-for-security-purposes-and-stored-securely
+			- JwtSettings__Issuer=frnq-api
+			- JwtSettings__Audience=frnq-client
+			- JwtSettings__AccessTokenExpiryInMinutes=15
+			- Features__SignupEnabled=true
+			- ApiBaseUrl=http://localhost:8080
+			- FrontendUrl=http://localhost:3000
+			# OIDC Configuration Examples (uncomment and configure to enable)
+			# Google OAuth2 Example:
+			# - OidcProviders__google__Enabled=true
+			# - OidcProviders__google__DisplayName=Google
+			# - OidcProviders__google__AuthorizationEndpoint=https://accounts.google.com/o/oauth2/v2/auth
+			# - OidcProviders__google__TokenEndpoint=https://oauth2.googleapis.com/token
+			# - OidcProviders__google__UserInfoEndpoint=https://www.googleapis.com/oauth2/v3/userinfo
+			# - OidcProviders__google__ClientId=${GOOGLE_CLIENT_ID}
+			# - OidcProviders__google__ClientSecret=${GOOGLE_CLIENT_SECRET}
+			# - OidcProviders__google__Scopes=openid profile email
+			# - OidcProviders__google__IconClass=fa-brands fa-google
+			# - OidcProviders__google__AutoRedirect=false
+			# - OidcProviders__google__DisplayOrder=0
+			# Azure AD / Entra ID Example:
+			# - OidcProviders__azure__Enabled=true
+			# - OidcProviders__azure__DisplayName=Microsoft
+			# - OidcProviders__azure__AuthorizationEndpoint=https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/authorize
+			# - OidcProviders__azure__TokenEndpoint=https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/token
+			# - OidcProviders__azure__UserInfoEndpoint=https://graph.microsoft.com/oidc/userinfo
+			# - OidcProviders__azure__ClientId=${AZURE_CLIENT_ID}
+			# - OidcProviders__azure__ClientSecret=${AZURE_CLIENT_SECRET}
+			# - OidcProviders__azure__Scopes=openid profile email
+			# - OidcProviders__azure__IconClass=fa-brands fa-microsoft
+			# - OidcProviders__azure__AutoRedirect=false
+			# - OidcProviders__azure__DisplayOrder=1
+		ports:
+			- "8080:8080"
+		depends_on:
+			postgres:
+				condition: service_healthy
+		networks:
+			- frnq-network
 
-  # Frontend UI (SvelteKit)
-  ui:
-    image: frnq-ui:latest
-    container_name: frnq-ui
-    restart: unless-stopped
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - VITE_API_BASE_URL=http://localhost:8080
-    ports:
-      - "3000:3000"
-    depends_on:
-      - api
-    networks:
-      - frnq-network
+	# Frontend UI (SvelteKit)
+	ui:
+		image: frnq-ui:latest
+		container_name: frnq-ui
+		restart: unless-stopped
+		environment:
+			- NODE_ENV=production
+			- PORT=3000
+			- VITE_API_BASE_URL=http://localhost:8080
+		ports:
+			- "3000:3000"
+		depends_on:
+			- api
+		networks:
+			- frnq-network
 
 networks:
-  frnq-network:
-    driver: bridge
+	frnq-network:
+		driver: bridge
 
 volumes:
-  postgres_data:
-    driver: local
+	postgres_data:
+		driver: local

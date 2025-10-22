@@ -42,55 +42,55 @@ var key = Encoding.ASCII.GetBytes(jwtSettings["SecretKey"]!);
 
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+	options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+	options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
 .AddJwtBearer(options =>
 {
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(key),
-        ValidateIssuer = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidateAudience = true,
-        ValidAudience = jwtSettings["Audience"],
-        ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero
-    };
+	options.TokenValidationParameters = new TokenValidationParameters
+	{
+		ValidateIssuerSigningKey = true,
+		IssuerSigningKey = new SymmetricSecurityKey(key),
+		ValidateIssuer = true,
+		ValidIssuer = jwtSettings["Issuer"],
+		ValidateAudience = true,
+		ValidAudience = jwtSettings["Audience"],
+		ValidateLifetime = true,
+		ClockSkew = TimeSpan.Zero
+	};
 });
 
 // Add CORS policy for development
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("DevCorsPolicy", policy =>
-    {
-        policy.WithOrigins("http://localhost:5173")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials(); // Required for cookies
-    });
+	options.AddPolicy("DevCorsPolicy", policy =>
+	{
+		policy.WithOrigins("http://localhost:5173")
+				.AllowAnyHeader()
+				.AllowAnyMethod()
+				.AllowCredentials(); // Required for cookies
+	});
 });
 
 string connectionString = builder.Configuration.GetConnectionString("DatabaseConnection") ?? throw new InvalidOperationException("Connection string 'DatabaseConnection' not found.");
 builder.Services.AddDbContext<DatabaseContext>(options =>
-    options.UseNpgsql(connectionString));
+	options.UseNpgsql(connectionString));
 
 
 var app = builder.Build();
 
 using (var localScope = app.Services.CreateScope())
 {
-    DatabaseContext databaseContext = localScope.ServiceProvider.GetRequiredService<DatabaseContext>();
-    databaseContext.Database.Migrate();
+	DatabaseContext databaseContext = localScope.ServiceProvider.GetRequiredService<DatabaseContext>();
+	databaseContext.Database.Migrate();
 }
 
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseCors("DevCorsPolicy");
-    app.MapOpenApi();
+	app.UseCors("DevCorsPolicy");
+	app.MapOpenApi();
 }
 
 app.UseHttpsRedirection();
@@ -105,5 +105,5 @@ app.Run();
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+	public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
 }
