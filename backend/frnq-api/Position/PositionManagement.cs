@@ -71,7 +71,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
         {
             decimal totalFees = 0;           // lifetime fees for info
             decimal realizedCash = 0;        // dividends + net sell proceeds
-            decimal investedCash = 0;        // buys – net sell proceeds
+            decimal realizedGain = 0;        // actual profit from sells and dividends
             Queue<(decimal Amount, decimal PricePerUnit)> lots = new();
 
             int invIndex = 0;
@@ -90,8 +90,6 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 
                     if (inv.Type == InvestmentType.Buy)
                     {
-                        decimal totalCost = inv.Amount * inv.PricePerUnit + inv.TotalFees;
-                        investedCash += totalCost;
                         totalFees += inv.TotalFees;
 
                         // track cost basis for remaining shares
@@ -105,15 +103,18 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
                         decimal netProceeds = grossProceeds - inv.TotalFees;
 
                         realizedCash += netProceeds;
-                        investedCash -= netProceeds;   // money you got back reduces "still invested"
                         totalFees += inv.TotalFees;
 
-                        // update remaining shares (FIFO)
+                        // update remaining shares (FIFO) and track cost basis
                         decimal toSell = sellAmount;
+                        decimal totalCostBasis = 0;
                         while (toSell > 0 && lots.Count > 0)
                         {
                             var lot = lots.Peek();
                             decimal used = Math.Min(lot.Amount, toSell);
+
+                            // Track the cost basis of shares being sold
+                            totalCostBasis += used * lot.PricePerUnit;
 
                             if (used == lot.Amount)
                             {
@@ -130,10 +131,15 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 
                             toSell -= used;
                         }
+
+                        // Calculate actual gain/loss from this sell
+                        // Gain = net proceeds - cost basis of shares sold
+                        realizedGain += netProceeds - totalCostBasis;
                     }
                     else if (inv.Type == InvestmentType.Dividend)
                     {
                         realizedCash += inv.Amount;  // pure cash in
+                        realizedGain += inv.Amount;  // dividends are pure profit
                     }
 
                     invIndex++;
@@ -156,6 +162,9 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
                 decimal currentShares = lots.Sum(l => l.Amount);
                 decimal marketValue = marketPrice * currentShares;
 
+                // Calculate invested amount from remaining lots (cost basis of current holdings)
+                decimal investedCash = lots.Sum(l => l.Amount * l.PricePerUnit);
+
                 // total value = remaining shares value + realized cash (dividends + sells)
                 decimal totalValue = marketValue + realizedCash;
                 decimal profit = totalValue - investedCash;
@@ -170,7 +179,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
                     Invested = investedCash,         // total money you still have tied up
                     TotalFees = totalFees,
                     MarketPricePerUnit = marketPrice,
-                    RealizedGain = realizedCash,     // NEW: total dividends + net sells
+                    RealizedGain = realizedGain,     // actual profit from sells and dividends
                 });
             }
         }

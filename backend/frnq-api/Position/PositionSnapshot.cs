@@ -32,7 +32,8 @@ public class PositionSnapshot
     public decimal CurrentValue => MarketPricePerUnit * Amount;
 
     /// <summary>
-    /// The total realized gain for this symbol up to the snapshot date (all time).
+    /// The total realized gain (profit) for this symbol up to the snapshot date.
+    /// This includes: (sale proceeds - cost basis) from all sells + all dividends received.
     /// </summary>
     public decimal RealizedGain { get; set; }
 }
