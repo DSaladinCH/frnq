@@ -1,7 +1,7 @@
 {
 	"folders": [
 		{
-			"path": "backend/frnq-api"
+			"path": "backend"
 		},
 		{
 			"path": "frontend"
@@ -29,7 +29,7 @@
 				"type": "process",
 				"args": [
 					"build",
-					"${workspaceFolder:frnq-api}/frnq-api.csproj"
+					"${workspaceFolder:backend}/frnq-api.csproj"
 				],
 				"group": {
 					"kind": "build",
@@ -57,9 +57,9 @@
 				"type": "coreclr",
 				"request": "launch",
 				"preLaunchTask": "build",
-				"program": "${workspaceFolder:frnq-api}/bin/Debug/net9.0/DSaladin.Frnq.Api.dll",
+				"program": "${workspaceFolder:backend}/bin/Debug/net9.0/DSaladin.Frnq.Api.dll",
 				"args": [],
-				"cwd": "${workspaceFolder:frnq-api}",
+				"cwd": "${workspaceFolder:backend}",
 				"stopAtEntry": false
 			},
 			{
