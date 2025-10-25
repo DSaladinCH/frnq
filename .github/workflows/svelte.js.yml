@@ -31,4 +31,4 @@ jobs:
                   context: ./
                   file: ./docker/Dockerfile.ui
                   push: true
-                  tags: ghcr.io/frnq/frnq-ui:latest
+                  tags: ghcr.io/dsaladinch/frnq-ui:latest
