@@ -42,19 +42,15 @@ public class AuthController(AuthManagement authManagement, IConfiguration config
 
     [HttpGet("me")]
     [Authorize]
-    public IActionResult GetCurrentUser()
+    public async Task<IActionResult> GetCurrentUser()
     {
-        // This endpoint demonstrates how to use [Authorize] and access user claims
-        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
-        var name = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+		return await authManagement.GetUserAsync();
+    }
 
-        return Ok(new 
-        { 
-            userId = userId,
-            email = email,
-            name = name,
-            message = "This endpoint requires valid JWT authentication"
-        });
+    [HttpPatch("me")]
+    [Authorize]
+    public async Task<IActionResult> UpdateCurrentUser([FromBody] UpdateUserModel updateModel)
+    {
+        return await authManagement.UpdateUserAsync(updateModel);
     }
 }

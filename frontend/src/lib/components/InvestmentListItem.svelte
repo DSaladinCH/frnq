@@ -5,6 +5,8 @@
 	import { ColorStyle } from '$lib/types/ColorStyle';
 	import { TextSize } from '$lib/types/TextSize';
 	import { ContentWidth } from '$lib/types/ContentSize';
+	import { formatDateTime } from '$lib/utils/dateFormat';
+	import { userPreferences } from '$lib/stores/userPreferences';
 
 	let {
 		investment,
@@ -18,10 +20,18 @@
 		ondelete: (event: MouseEvent) => Promise<void>;
 	} = $props();
 
-	const locale = navigator.languages?.[0] || navigator.language || 'en-US';
+	let preferences = $state($userPreferences);
 	let isDeleting = $state(false);
 
 	let dividendHidden = $derived(investment.type === InvestmentType.Dividend ? 'hidden' : '');
+
+	// Subscribe to user preferences changes
+	$effect(() => {
+		const unsubscribe = userPreferences.subscribe((prefs) => {
+			preferences = prefs;
+		});
+		return unsubscribe;
+	});
 
 	function getInvestmentType(investment: InvestmentModel): string {
 		switch (investment.type) {
@@ -30,16 +40,6 @@
 			default:
 				return InvestmentType[investment.type];
 		}
-	}
-
-	function formatDate(date: string): string {
-		return new Date(date).toLocaleDateString(locale, {
-			day: '2-digit',
-			month: '2-digit',
-			year: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit'
-		});
 	}
 
 	function formatCurrency(value: number): string {
@@ -70,7 +70,7 @@
 		<div class="row-1 col-1 color-muted flex items-center gap-2">
 			<span class="uppercase">{getInvestmentType(investment)}</span>
 			<span>•</span>
-			<span>{formatDate(investment.date)}</span>
+			<span>{formatDateTime(investment.date, preferences.dateFormat)}</span>
 			<span>•</span>
 			<span>{quote.currency}</span>
 		</div>

@@ -12,12 +12,23 @@
 	} from '$lib/services/authService';
 	import { notify } from '$lib/services/notificationService';
 	import { ColorStyle } from '$lib/types/ColorStyle';
+	import { formatDateTime } from '$lib/utils/dateFormat';
+	import { userPreferences } from '$lib/stores/userPreferences';
 
 	let links = $state<ExternalLink[]>([]);
 	let availableProviders = $state<OidcProvider[]>([]);
 	let isLoading = $state(true);
 	let isDeleting = $state<string | null>(null);
 	let isLinking = $state<string | null>(null);
+	let preferences = $state($userPreferences);
+
+	// Subscribe to user preferences changes
+	$effect(() => {
+		const unsubscribe = userPreferences.subscribe((prefs) => {
+			preferences = prefs;
+		});
+		return unsubscribe;
+	});
 
 	onMount(async () => {
 		// Check if we just linked an account
@@ -95,11 +106,6 @@
 			isDeleting = null;
 		}
 	}
-
-	function formatDate(dateString: string): string {
-		const date = new Date(dateString);
-		return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-	}
 </script>
 
 <div class="bg-card mt-6 rounded-lg p-6 shadow-lg">
@@ -141,7 +147,7 @@
 											{#if linked.providerEmail}
 												{linked.providerEmail} •
 											{/if}
-											Linked {formatDate(linked.linkedAt)}
+											Linked {formatDateTime(linked.linkedAt, preferences.dateFormat)}
 										</div>
 									{:else}
 										<div class="text-xs color-muted">Not linked</div>

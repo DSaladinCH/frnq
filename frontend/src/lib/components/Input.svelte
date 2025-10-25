@@ -8,6 +8,7 @@
 	import localeFr from 'air-datepicker/locale/fr';
 	import localeIt from 'air-datepicker/locale/it';
 	import { onMount } from 'svelte';
+	import { userPreferences } from '$lib/stores/userPreferences';
 
 	let {
 		type = 'text',
@@ -56,13 +57,36 @@
 
 	let dateInputRef: HTMLInputElement | null = $state(null);
 	let datepicker: AirDatepicker<HTMLInputElement> | null = null;
+	let preferences = $state($userPreferences);
 
-	// Map locale strings to air-datepicker locale objects
+	// Subscribe to user preferences changes
+	$effect(() => {
+		const unsubscribe = userPreferences.subscribe((prefs) => {
+			preferences = prefs;
+			// Update datepicker locale if it exists
+			if (datepicker && isDateTimeInput) {
+				const newLocale = getDatepickerLocale(prefs.dateFormat);
+				datepicker.update({
+					locale: newLocale
+				});
+			}
+		});
+		return unsubscribe;
+	});
+
+	// Map locale strings or user preference to air-datepicker locale objects
 	function getDatepickerLocale(localeStr: string) {
 		const localeLower = localeStr.toLowerCase();
+		
+		// Handle user preference format
+		if (localeLower === 'german') return localeDe;
+		if (localeLower === 'english') return localeEn;
+		
+		// Handle standard locale codes (backward compatibility)
 		if (localeLower.startsWith('de')) return localeDe;
 		if (localeLower.startsWith('fr')) return localeFr;
 		if (localeLower.startsWith('it')) return localeIt;
+		
 		return localeEn; // Default to English
 	}
 
@@ -87,8 +111,13 @@
 			const containerElement = modalDialog || document.body;
 
 			// Configure datepicker based on type
+			// Use user's preference if available, otherwise fall back to locale prop
+			const datepickerLocale = preferences.dateFormat 
+				? getDatepickerLocale(preferences.dateFormat)
+				: getDatepickerLocale(locale);
+			
 			const options: any = {
-				locale: getDatepickerLocale(locale),
+				locale: datepickerLocale,
 				timepicker: type === 'datetime-local',
 				onlyTimepicker: type === 'time',
 				autoClose: type === 'date',

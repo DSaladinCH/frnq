@@ -20,6 +20,8 @@
 	import { InfiniteInvestmentsList } from '$lib/stores/infiniteInvestmentsList';
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import { onMount } from 'svelte';
+	import { formatDate } from '$lib/utils/dateFormat';
+	import { userPreferences } from '$lib/stores/userPreferences';
 
 	// Create infinite scroll list
 	const investmentsList = new InfiniteInvestmentsList();
@@ -31,6 +33,7 @@
 	let secondaryLoading = $state(dataStore.secondaryLoading);
 	let listLoading = $state(investmentsList.loading);
 	let hasMore = $state(investmentsList.hasMore);
+	let preferences = $state($userPreferences);
 
 	// Subscribe to store changes
 	$effect(() => {
@@ -45,9 +48,14 @@
 			hasMore = investmentsList.hasMore;
 		});
 
+		const unsubscribePrefs = userPreferences.subscribe((prefs) => {
+			preferences = prefs;
+		});
+
 		return () => {
 			unsubscribeData();
 			unsubscribeList();
+			unsubscribePrefs();
 		};
 	});
 
@@ -58,19 +66,10 @@
 
 	let currentInvestment = $state<InvestmentModel>(createDefaultInvestment());
 	let currentQuote = $state<QuoteModel | null>(null);
-	const locale = navigator.languages?.[0] || navigator.language || 'en-US';
 
 	function getQuoteName(investment: InvestmentModel): string | undefined {
 		const quote = quotes.find((quote) => quote.id === investment.quoteId);
 		return quote?.customName || quote?.name;
-	}
-
-	function formatDate(date: string): string {
-		return new Date(date).toLocaleDateString(locale, {
-			day: '2-digit',
-			month: '2-digit',
-			year: 'numeric'
-		});
 	}
 
 	function formatNumber(value: number): string {
@@ -135,7 +134,8 @@
 			`Are you sure you want to delete the investment of ${formatNumber(
 				investment.amount
 			)} units of ${getQuoteName(investment) || 'unknown quote'} on ${formatDate(
-				investment.date
+				investment.date,
+				preferences.dateFormat
 			)}? This action cannot be undone.`
 		);
 

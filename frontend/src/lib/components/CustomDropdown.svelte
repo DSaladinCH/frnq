@@ -12,6 +12,7 @@
 		placeholder = 'Select an option...',
 		disabled = false,
 		class: className = '',
+		isLoading = false,
 		onchange
 	}: {
 		options: Option[];
@@ -19,6 +20,7 @@
 		placeholder?: string;
 		disabled?: boolean;
 		class?: string;
+		isLoading?: boolean;
 		onchange?: (value: string) => void;
 	} = $props();
 
@@ -26,7 +28,7 @@
 	let dropdownRef: HTMLDivElement;
 	let buttonRef: HTMLButtonElement;
 	let menuRef: HTMLDivElement | undefined = $state();
-	let selectedOption = $derived(options.find(opt => opt.value === value));
+	let selectedOption = $derived(options.find((opt) => opt.value === value));
 	let dropdownPosition = $state({ top: 0, left: 0, width: 0 });
 	let portalTarget: HTMLElement | undefined = $state();
 
@@ -41,11 +43,11 @@
 			const rect = buttonRef.getBoundingClientRect();
 			const viewportHeight = window.innerHeight;
 			const menuHeight = 200; // Max height from CSS
-			
+
 			// Calculate if there's space below, otherwise position above
 			const spaceBelow = viewportHeight - rect.bottom;
 			const shouldPositionAbove = spaceBelow < menuHeight && rect.top > menuHeight;
-			
+
 			dropdownPosition = {
 				top: shouldPositionAbove ? rect.top + 18 - menuHeight - 4 : rect.bottom + 4,
 				left: rect.left,
@@ -86,7 +88,7 @@
 					isOpen = true;
 				} else {
 					// Navigate to next option
-					const currentIndex = options.findIndex(opt => opt.value === value);
+					const currentIndex = options.findIndex((opt) => opt.value === value);
 					const nextIndex = Math.min(currentIndex + 1, options.length - 1);
 					if (nextIndex !== currentIndex) {
 						handleSelect(options[nextIndex].value);
@@ -97,7 +99,7 @@
 				event.preventDefault();
 				if (isOpen) {
 					// Navigate to previous option
-					const currentIndex = options.findIndex(opt => opt.value === value);
+					const currentIndex = options.findIndex((opt) => opt.value === value);
 					const prevIndex = Math.max(currentIndex - 1, 0);
 					if (prevIndex !== currentIndex) {
 						handleSelect(options[prevIndex].value);
@@ -119,11 +121,11 @@
 			// Detect portal target and initial position calculation
 			detectPortalTarget();
 			updateDropdownPosition();
-			
+
 			document.addEventListener('click', handleClickOutside);
 			window.addEventListener('scroll', updateDropdownPosition, true);
 			window.addEventListener('resize', updateDropdownPosition);
-			
+
 			return () => {
 				document.removeEventListener('click', handleClickOutside);
 				window.removeEventListener('scroll', updateDropdownPosition, true);
@@ -133,7 +135,7 @@
 	});
 </script>
 
-<div 
+<div
 	bind:this={dropdownRef}
 	class="relative inline-block w-full {className}"
 	class:opacity-50={disabled}
@@ -150,19 +152,33 @@
 		aria-haspopup="listbox"
 		aria-expanded={isOpen}
 	>
-		<span class="flex-1 text-left whitespace-nowrap overflow-hidden text-ellipsis">
+		<span class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left">
 			{selectedOption?.label || placeholder}
 		</span>
-		<span class="dropdown-arrow" class:rotated={isOpen}>
-			<i class="fa-solid fa-chevron-down"></i>
-		</span>
+		{#if !isLoading}
+			<span class="dropdown-arrow" class:rotated={isOpen}>
+				<i class="fa-solid fa-chevron-down"></i>
+			</span>
+		{:else}
+			<svg
+				class="fa-spin col-1 row-1 mx-auto h-5 w-5 text-white"
+				xmlns="http://www.w3.org/2000/svg"
+				fill="none"
+				viewBox="0 0 24 24"
+			>
+				<circle class="opacity-50" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+				></circle>
+				<path class="opacity-100" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+				></path>
+			</svg>
+		{/if}
 	</button>
 
 	<!-- Portal the dropdown to body to escape overflow constraints -->
 	{#if isOpen && portalTarget}
-		<div 
+		<div
 			bind:this={menuRef}
-			class="dropdown-menu dropdown-menu-portal" 
+			class="dropdown-menu dropdown-menu-portal"
 			style="top: {dropdownPosition.top}px; left: {dropdownPosition.left}px; width: {dropdownPosition.width}px;"
 			role="listbox"
 			use:createPortal={portalTarget}
@@ -170,7 +186,7 @@
 			{#each options as option}
 				<button
 					type="button"
-					class="w-full px-3 py-2 border-0 bg-transparent color-default text-sm cursor-pointer transition-all duration-150 ease-in-out text-left block font-inherit dropdown-option"
+					class="color-default font-inherit dropdown-option block w-full cursor-pointer border-0 bg-transparent px-3 py-2 text-left text-sm transition-all duration-150 ease-in-out"
 					class:selected={option.value === value}
 					onclick={() => handleSelect(option.value)}
 					role="option"

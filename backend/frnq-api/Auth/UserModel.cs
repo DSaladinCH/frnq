@@ -5,6 +5,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DSaladin.Frnq.Api.Auth;
 
+public enum DateFormat
+{
+    English = 0,  // en-US: MM/DD/YYYY
+    German = 1    // de-DE: DD.MM.YYYY
+}
+
 [Table("user")]
 [Index(nameof(Email), IsUnique = true)]
 public class UserModel
@@ -21,6 +27,8 @@ public class UserModel
     public string PasswordHash { get; set; } = string.Empty;
 
     public string Firstname { get; set; } = string.Empty;
+
+    public DateFormat DateFormat { get; set; } = DateFormat.English;
 
     public virtual ICollection<InvestmentModel> Investments { get; set; } = [];
     public virtual ICollection<ExternalUserLink> ExternalLinks { get; set; } = [];

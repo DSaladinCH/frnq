@@ -2,6 +2,8 @@
 	import { ColorStyle } from "$lib/types/ColorStyle";
 	import { TextSize } from "$lib/types/TextSize";
 	import Button from "./Button.svelte";
+	import { formatDateTime } from "$lib/utils/dateFormat";
+	import { userPreferences } from "$lib/stores/userPreferences";
 
 	interface Props {
 		csvData: string[][];
@@ -24,6 +26,16 @@
 		onback,
 		onimport
 	}: Props = $props();
+
+	let preferences = $state($userPreferences);
+
+	// Subscribe to user preferences changes
+	$effect(() => {
+		const unsubscribe = userPreferences.subscribe((prefs) => {
+			preferences = prefs;
+		});
+		return unsubscribe;
+	});
 
 	interface ProcessedInvestment {
 		symbol: string;
@@ -210,15 +222,6 @@
 		}).format(value);
 	}
 
-	function formatDate(datetime: string): string {
-		try {
-			const date = new Date(datetime);
-			return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-		} catch {
-			return datetime;
-		}
-	}
-
 	function handleBack() {
 		onback?.();
 	}
@@ -317,7 +320,7 @@
 								<tr>
 									<td class="px-2 py-3 text-sm color-muted" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.symbol || '-'}</td>
 									<td class="px-2 py-3 text-sm color-muted" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.type || '-'}</td>
-									<td class="px-2 py-3 text-sm color-muted" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.datetime ? formatDate(row.datetime) : '-'}</td>
+									<td class="px-2 py-3 text-sm color-muted" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.datetime ? formatDateTime(row.datetime, preferences.dateFormat) : '-'}</td>
 									<td class="px-2 py-3 text-sm color-muted" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.amount > 0 ? row.amount : '-'}</td>
 									<td class="px-2 py-3 text-sm color-muted" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.unitPrice > 0 ? formatCurrency(row.unitPrice) : '-'}</td>
 									<td class="px-2 py-3 text-sm color-muted" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.feePrice > 0 ? formatCurrency(row.feePrice) : '-'}</td>
@@ -366,7 +369,7 @@
 											{row.type}
 										</span>
 									</td>
-									<td class="px-2 py-3 text-sm color-default" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{formatDate(row.datetime)}</td>
+									<td class="px-2 py-3 text-sm color-default" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{formatDateTime(row.datetime, preferences.dateFormat)}</td>
 									<td class="px-2 py-3 text-sm color-default text-right font-mono" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.amount}</td>
 									<td class="px-2 py-3 text-sm color-default text-right font-mono" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{formatCurrency(row.unitPrice)}</td>
 									<td class="px-2 py-3 text-sm color-default text-right font-mono" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.feePrice > 0 ? formatCurrency(row.feePrice) : '-'}</td>

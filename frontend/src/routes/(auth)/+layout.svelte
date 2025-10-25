@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { dataStore } from '$lib/stores/dataStore';
+	import { userPreferences } from '$lib/stores/userPreferences';
 	import type { Snippet } from 'svelte';
 
 	let { children }: { children: Snippet } = $props();
@@ -32,9 +33,12 @@
 		}
 	});
 
-	// Initialize data store for authenticated routes
+	// Initialize data store and user preferences for authenticated routes
 	onMount(async () => {
-		await dataStore.initialize();
+		await Promise.all([
+			dataStore.initialize(),
+			userPreferences.load()
+		]);
 	});
 </script>
 

@@ -4,9 +4,13 @@
 	import PageHead from '$lib/components/PageHead.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import ExternalAccountsSection from '$lib/components/ExternalAccountsSection.svelte';
+	import CustomDropdown from '$lib/components/CustomDropdown.svelte';
 	import { dataStore } from '$lib/stores/dataStore';
+	import { userPreferences } from '$lib/stores/userPreferences';
 	import { ColorStyle } from '$lib/types/ColorStyle';
+	import { notify } from '$lib/services/notificationService';
 	import { tick } from 'svelte';
+	import type { DateFormatType } from '$lib/utils/dateFormat';
 
 	// Reactive values that track the store
 	let secondaryLoading = $state(dataStore.secondaryLoading);
@@ -22,12 +26,24 @@
 	let savingGroup = $state(false);
 	let deletingGroup = $state<number | null>(null);
 
+	// User preferences
+	let preferences = $state($userPreferences);
+	let savingDateFormat = $state(false);
+
 	// Subscribe to store changes
 	$effect(() => {
 		const unsubscribe = dataStore.subscribe(() => {
 			groups = dataStore.groups;
 			secondaryLoading = dataStore.secondaryLoading;
 			error = dataStore.error;
+		});
+		return unsubscribe;
+	});
+
+	// Subscribe to user preferences changes
+	$effect(() => {
+		const unsubscribe = userPreferences.subscribe((prefs) => {
+			preferences = prefs;
 		});
 		return unsubscribe;
 	});
@@ -95,6 +111,29 @@
 			deletingGroup = null;
 		}
 	}
+
+	async function handleDateFormatChange(newFormat: string) {
+		if (savingDateFormat) return;
+		
+		savingDateFormat = true;
+		try {
+			const success = await userPreferences.setDateFormat(newFormat as DateFormatType);
+			if (success) {
+				notify.success('Date format updated successfully');
+			} else {
+				notify.error('Failed to update date format');
+			}
+		} catch (error) {
+			notify.error('Failed to update date format');
+		} finally {
+			savingDateFormat = false;
+		}
+	}
+
+	const dateFormatOptions = [
+		{ value: 'english', label: 'English (MM/DD/YYYY)' },
+		{ value: 'german', label: 'German (DD.MM.YYYY)' }
+	];
 </script>
 
 <PageHead title="Settings" />
@@ -196,6 +235,24 @@
 						<hr class="color-muted mx-4 my-1 w-5 border-t" />
 					{/if}
 				{/each}
+			</div>
+		</div>
+	</div>
+
+	<div class="bg-card mt-6 rounded-lg p-6 shadow-lg">
+		<h2 class="mb-2 text-xl font-semibold">Date Format</h2>
+		<p class="color-muted mb-4">Choose how dates and times are displayed throughout the application.</p>
+		
+		<div class="flex items-center gap-4">
+			<span class="color-default font-medium">Format:</span>
+			<div class="w-64">
+				<CustomDropdown
+					options={dateFormatOptions}
+					value={preferences.dateFormat}
+					disabled={savingDateFormat}
+					isLoading={savingDateFormat}
+					onchange={handleDateFormatChange}
+				/>
 			</div>
 		</div>
 	</div>
