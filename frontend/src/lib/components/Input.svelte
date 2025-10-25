@@ -27,8 +27,12 @@
 		step,
 		min,
 		max,
+		oninput = $bindable(),
+		onkeydown = $bindable(),
 		onchange = $bindable(),
-		onkeypress
+		onfocus = $bindable(),
+		onkeypress = $bindable(),
+		inputElement = $bindable()
 	}: {
 		type?: string;
 		id?: string;
@@ -46,8 +50,12 @@
 		step?: string | number;
 		min?: string | number;
 		max?: string | number;
+		oninput?: (event: Event) => void;
+		onkeydown?: (event: KeyboardEvent) => void;
 		onchange?: (event: Event) => void;
+		onfocus?: (event: FocusEvent) => void;
 		onkeypress?: (event: KeyboardEvent) => void;
+		inputElement?: HTMLInputElement;
 	} = $props();
 
 	id = id || `textbox-${Math.random().toString(36).slice(2, 11)}`;
@@ -289,7 +297,7 @@
 </script>
 
 <div
-	class="flex h-full flex-col gap-1 {isCheckbox
+	class="flex h-full w-full flex-col gap-1 {isCheckbox
 		? 'flex-row-reverse items-center justify-end gap-2'
 		: ''}"
 >
@@ -318,6 +326,7 @@
 				{accept}
 				{required}
 				{onchange}
+				{onfocus}
 				{disabled}
 			/>
 			<label
@@ -338,16 +347,21 @@
 			{required}
 			{disabled}
 			{placeholder}
+			{onfocus}
 			readonly
 		/>
 	{:else}
 		<input
 			class="textbox grow"
+			bind:this={inputElement}
 			{type}
 			{id}
 			{autocomplete}
 			{required}
+			{oninput}
+			{onkeydown}
 			{onchange}
+			{onfocus}
 			bind:value
 			{placeholder}
 			{onkeypress}

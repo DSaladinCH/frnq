@@ -14,6 +14,9 @@
 	} from '$lib/services/authService';
 	import { notify } from '$lib/services/notificationService';
 	import { ContentWidth } from '$lib/types/ContentSize';
+	import { ColorStyle } from '$lib/types/ColorStyle';
+	import { StylePadding } from '$lib/types/StylePadding';
+	import { TextSize } from '$lib/types/TextSize';
 
 	let email = $state('');
 	let password = $state('');
@@ -174,10 +177,12 @@
 						<div class="grid gap-3">
 							{#each oidcProviders as provider}
 								<!-- TODO: Implement with Button component -->
-								<button
-									type="button"
+								<Button
+									style={ColorStyle.Card}
+									padding={StylePadding.Reduced}
+									width={ContentWidth.Full}
+									textSize={TextSize.Medium}
 									onclick={() => handleOidcLogin(provider.providerId)}
-									class="oidc-button border-button hover:bg-button-hover flex items-center justify-center gap-3 rounded-lg border px-4 py-3 transition-colors"
 								>
 									{#if provider.faviconUrl}
 										<img
@@ -188,8 +193,9 @@
 									{:else}
 										<i class="fas fa-building"></i>
 									{/if}
+
 									<span>Continue with {provider.displayName}</span>
-								</button>
+								</Button>
 							{/each}
 						</div>
 					{/if}

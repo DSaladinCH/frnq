@@ -24,6 +24,7 @@
 	import { formatDate } from '$lib/utils/dateFormat';
 	import { userPreferences } from '$lib/stores/userPreferences';
 	import InvestmentFiltersComponent from '$lib/components/InvestmentFilters.svelte';
+	import { StylePadding } from '$lib/types/StylePadding';
 
 	// Create infinite scroll list
 	const investmentsList = new InfiniteInvestmentsList();
@@ -189,6 +190,7 @@
 				icon="fa fa-plus"
 				textSize={TextSize.Medium}
 				width={ContentWidth.Full}
+				padding={StylePadding.None}
 			/>
 			<Button
 				onclick={importInvestment}
@@ -196,6 +198,7 @@
 				icon="fa fa-file-import"
 				textSize={TextSize.Medium}
 				width={ContentWidth.Full}
+				padding={StylePadding.None}
 			/>
 		</div>
 

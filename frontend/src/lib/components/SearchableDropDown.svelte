@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { QuoteModel } from '$lib/Models/QuoteModel';
 	import { searchQuotes } from '$lib/services/quoteService';
+	import Input from './Input.svelte';
 
 	type Props = {
 		selectedQuote?: QuoteModel | null;
@@ -152,18 +153,15 @@
 
 <div class="relative w-full z-20" bind:this={dropdownElement}>
 	<div class="relative flex items-center">
-		<input
-			bind:this={inputElement}
+		<Input bind:inputElement={inputElement}
 			id="quote-search"
 			type="text"
-			class="textbox w-full pr-12"
 			bind:value={searchTerm}
 			{placeholder}
 			oninput={handleInput}
 			onkeydown={handleKeydown}
 			onfocus={handleFocus}
-			autocomplete="off"
-		/>
+			autocomplete="off" />
 
 		<!-- Loading spinner -->
 		{#if isLoading}
@@ -258,14 +256,25 @@
 		background-color: rgba(255, 255, 255, 0.1);
 	}
 
-	.dropdown-item:hover,
+	.dropdown-item:hover {
+		background: color-mix(in srgb, var(--color-primary), transparent 90%);
+		color: var(--color-primary);
+	}
+
 	.dropdown-item:focus {
-		background-color: var(--color-secondary);
 		outline: none;
+		background: color-mix(in srgb, var(--color-primary), transparent 90%);
+		color: var(--color-primary);
 	}
 
 	.dropdown-item.selected {
-		background-color: var(--color-secondary);
+		background: var(--color-primary);
+		color: white;
+		font-weight: 500;
+	}
+
+	.dropdown-item.selected:hover {
+		background: color-mix(in srgb, var(--color-primary), var(--color-text) 10%);
 	}
 
 	.dropdown-list::-webkit-scrollbar-thumb:hover {

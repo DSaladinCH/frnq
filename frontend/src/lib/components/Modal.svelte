@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import Button from './Button.svelte';
 	import { ColorStyle } from '$lib/types/ColorStyle';
+	import { StylePadding } from '$lib/types/StylePadding';
 
 	let {
 		showModal = $bindable(),
@@ -61,7 +62,7 @@
 				{:else}
 					<div></div>
 				{/if}
-				<Button text="" icon="fa fa-xmark" style={ColorStyle.Secondary} onclick={onClose} />
+				<Button text="" icon="fa fa-xmark" style={ColorStyle.Secondary} padding={StylePadding.Reduced} onclick={onClose} />
 			</div>
 
 			<!-- Scrollable Content Area -->

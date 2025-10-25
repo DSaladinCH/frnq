@@ -5,6 +5,7 @@
 	import { addInvestmentsBulk, InvestmentType } from '$lib/services/investmentService';
 	import type { InvestmentModel } from '$lib/services/investmentService';
 	import { onMount } from 'svelte';
+	import Button from '$lib/components/Button.svelte';
 
 	interface ProcessedInvestment {
 		symbol: string;
@@ -128,9 +129,7 @@
 				<h2>Import Failed</h2>
 				<p class="error-message">{importError}</p>
 				<div class="error-actions">
-					<button class="btn btn-primary btn-big" onclick={startNewImport}>
-						Try Again
-					</button>
+					<Button text="Try Again" onclick={startNewImport} />
 				</div>
 			</div>
 		</div>
@@ -143,9 +142,7 @@
 				<h2>Import Successful!</h2>
 				<p>Successfully imported <strong>{importedCount}</strong> investment records.</p>
 				<div class="success-actions">
-					<button class="btn btn-primary btn-big" onclick={startNewImport}>
-						Import More Data
-					</button>
+					<Button text="Import More Data" onclick={startNewImport} />
 					<a href="/investments" class="btn btn-secondary btn-big">
 						View Investments
 					</a>

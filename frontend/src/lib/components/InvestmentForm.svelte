@@ -11,6 +11,7 @@
 	import Input from './Input.svelte';
 	import { ContentWidth } from '$lib/types/ContentSize';
 	import { notify } from '$lib/services/notificationService';
+	import { StylePadding } from '$lib/types/StylePadding';
 
 	type InvestmentTypeIcon = { type: InvestmentType; faIcon: string };
 	let isLoading = $state(false);
@@ -171,7 +172,7 @@
 		></div>
 		<div class="flex flex-col">
 			<span class="text-lg font-bold">Total</span>
-			<span class="grow-1 text-(--color-success) flex items-center text-xl font-bold">
+			<span class="grow text-(--color-success) flex items-center text-xl font-bold">
 				{#if totalInvestment === 0}
 					<span class="text-(--color-error)">-</span>
 				{:else}
@@ -187,6 +188,7 @@
 			text={investment.id === 0 ? 'Create Investment' : 'Save Changes'}
 			style={ColorStyle.Success}
 			width={ContentWidth.Full}
+			padding={StylePadding.Reduced}
 			{isLoading}
 			onclick={() => saveChanges()}
 		/>

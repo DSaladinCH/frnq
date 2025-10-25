@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Button from './Button.svelte';
 	import Input from './Input.svelte';
 
 	interface Props {
@@ -251,11 +252,8 @@
 	{/if}
 
 	{#if filename && fileContent}
-		<div class="mt-8 flex justify-center">
-			<button class="btn btn-primary btn-big" onclick={handleNext}>
-				Continue to Column Mapping
-				<i class="fa-solid fa-arrow-right ml-2"></i>
-			</button>
+		<div class="flex justify-center">
+			<Button text="Continue to Column Mapping" icon="fa-solid fa-arrow-right" onclick={handleNext} />
 		</div>
 	{/if}
 </div>

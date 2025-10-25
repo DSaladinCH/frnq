@@ -4,5 +4,6 @@ export enum ColorStyle {
 	Accent = 'accent',
 	Success = 'success',
 	Error = 'error',
-	Control = 'button'
+	Control = 'button',
+	Card = 'card'
 }

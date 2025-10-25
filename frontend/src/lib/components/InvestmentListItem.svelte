@@ -7,6 +7,7 @@
 	import { ContentWidth } from '$lib/types/ContentSize';
 	import { formatDateTime } from '$lib/utils/dateFormat';
 	import { userPreferences } from '$lib/stores/userPreferences';
+	import { StylePadding } from '$lib/types/StylePadding';
 
 	let {
 		investment,
@@ -112,6 +113,7 @@
 				textSize={TextSize.Small}
 				style={ColorStyle.Secondary}
 				width={ContentWidth.Full}
+				padding={StylePadding.Reduced}
 			/>
 		</div>
 	</div>

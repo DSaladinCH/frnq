@@ -6,6 +6,8 @@
 	import { TextSize } from '$lib/types/TextSize';
 	import { formatDateTime } from '$lib/utils/dateFormat';
 	import { userPreferences } from '$lib/stores/userPreferences';
+	import { StylePadding } from '$lib/types/StylePadding';
+	import { ContentWidth } from '$lib/types/ContentSize';
 
 	let {
 		investment,
@@ -74,7 +76,7 @@
 			<span class="font-bold">{quote.customName || quote.name}</span>
 		</div>
 
-		<div class="row-span-2 -col-1 h-10">
+		<div class="row-span-2 -col-1 h-10 w-10">
 			<Button
 				onclick={deleteInvestment}
 				disabled={isDeleting}
@@ -82,6 +84,8 @@
 				icon="fa-solid fa-trash"
 				textSize={TextSize.Small}
 				style={ColorStyle.Secondary}
+				padding={StylePadding.None}
+				width={ContentWidth.Full}
 			/>
 		</div>
 
