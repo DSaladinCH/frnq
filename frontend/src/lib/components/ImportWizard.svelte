@@ -133,13 +133,11 @@
 			// When treating header as data, use first row as headers and include all rows as data
 			const headers = parseCsvLine(lines[0], delimiter);
 			const data = lines.map(line => parseCsvLine(line, delimiter));
-			console.log('Parsed CSV:', { headers, data });
 			return { headers, data };
 		} else {
 			// Standard parsing with first row as headers
 			const headers = parseCsvLine(lines[0], delimiter);
 			const data = lines.slice(1).map(line => parseCsvLine(line, delimiter));
-			console.log('Parsed CSV:', { headers, data });
 			return { headers, data };
 		}
 

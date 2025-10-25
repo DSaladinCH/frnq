@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { createPortal } from '$lib/utils/portal.js';
+	import type { Snippet } from 'svelte';
 
 	interface Option {
 		value: string;
@@ -9,6 +10,7 @@
 	let {
 		options = [],
 		value = '',
+		title = '',
 		placeholder = 'Select an option...',
 		disabled = false,
 		class: className = '',
@@ -17,6 +19,7 @@
 	}: {
 		options: Option[];
 		value?: string;
+		title?: string | Snippet;
 		placeholder?: string;
 		disabled?: boolean;
 		class?: string;
@@ -135,68 +138,81 @@
 	});
 </script>
 
-<div
-	bind:this={dropdownRef}
-	class="relative inline-block w-full {className}"
-	class:opacity-50={disabled}
-	class:pointer-events-none={disabled}
-	class:open={isOpen}
->
-	<button
-		bind:this={buttonRef}
-		type="button"
-		class="dropdown-button"
-		onclick={toggleDropdown}
-		onkeydown={handleKeydown}
-		{disabled}
-		aria-haspopup="listbox"
-		aria-expanded={isOpen}
-	>
-		<span class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left">
-			{selectedOption?.label || placeholder}
-		</span>
-		{#if !isLoading}
-			<span class="dropdown-arrow" class:rotated={isOpen}>
-				<i class="fa-solid fa-chevron-down"></i>
-			</span>
-		{:else}
-			<svg
-				class="fa-spin col-1 row-1 mx-auto h-5 w-5 text-white"
-				xmlns="http://www.w3.org/2000/svg"
-				fill="none"
-				viewBox="0 0 24 24"
-			>
-				<circle class="opacity-50" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
-				></circle>
-				<path class="opacity-100" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-				></path>
-			</svg>
-		{/if}
-	</button>
-
-	<!-- Portal the dropdown to body to escape overflow constraints -->
-	{#if isOpen && portalTarget}
-		<div
-			bind:this={menuRef}
-			class="dropdown-menu dropdown-menu-portal"
-			style="top: {dropdownPosition.top}px; left: {dropdownPosition.left}px; width: {dropdownPosition.width}px;"
-			role="listbox"
-			use:createPortal={portalTarget}
-		>
-			{#each options as option}
-				<button
-					type="button"
-					class="color-default font-inherit dropdown-option block w-full cursor-pointer border-0 bg-transparent px-3 py-2 text-left text-sm transition-all duration-150 ease-in-out"
-					class:selected={option.value === value}
-					onclick={() => handleSelect(option.value)}
-					role="option"
-					aria-selected={option.value === value}
-				>
-					{option.label}
-				</button>
-			{/each}
-		</div>
+<div class="flex h-full flex-col gap-1">
+	{#if title}
+		<!-- Check if title is string or snippet -->
+		<label class="leading-none">
+			{#if typeof title === 'string'}
+				{title}
+			{:else}
+				{@render title()}
+			{/if}
+		</label>
 	{/if}
+
+	<div
+		bind:this={dropdownRef}
+		class="grow relative inline-block w-full {className}"
+		class:opacity-50={disabled}
+		class:pointer-events-none={disabled}
+		class:open={isOpen}
+	>
+		<button
+			bind:this={buttonRef}
+			type="button"
+			class="dropdown-button h-full"
+			onclick={toggleDropdown}
+			onkeydown={handleKeydown}
+			{disabled}
+			aria-haspopup="listbox"
+			aria-expanded={isOpen}
+		>
+			<span class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left">
+				{selectedOption?.label || placeholder}
+			</span>
+			{#if !isLoading}
+				<span class="dropdown-arrow" class:rotated={isOpen}>
+					<i class="fa-solid fa-chevron-down"></i>
+				</span>
+			{:else}
+				<svg
+					class="fa-spin col-1 row-1 mx-auto h-5 w-5 text-white"
+					xmlns="http://www.w3.org/2000/svg"
+					fill="none"
+					viewBox="0 0 24 24"
+				>
+					<circle class="opacity-50" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+					></circle>
+					<path class="opacity-100" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+					></path>
+				</svg>
+			{/if}
+		</button>
+
+		<!-- Portal the dropdown to body to escape overflow constraints -->
+		{#if isOpen && portalTarget}
+			<div
+				bind:this={menuRef}
+				class="dropdown-menu dropdown-menu-portal"
+				style="top: {dropdownPosition.top}px; left: {dropdownPosition.left}px; width: {dropdownPosition.width}px;"
+				role="listbox"
+				use:createPortal={portalTarget}
+			>
+				{#each options as option}
+					<button
+						type="button"
+						class="color-default font-inherit dropdown-option block w-full cursor-pointer border-0 bg-transparent px-3 py-2 text-left text-sm transition-all duration-150 ease-in-out"
+						class:selected={option.value === value}
+						onclick={() => handleSelect(option.value)}
+						role="option"
+						aria-selected={option.value === value}
+					>
+						{option.label}
+					</button>
+				{/each}
+			</div>
+		{/if}
+	</div>
 </div>
 
 <style>
@@ -205,7 +221,7 @@
 		width: 100%;
 		padding: 0.5rem 0.75rem 0.5rem 0.75rem;
 		border: 1px solid var(--color-button);
-		border-radius: 6px;
+		border-radius: 0.25rem;
 		background: var(--color-card);
 		color: var(--color-text);
 		font-size: 0.9rem;

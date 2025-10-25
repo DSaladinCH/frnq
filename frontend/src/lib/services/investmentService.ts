@@ -46,6 +46,14 @@ type InvestmentRequest = Omit<InvestmentModel, 'provider'> & {
 	providerId: string;
 };
 
+export interface InvestmentFilters {
+	fromDate?: string;
+	toDate?: string;
+	quoteId?: number;
+	groupId?: number;
+	type?: InvestmentType;
+}
+
 export function investmentValuesValid(investment: InvestmentModel): boolean {
 	const hasValidQuote =
 		investment.quoteId > 0 ||
@@ -64,8 +72,21 @@ export function investmentValuesValid(investment: InvestmentModel): boolean {
 	return hasValidQuote && validNumber && hasValidDate;
 }
 
-export async function getInvestments(skip: number = 0, take: number = 25): Promise<PaginatedInvestmentsResponse> {
-	const url = `${baseUrl}/api/investments?skip=${skip}&take=${take}`;
+export async function getInvestments(
+	skip: number = 0, 
+	take: number = 25, 
+	filters?: InvestmentFilters
+): Promise<PaginatedInvestmentsResponse> {
+	let url = `${baseUrl}/api/investments?skip=${skip}&take=${take}`;
+	
+	if (filters) {
+		if (filters.fromDate) url += `&fromDate=${filters.fromDate}`;
+		if (filters.toDate) url += `&toDate=${filters.toDate}`;
+		if (filters.quoteId) url += `&quoteId=${filters.quoteId}`;
+		if (filters.groupId) url += `&groupId=${filters.groupId}`;
+		if (filters.type !== undefined) url += `&type=${filters.type}`;
+	}
+	
 	const res = await fetchWithAuth(url);
 
 	if (!res.ok) throw new Error('Failed to fetch investments');
@@ -108,7 +129,6 @@ export async function addInvestmentsBulk(investments: InvestmentModel[]): Promis
 
 export async function updateInvestment(investment: InvestmentModel): Promise<InvestmentModel> {
 	investment.quoteId = 0; // ensure quoteId is not sent in the payload
-	console.log('Updating investment:', investment);
 
 	const url = `${baseUrl}/api/investments/${investment.id}`;
 	const res = await fetchWithAuth(url, {

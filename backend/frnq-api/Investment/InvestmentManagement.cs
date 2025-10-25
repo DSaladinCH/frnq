@@ -8,9 +8,49 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 {
     private readonly Guid userId = authManagement.GetCurrentUserId();
     
-    public async Task<PaginatedInvestmentsResponse> GetInvestmentsAsync(int skip = 0, int take = 50)
+    public async Task<PaginatedInvestmentsResponse> GetInvestmentsAsync(
+        int skip = 0, 
+        int take = 50,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        int? quoteId = null,
+        int? groupId = null,
+        InvestmentType? type = null)
     {
         var query = databaseContext.Investments.Where(i => i.UserId == userId);
+        
+        // Apply filters
+        if (fromDate.HasValue)
+        {
+            var fromDateUtc = DateTime.SpecifyKind(fromDate.Value.Date, DateTimeKind.Utc);
+            query = query.Where(i => i.Date >= fromDateUtc);
+        }
+        
+        if (toDate.HasValue)
+        {
+            var toDateUtc = DateTime.SpecifyKind(toDate.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
+            query = query.Where(i => i.Date <= toDateUtc);
+        }
+        
+        if (quoteId.HasValue)
+        {
+            query = query.Where(i => i.QuoteId == quoteId.Value);
+        }
+        
+        if (groupId.HasValue)
+        {
+            // Filter by group - join with QuoteGroupMapping
+            var quoteIdsInGroup = databaseContext.QuoteGroupMappings
+                .Where(m => m.UserId == userId && m.GroupId == groupId.Value)
+                .Select(m => m.QuoteId);
+            
+            query = query.Where(i => quoteIdsInGroup.Contains(i.QuoteId));
+        }
+        
+        if (type.HasValue)
+        {
+            query = query.Where(i => i.Type == type.Value);
+        }
         
         var totalCount = await query.CountAsync();
         var investments = await query

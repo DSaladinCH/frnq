@@ -6,7 +6,8 @@
 	import {
 		type InvestmentModel,
 		createDefaultInvestment,
-		investmentValuesValid
+		investmentValuesValid,
+		type InvestmentFilters
 	} from '$lib/services/investmentService';
 	import { dataStore } from '$lib/stores/dataStore';
 	import InvestmentCard from '$lib/components/InvestmentCard.svelte';
@@ -22,6 +23,7 @@
 	import { onMount } from 'svelte';
 	import { formatDate } from '$lib/utils/dateFormat';
 	import { userPreferences } from '$lib/stores/userPreferences';
+	import InvestmentFiltersComponent from '$lib/components/InvestmentFilters.svelte';
 
 	// Create infinite scroll list
 	const investmentsList = new InfiniteInvestmentsList();
@@ -29,16 +31,19 @@
 	// Reactive values that track the store
 	let investments = $state(investmentsList.items);
 	let quotes = $state(dataStore.quotes);
+	let groups = $state(dataStore.groups);
 	let showInvestmentDialog = $state(false);
 	let secondaryLoading = $state(dataStore.secondaryLoading);
 	let listLoading = $state(investmentsList.loading);
 	let hasMore = $state(investmentsList.hasMore);
 	let preferences = $state($userPreferences);
+	let filters = $state<InvestmentFilters>({});
 
 	// Subscribe to store changes
 	$effect(() => {
 		const unsubscribeData = dataStore.subscribe(() => {
 			quotes = dataStore.quotes;
+			groups = dataStore.groups;
 			secondaryLoading = dataStore.secondaryLoading;
 		});
 
@@ -161,6 +166,15 @@
 	function importInvestment() {
 		goto('/investments/import');
 	}
+
+	async function handleApplyFilters() {
+		await investmentsList.updateFilters(filters);
+	}
+
+	async function handleClearFilters() {
+		filters = {};
+		await investmentsList.updateFilters(filters);
+	}
 </script>
 
 <PageHead title="Investments" />
@@ -168,7 +182,7 @@
 <div class="flex flex-col h-screen">
 	<div class="px-4 pt-4 xs:px-8 xs:pt-8">
 		<PageTitle title="Investments" icon="fa-solid fa-coins" />
-		<div class="mb-3 grid w-full max-w-md grid-cols-2 gap-2">
+		<div class="grid w-full max-w-md grid-cols-2 gap-2">
 			<Button
 				onclick={newInvestment}
 				text="Add Investment"
@@ -184,9 +198,18 @@
 				width={ContentWidth.Full}
 			/>
 		</div>
+
+		<!-- Investment Filters -->
+		<InvestmentFiltersComponent
+			bind:filters
+			{quotes}
+			{groups}
+			onApplyFilters={handleApplyFilters}
+			onClearFilters={handleClearFilters}
+		/>
 	</div>
 
-	<div class="investments-list flex-1 grid gap-2 overflow-y-auto py-1 min-h-0 px-4 xs:px-8">
+	<div class="investments-list grid gap-2 overflow-y-auto py-1 min-h-0 px-4 xs:px-8">
 		{#each investments as investment}
 			<div class="max-lg:hidden">
 				<InvestmentListItem

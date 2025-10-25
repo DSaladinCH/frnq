@@ -1,4 +1,4 @@
-import { getInvestments, type InvestmentModel, type PaginatedInvestmentsResponse } from '$lib/services/investmentService';
+import { getInvestments, type InvestmentModel, type PaginatedInvestmentsResponse, type InvestmentFilters } from '$lib/services/investmentService';
 
 export class InfiniteInvestmentsList {
 	private _items: InvestmentModel[] = [];
@@ -6,6 +6,7 @@ export class InfiniteInvestmentsList {
 	private _loading = false;
 	private _hasMore = true;
 	private _pageSize = 25;
+	private _filters: InvestmentFilters | undefined;
 	private _listeners = new Set<() => void>();
 
 	get items() {
@@ -24,6 +25,10 @@ export class InfiniteInvestmentsList {
 		return this._hasMore;
 	}
 
+	get filters() {
+		return this._filters;
+	}
+
 	subscribe(listener: () => void) {
 		this._listeners.add(listener);
 		return () => this._listeners.delete(listener);
@@ -33,8 +38,17 @@ export class InfiniteInvestmentsList {
 		this._listeners.forEach((listener) => listener());
 	}
 
-	async initialize(pageSize: number = 25) {
+	async initialize(pageSize: number = 25, filters?: InvestmentFilters) {
 		this._pageSize = pageSize;
+		this._filters = filters;
+		this._items = [];
+		this._totalCount = 0;
+		this._hasMore = true;
+		await this.loadMore();
+	}
+
+	async updateFilters(filters?: InvestmentFilters) {
+		this._filters = filters;
 		this._items = [];
 		this._totalCount = 0;
 		this._hasMore = true;
@@ -52,7 +66,8 @@ export class InfiniteInvestmentsList {
 		try {
 			const response: PaginatedInvestmentsResponse = await getInvestments(
 				this._items.length,
-				this._pageSize
+				this._pageSize,
+				this._filters
 			);
 
 			this._items = [...this._items, ...response.items];

@@ -30,7 +30,6 @@ export async function createQuoteGroup(name: string): Promise<void> {
 
 export async function updateQuoteGroup(id: number, name: string): Promise<QuoteGroup> {
 	const quoteGroup: QuoteGroup = { id, name };
-	console.log('Updating quote group:', quoteGroup);
 
 	const url = `${baseUrl}/api/groups/${quoteGroup.id}`;
 	const res = await fetchWithAuth(url, {

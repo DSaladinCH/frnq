@@ -20,7 +20,6 @@ export async function searchQuotes(query: string, providerId: string = 'yahoo-fi
 
 export async function updateQuoteCustomName(quoteId: number, customName: string): Promise<boolean> {
 	const url = `${baseUrl}/api/quote/${quoteId}/customName`;
-	console.log('Updating quote custom name:', url, customName);
 
 	const res = await fetchWithAuth(url, {
 		method: 'PUT',

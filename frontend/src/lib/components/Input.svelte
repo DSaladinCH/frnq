@@ -211,25 +211,30 @@
 					formattedDate: string | string[];
 				}) {
 					if (date) {
-						// Convert to ISO string format expected by the backend
+						// Get the actual date object - handle both single Date and Date array
+						let selectedDate: Date | null = null;
+						
 						if (Array.isArray(date)) {
-							const selectedDate = date[0];
-							if (selectedDate instanceof Date) {
-								// Format as YYYY-MM-DDTHH:mm for datetime-local
-								const pad = (n: number) => n.toString().padStart(2, '0');
-								if (type === 'datetime-local') {
-									value = `${selectedDate.getFullYear()}-${pad(selectedDate.getMonth() + 1)}-${pad(selectedDate.getDate())}T${pad(selectedDate.getHours())}:${pad(selectedDate.getMinutes())}`;
-								} else if (type === 'date') {
-									value = `${selectedDate.getFullYear()}-${pad(selectedDate.getMonth() + 1)}-${pad(selectedDate.getDate())}`;
-								} else if (type === 'time') {
-									value = `${pad(selectedDate.getHours())}:${pad(selectedDate.getMinutes())}`;
-								}
+							selectedDate = date[0];
+						} else if (date instanceof Date) {
+							selectedDate = date;
+						}
+						
+						if (selectedDate instanceof Date) {
+							// Format as YYYY-MM-DDTHH:mm for datetime-local or YYYY-MM-DD for date
+							const pad = (n: number) => n.toString().padStart(2, '0');
+							if (type === 'datetime-local') {
+								value = `${selectedDate.getFullYear()}-${pad(selectedDate.getMonth() + 1)}-${pad(selectedDate.getDate())}T${pad(selectedDate.getHours())}:${pad(selectedDate.getMinutes())}`;
+							} else if (type === 'date') {
+								value = `${selectedDate.getFullYear()}-${pad(selectedDate.getMonth() + 1)}-${pad(selectedDate.getDate())}`;
+							} else if (type === 'time') {
+								value = `${pad(selectedDate.getHours())}:${pad(selectedDate.getMinutes())}`;
+							}
 
-								// Trigger onchange if provided
-								if (onchange && dateInputRef) {
-									const event = new Event('change', { bubbles: true });
-									onchange(event);
-								}
+							// Trigger onchange if provided
+							if (onchange && dateInputRef) {
+								const event = new Event('change', { bubbles: true });
+								onchange(event);
 							}
 						}
 					}
@@ -278,7 +283,6 @@
 		files = dataTransfer.files;
 	}
 	export function clearFileInput() {
-		console.log('Clearing file input');
 		value = '';
 		files = null;
 	}
@@ -369,8 +373,6 @@
 		max-height: 50px;
 		padding-left: 10px;
 		padding-right: 10px;
-		margin-top: 5px;
-		margin-bottom: 5px;
 		outline: 0;
 		background-color: var(--color-card);
 		border-color: var(--color-button);

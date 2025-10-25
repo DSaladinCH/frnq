@@ -109,7 +109,6 @@ export class DataStore {
 			await this.fetchAllData();
 			this._initialized = true;
 		} catch (e) {
-			console.log('DataStore: API calls failed:', e);
 			this._error = (e as Error).message;
 		} finally {
 			this._primaryLoading = false;
@@ -120,9 +119,7 @@ export class DataStore {
 	async refreshData() {
 		try {
 			await this.runWithSecondaryLoading(() => this.fetchAllData());
-		} catch (e) {
-			console.log('DataStore: refreshData failed:', e);
-		}
+		} catch (e) {}
 	}
 
 	// Method to load more investments for infinite scrolling
