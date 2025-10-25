@@ -4,7 +4,7 @@
 	import PageHead from '$lib/components/PageHead.svelte';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import ExternalAccountsSection from '$lib/components/ExternalAccountsSection.svelte';
-	import CustomDropdown from '$lib/components/CustomDropdown.svelte';
+	import DropDown from '$lib/components/DropDown.svelte';
 	import { dataStore } from '$lib/stores/dataStore';
 	import { userPreferences } from '$lib/stores/userPreferences';
 	import { ColorStyle } from '$lib/types/ColorStyle';
@@ -246,7 +246,7 @@
 		<div class="flex items-center gap-4">
 			<span class="color-default font-medium">Format:</span>
 			<div class="w-64">
-				<CustomDropdown
+				<DropDown
 					options={dateFormatOptions}
 					value={preferences.dateFormat}
 					disabled={savingDateFormat}

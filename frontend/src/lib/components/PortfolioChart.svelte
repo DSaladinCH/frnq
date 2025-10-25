@@ -2,9 +2,8 @@
 	import { onMount } from 'svelte';
 	import Chart from 'chart.js/auto';
 	import type { PositionSnapshot } from '../services/positionService';
-	import DropDown from './DropDown.svelte';
 	import PillToggle from './PillToggle.svelte';
-	import CustomDropdown from './CustomDropdown.svelte';
+	import DropDown from './DropDown.svelte';
 
 	let { snapshots, onPeriodChange }: { snapshots: PositionSnapshot[], onPeriodChange?: (period: string) => void } = $props();
 	let canvas: HTMLCanvasElement;
@@ -525,7 +524,7 @@
 			/>
 		</div>
 		<div class="block sm:hidden">
-			<CustomDropdown
+			<DropDown
 				options={periodOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
 				value={selectedPeriod}
 				onchange={selectPeriod}

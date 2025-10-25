@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
-	import CustomDropdown from './CustomDropdown.svelte';
+	import DropDown from './DropDown.svelte';
 
 	type Option = { value: string; label: string };
 

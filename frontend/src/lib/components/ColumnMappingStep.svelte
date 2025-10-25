@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Modal from './Modal.svelte';
-	import CustomDropdown from './CustomDropdown.svelte';
+	import DropDown from './DropDown.svelte';
 	import Input from './Input.svelte';
 	import Button from './Button.svelte';
 	import { TextSize } from '$lib/types/TextSize';
@@ -325,7 +325,7 @@
 								</span>
 							</div>
 						{:else}
-							<CustomDropdown
+							<DropDown
 								options={[
 									{ value: '', label: 'Select column...' },
 									...csvHeaders.map((header) => ({ value: header, label: header }))
@@ -410,7 +410,7 @@
 			{#if useFixedValue}
 				<div class="flex flex-col gap-3">
 					<div class="color-default font-semibold">Transaction Type:</div>
-					<CustomDropdown
+					<DropDown
 						options={transactionTypes}
 						value={fixedTypeValue}
 						onchange={(value) => handleFixedTypeValueChange(value)}
@@ -434,7 +434,7 @@
 							</div>
 
 							<div>
-								<CustomDropdown
+								<DropDown
 									options={[{ value: '', label: 'Select type...' }, ...transactionTypes]}
 									value={valueMappings.type?.[originalValue] || ''}
 									onchange={(value) => handleValueMappingChange(originalValue, value)}

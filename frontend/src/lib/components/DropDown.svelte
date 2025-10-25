@@ -1,131 +1,311 @@
 <script lang="ts">
-	export let options: { value: string; label: string }[];
-	export let selected: string;
-	export let onSelect: (val: string) => void;
-	let open = false;
-	function label(val: string) {
-		return (options && options.find((o) => o.value === val)?.label) || val;
+	import { createPortal } from '$lib/utils/portal.js';
+
+	interface Option {
+		value: string;
+		label: string;
 	}
-	function select(val: string) {
-		if (onSelect) onSelect(val);
-		open = false;
+
+	let {
+		options = [],
+		value = '',
+		placeholder = 'Select an option...',
+		disabled = false,
+		class: className = '',
+		isLoading = false,
+		onchange
+	}: {
+		options: Option[];
+		value?: string;
+		placeholder?: string;
+		disabled?: boolean;
+		class?: string;
+		isLoading?: boolean;
+		onchange?: (value: string) => void;
+	} = $props();
+
+	let isOpen = $state(false);
+	let dropdownRef: HTMLDivElement;
+	let buttonRef: HTMLButtonElement;
+	let menuRef: HTMLDivElement | undefined = $state();
+	let selectedOption = $derived(options.find((opt) => opt.value === value));
+	let dropdownPosition = $state({ top: 0, left: 0, width: 0 });
+	let portalTarget: HTMLElement | undefined = $state();
+
+	function handleSelect(optionValue: string) {
+		value = optionValue;
+		isOpen = false;
+		onchange?.(optionValue);
 	}
-	function handleDropdownKey(e: KeyboardEvent, val: string) {
-		if (e.key === 'Enter' || e.key === ' ') {
-			select(val);
-			e.preventDefault();
-		} else if (e.key === 'Escape') {
-			open = false;
+
+	function updateDropdownPosition() {
+		if (buttonRef && isOpen) {
+			const rect = buttonRef.getBoundingClientRect();
+			const viewportHeight = window.innerHeight;
+			const menuHeight = 200; // Max height from CSS
+
+			// Calculate if there's space below, otherwise position above
+			const spaceBelow = viewportHeight - rect.bottom;
+			const shouldPositionAbove = spaceBelow < menuHeight && rect.top > menuHeight;
+
+			dropdownPosition = {
+				top: shouldPositionAbove ? rect.top + 18 - menuHeight - 4 : rect.bottom + 4,
+				left: rect.left,
+				width: rect.width
+			};
 		}
 	}
+
+	function detectPortalTarget() {
+		if (dropdownRef) {
+			// Check if we're inside a dialog
+			const dialogElement = dropdownRef.closest('dialog');
+			portalTarget = dialogElement || document.body;
+		}
+	}
+
+	function toggleDropdown() {
+		if (!disabled) {
+			isOpen = !isOpen;
+		}
+	}
+
+	function handleKeydown(event: KeyboardEvent) {
+		if (disabled) return;
+
+		switch (event.key) {
+			case 'Enter':
+			case ' ':
+				event.preventDefault();
+				toggleDropdown();
+				break;
+			case 'Escape':
+				isOpen = false;
+				break;
+			case 'ArrowDown':
+				event.preventDefault();
+				if (!isOpen) {
+					isOpen = true;
+				} else {
+					// Navigate to next option
+					const currentIndex = options.findIndex((opt) => opt.value === value);
+					const nextIndex = Math.min(currentIndex + 1, options.length - 1);
+					if (nextIndex !== currentIndex) {
+						handleSelect(options[nextIndex].value);
+					}
+				}
+				break;
+			case 'ArrowUp':
+				event.preventDefault();
+				if (isOpen) {
+					// Navigate to previous option
+					const currentIndex = options.findIndex((opt) => opt.value === value);
+					const prevIndex = Math.max(currentIndex - 1, 0);
+					if (prevIndex !== currentIndex) {
+						handleSelect(options[prevIndex].value);
+					}
+				}
+				break;
+		}
+	}
+
+	function handleClickOutside(event: MouseEvent) {
+		if (dropdownRef && !dropdownRef.contains(event.target as Node)) {
+			isOpen = false;
+		}
+	}
+
+	// Close dropdown when clicking outside and handle positioning updates
+	$effect(() => {
+		if (isOpen) {
+			// Detect portal target and initial position calculation
+			detectPortalTarget();
+			updateDropdownPosition();
+
+			document.addEventListener('click', handleClickOutside);
+			window.addEventListener('scroll', updateDropdownPosition, true);
+			window.addEventListener('resize', updateDropdownPosition);
+
+			return () => {
+				document.removeEventListener('click', handleClickOutside);
+				window.removeEventListener('scroll', updateDropdownPosition, true);
+				window.removeEventListener('resize', updateDropdownPosition);
+			};
+		}
+	});
 </script>
 
-<div class="custom-dropdown">
+<div
+	bind:this={dropdownRef}
+	class="relative inline-block w-full {className}"
+	class:opacity-50={disabled}
+	class:pointer-events-none={disabled}
+	class:open={isOpen}
+>
 	<button
+		bind:this={buttonRef}
 		type="button"
-		class="dropdown-toggle"
+		class="dropdown-button"
+		onclick={toggleDropdown}
+		onkeydown={handleKeydown}
+		{disabled}
 		aria-haspopup="listbox"
-		aria-expanded={open}
-		on:click={() => (open = !open)}
-		on:keydown={(e) => {
-			if (e.key === 'ArrowDown' && open) {
-				const first = document.querySelector('.dropdown-list li');
-				first && (first as HTMLElement).focus();
-			} else if (e.key === 'Escape') {
-				open = false;
-			}
-		}}
-		tabindex="0"
+		aria-expanded={isOpen}
 	>
-		{label(selected)}
-		<span class="dropdown-arrow">▼</span>
+		<span class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left">
+			{selectedOption?.label || placeholder}
+		</span>
+		{#if !isLoading}
+			<span class="dropdown-arrow" class:rotated={isOpen}>
+				<i class="fa-solid fa-chevron-down"></i>
+			</span>
+		{:else}
+			<svg
+				class="fa-spin col-1 row-1 mx-auto h-5 w-5 text-white"
+				xmlns="http://www.w3.org/2000/svg"
+				fill="none"
+				viewBox="0 0 24 24"
+			>
+				<circle class="opacity-50" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+				></circle>
+				<path class="opacity-100" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+				></path>
+			</svg>
+		{/if}
 	</button>
-	{#if open}
-		<ul class="dropdown-list" role="listbox">
-			{#each options as opt}
-				<li
+
+	<!-- Portal the dropdown to body to escape overflow constraints -->
+	{#if isOpen && portalTarget}
+		<div
+			bind:this={menuRef}
+			class="dropdown-menu dropdown-menu-portal"
+			style="top: {dropdownPosition.top}px; left: {dropdownPosition.left}px; width: {dropdownPosition.width}px;"
+			role="listbox"
+			use:createPortal={portalTarget}
+		>
+			{#each options as option}
+				<button
+					type="button"
+					class="color-default font-inherit dropdown-option block w-full cursor-pointer border-0 bg-transparent px-3 py-2 text-left text-sm transition-all duration-150 ease-in-out"
+					class:selected={option.value === value}
+					onclick={() => handleSelect(option.value)}
 					role="option"
-					class:selected={selected === opt.value}
-					aria-selected={selected === opt.value}
-					tabindex="0"
-					on:click={() => select(opt.value)}
-					on:keydown={(e) => handleDropdownKey(e, opt.value)}
+					aria-selected={option.value === value}
 				>
-					{opt.label}
-				</li>
+					{option.label}
+				</button>
 			{/each}
-		</ul>
+		</div>
 	{/if}
 </div>
 
 <style>
-	.custom-dropdown {
-		position: relative;
-		width: 140px;
-		z-index: 20;
-	}
-	.dropdown-toggle {
+	/* Keep complex dropdown styling that's difficult to replace with Tailwind */
+	.dropdown-button {
 		width: 100%;
-		background: rgba(62, 62, 68, 0.7);
-		color: #fff;
-		border: none;
-		border-radius: 12px;
-		padding: 0.3rem 1rem;
-		font-size: 1rem;
-		font-weight: 500;
+		padding: 0.5rem 0.75rem 0.5rem 0.75rem;
+		border: 1px solid var(--color-button);
+		border-radius: 6px;
+		background: var(--color-card);
+		color: var(--color-text);
+		font-size: 0.9rem;
 		cursor: pointer;
-		transition:
-			background 0.2s,
-			color 0.2s;
-		outline: none;
+		transition: all 0.2s ease;
 		display: flex;
+		gap: 0.25rem;
 		align-items: center;
 		justify-content: space-between;
-	}
-	.dropdown-toggle:focus {
-		outline: none;
-		box-shadow: none;
-	}
-	.dropdown-arrow {
-		margin-left: 0.5rem;
-		font-size: 0.9em;
-		color: #aaa;
-	}
-	.dropdown-list {
-		position: absolute;
-		top: 110%;
-		left: 0;
-		width: 100%;
-		background: #23232b;
-		border-radius: 12px;
-		box-shadow: 0 8px 32px #000c;
-		padding: 0.2rem 0;
-		margin: 0;
-		list-style: none;
-		z-index: 20;
 		text-align: left;
+		font-family: inherit;
 	}
-	.dropdown-list li {
-		padding: 0.5rem 1rem;
-		color: #fff;
-		cursor: pointer;
-		transition:
-			background 0.15s,
-			color 0.15s;
-		font-size: 1rem;
-		border: none;
-		background: none;
+
+	.dropdown-button:hover:not(:disabled) {
+		border-color: var(--color-primary);
+		background: color-mix(in srgb, var(--color-card), var(--color-primary) 5%);
 	}
-	.dropdown-list li.selected,
-	.dropdown-list li[aria-selected='true'] {
-		background: #18181b;
+
+	.dropdown-button:focus {
+		outline: none;
+		border-color: var(--color-secondary);
+		box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary), transparent 85%);
+	}
+
+	.dropdown-button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+		background: color-mix(in srgb, var(--color-card), var(--color-background) 50%);
+	}
+
+	.dropdown-arrow {
+		color: var(--color-muted);
+		font-size: 0.8rem;
+		transition: all 0.2s ease;
+		display: flex;
+		align-items: center;
+		margin-left: 0.25rem;
+	}
+
+	.dropdown-arrow.rotated {
+		transform: rotate(180deg);
+	}
+
+	.dropdown-button:hover:not(:disabled) .dropdown-arrow {
 		color: var(--color-primary);
 	}
-	.dropdown-list li:hover {
-		background: #2a2a33;
-		color: #10b981;
+
+	.dropdown-menu {
+		background: var(--color-card);
+		border: 1px solid var(--color-button);
+		border-radius: 6px;
+		box-shadow: 0 4px 12px color-mix(in srgb, var(--color-text), transparent 85%);
+		max-height: 200px;
+		overflow-y: auto;
+		animation: dropdownSlide 0.15s ease-out;
 	}
-	.dropdown-list li:focus {
+
+	.dropdown-menu-absolute {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		right: 0;
+		z-index: 1000;
+		margin-top: 4px;
+	}
+
+	.dropdown-menu-portal {
+		position: fixed;
+		z-index: 9999;
+	}
+
+	@keyframes dropdownSlide {
+		from {
+			opacity: 0;
+			transform: translateY(-8px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.dropdown-option:hover {
+		background: color-mix(in srgb, var(--color-primary), transparent 90%);
+		color: var(--color-primary);
+	}
+
+	.dropdown-option:focus {
 		outline: none;
+		background: color-mix(in srgb, var(--color-primary), transparent 90%);
+		color: var(--color-primary);
+	}
+
+	.dropdown-option.selected {
+		background: var(--color-primary);
+		color: white;
+		font-weight: 500;
+	}
+
+	.dropdown-option.selected:hover {
+		background: color-mix(in srgb, var(--color-primary), var(--color-text) 10%);
 	}
 </style>
