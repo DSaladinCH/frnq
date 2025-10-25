@@ -11,18 +11,54 @@
 	let { children }: { children: Snippet } = $props();
 
 	const links = [
-		{ key: '/portfolio', icon: 'fa-solid fa-chart-line', label: 'Portfolio', showWhenLoggedIn: true, inFooter: false },
-		{ key: '/investments', icon: 'fa-solid fa-coins', label: 'Investments', showWhenLoggedIn: true, inFooter: false },
-		{ key: '/wallet', icon: 'fa-solid fa-wallet', label: 'Wallet', showWhenLoggedIn: true, inFooter: false },
-		{ key: '/settings', icon: 'fa-solid fa-gear', label: 'Settings', showWhenLoggedIn: true, inFooter: true },
-		{ key: '/logout', icon: 'fa-solid fa-sign-out-alt', label: 'Logout', showWhenLoggedIn: true, inFooter: true },
-		{ key: '/login', icon: 'fa-solid fa-sign-in-alt', label: 'Login', showWhenLoggedIn: false, inFooter: true }
+		{
+			key: '/portfolio',
+			icon: 'fa-solid fa-chart-line',
+			label: 'Portfolio',
+			showWhenLoggedIn: true,
+			inFooter: false
+		},
+		{
+			key: '/investments',
+			icon: 'fa-solid fa-coins',
+			label: 'Investments',
+			showWhenLoggedIn: true,
+			inFooter: false
+		},
+		{
+			key: '/wallet',
+			icon: 'fa-solid fa-wallet',
+			label: 'Wallet',
+			showWhenLoggedIn: true,
+			inFooter: false
+		},
+		{
+			key: '/settings',
+			icon: 'fa-solid fa-gear',
+			label: 'Settings',
+			showWhenLoggedIn: true,
+			inFooter: true
+		},
+		{
+			key: '/logout',
+			icon: 'fa-solid fa-sign-out-alt',
+			label: 'Logout',
+			showWhenLoggedIn: true,
+			inFooter: true
+		},
+		{
+			key: '/login',
+			icon: 'fa-solid fa-sign-in-alt',
+			label: 'Login',
+			showWhenLoggedIn: false,
+			inFooter: true
+		}
 	];
 
 	// Filter links based on login status
-	let visibleLinks = $derived(links.filter(link => link.showWhenLoggedIn === $isLoggedIn));
-	let mainLinks = $derived(visibleLinks.filter(link => !link.inFooter));
-	let footerLinks = $derived(visibleLinks.filter(link => link.inFooter));
+	let visibleLinks = $derived(links.filter((link) => link.showWhenLoggedIn === $isLoggedIn));
+	let mainLinks = $derived(visibleLinks.filter((link) => !link.inFooter));
+	let footerLinks = $derived(visibleLinks.filter((link) => link.inFooter));
 
 	let mobileMenuOpen = $state(false);
 
@@ -36,6 +72,8 @@
 	function toggleMobileMenu() {
 		mobileMenuOpen = !mobileMenuOpen;
 	}
+
+	let keyActive = (key: string) => (currentPath.startsWith(key) ? 'active' : '');
 
 	// Get current path for active state
 	let currentPath = $derived($page.url.pathname);
@@ -105,10 +143,7 @@
 			{#each visibleLinks as { key, icon, label }}
 				<button
 					type="button"
-					class="mobile-nav-item mb-2 flex w-full items-center gap-3 rounded-md px-3 py-3 text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 {currentPath ===
-					key
-						? 'active'
-						: ''}"
+					class="{keyActive(key)} mobile-nav-item mb-2 flex w-full items-center gap-3 rounded-md px-3 py-3 text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
 					onclick={() => navigateTo(key)}
 				>
 					<i class="{icon} text-xl"></i>
@@ -126,16 +161,17 @@
 		class="bg-card fixed bottom-0 left-0 top-0 hidden w-[70px] flex-col items-center justify-between p-1 md:flex"
 	>
 		<div class="flex h-full flex-col">
-			<button class="flex items-center justify-center h-12.5 w-12.5 mt-2 hover:scale-105 transition-transform hover:cursor-pointer" onclick={() => navigateTo($isLoggedIn ? '/portfolio' : '/login')}>
+			<button
+				class="h-12.5 w-12.5 mt-2 flex items-center justify-center transition-transform hover:scale-105 hover:cursor-pointer"
+				onclick={() => navigateTo($isLoggedIn ? '/portfolio' : '/login')}
+			>
 				<img class="w-10" src="/logo.png" alt="Portfolio Logo" />
 			</button>
 
 			{#each mainLinks as { key, icon, label }, i}
 				<button
 					type="button"
-					class="nav-item flex h-12.5 w-12.5 flex-col items-center justify-center text-2xl my-1 hover:scale-115 transition-transform hover:cursor-pointer {currentPath === key
-						? 'active'
-						: ''}"
+					class="{keyActive(key)} nav-item h-12.5 w-12.5 hover:scale-115 my-1 flex flex-col items-center justify-center text-2xl transition-transform hover:cursor-pointer"
 					aria-label={label}
 					title={label}
 					onclick={() => navigateTo(key)}
@@ -151,7 +187,9 @@
 			{#each footerLinks as { key, icon, label }, i}
 				<button
 					type="button"
-					class="nav-item flex h-12.5 w-12.5 flex-col items-center justify-center text-2xl {i === 0 ? 'mt-auto' : 'my-1'} hover:scale-115 transition-transform hover:cursor-pointer {currentPath === key
+					class="nav-item h-12.5 w-12.5 flex flex-col items-center justify-center text-2xl {i === 0
+						? 'mt-auto'
+						: 'my-1'} hover:scale-115 transition-transform hover:cursor-pointer {currentPath === key
 						? 'active'
 						: ''}"
 					aria-label={label}
