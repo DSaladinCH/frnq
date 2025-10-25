@@ -260,13 +260,4 @@
 		box-shadow: 0 25px 50px -12px color-mix(in srgb, var(--color-primary) 15%, transparent);
 		transition: box-shadow 0.3s ease;
 	}
-
-	.oidc-button {
-		font-weight: 500;
-		cursor: pointer;
-	}
-
-	.oidc-button:hover {
-		background: color-mix(in srgb, var(--color-button) 80%, transparent);
-	}
 </style>

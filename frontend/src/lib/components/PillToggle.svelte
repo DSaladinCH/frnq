@@ -132,7 +132,7 @@
 <!-- Pill Toggle Display -->
 <div
 	bind:this={containerEl}
-	class="flex bg-card border-1 border-button relative gap-0.5 rounded-xl p-1 {direction ===
+	class="flex bg-card border border-button relative gap-0.5 rounded-xl p-1 {direction ===
 	'horizontal'
 		? 'flex-row'
 		: 'flex-col'}"

@@ -23,7 +23,7 @@
 	let searchResults = $state<QuoteModel[]>([]);
 	let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 	let dropdownElement: HTMLDivElement;
-	let inputElement: HTMLInputElement;
+	let inputElement: HTMLInputElement | undefined = $state<HTMLInputElement>();
 
 	// Initialize search term with selected quote name only when selectedQuote changes
 	$effect(() => {
@@ -90,7 +90,7 @@
 		searchResults = [];
 		isOpen = false;
 		onSelect?.(null);
-		inputElement.focus();
+		inputElement?.focus();
 	}
 
 	// Handle keyboard navigation
@@ -111,7 +111,7 @@
 			selectQuote(quote);
 		} else if (e.key === 'Escape') {
 			isOpen = false;
-			inputElement.focus();
+			inputElement?.focus();
 		} else if (e.key === 'ArrowDown') {
 			e.preventDefault();
 			const current = e.target as HTMLElement;
@@ -124,7 +124,7 @@
 			if (prev) {
 				prev.focus();
 			} else {
-				inputElement.focus();
+				inputElement?.focus();
 			}
 		}
 	}
@@ -196,7 +196,7 @@
 
 	<!-- Dropdown list -->
 	{#if isOpen && searchResults.length > 0}
-		<div class="dropdown-list absolute top-full left-0 right-0 bg-card border-1 border-solid border-button rounded-sm max-h-50 overflow-y-auto z-100">
+		<div class="dropdown-list absolute top-full left-0 right-0 bg-card border border-solid border-button rounded-sm max-h-50 overflow-y-auto z-100">
 			{#each searchResults as quote}
 				<button
 					type="button"

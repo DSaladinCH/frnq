@@ -111,9 +111,9 @@
 
 {#if portalTarget}
 	<div 
-		class="fixed z-[9999] flex flex-col gap-3 p-4 pointer-events-none max-w-full box-border
+		class="fixed z-9999 flex flex-col gap-3 p-4 pointer-events-none max-w-full box-border
 			{POSITION_CLASS_MAP[position]}
-			max-md:p-2 max-md:left-0 max-md:right-0 max-md:!translate-x-0 max-md:items-stretch"
+			max-md:p-2 max-md:left-0 max-md:right-0 max-md:translate-x-0! max-md:items-stretch"
 		use:createPortal={portalTarget}
 	>
 		{#each notifications as notification (notification.id)}
@@ -133,7 +133,7 @@
 					<i class="fa-solid {ICON_MAP[notification.type]}"></i>
 				</div>
 				<div class="flex-1 min-w-0">
-					<p class="m-0 color-default text-[0.95rem] leading-6 break-words">{notification.message}</p>
+					<p class="m-0 color-default text-[0.95rem] leading-6 wrap-break-word">{notification.message}</p>
 				</div>
 				<button 
 					class="notification-close shrink-0 bg-transparent border-none color-muted cursor-pointer p-1 

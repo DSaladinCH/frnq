@@ -152,12 +152,12 @@
 
 			<div class={isDragActive ? 'upload-inner active' : 'upload-inner'}>
 				{#if isProcessing}
-					<div class="color-primary flex-shrink-0 text-3xl">
+					<div class="color-primary shrink-0 text-3xl">
 						<i class="fa-solid fa-spinner fa-spin"></i>
 					</div>
 				{:else}
 					<svg
-						class="color-primary flex-shrink-0"
+						class="color-primary shrink-0"
 						width="48"
 						height="48"
 						viewBox="0 0 24 24"
@@ -184,7 +184,7 @@
 	{:else}
 		<div class="bg-card mb-6 rounded-xl p-6">
 			<div class="mb-4 flex items-center gap-4">
-				<div class="color-success flex-shrink-0 text-3xl">
+				<div class="color-success shrink-0 text-3xl">
 					<i class="fa-solid fa-file-csv"></i>
 				</div>
 				<div class="flex-1">
@@ -207,7 +207,7 @@
 						{#each fileContent.split('\n').slice(0, 5) as line, index}
 							{#if line.trim()}
 								<div class="mb-1 last:mb-0 flex gap-4">
-									<span class="color-muted min-w-5 flex-shrink-0 text-right text-sm"
+									<span class="color-muted min-w-5 shrink-0 text-right text-sm"
 										>{index + 1}</span
 									>
 									<span class="color-default break-all text-sm">{line}</span>
@@ -216,7 +216,7 @@
 						{/each}
 						{#if fileContent.split('\n').length > 5}
 							<div class="color-muted ml-2 mt-1 flex gap-4 italic">
-								<span class="min-w-5 flex-shrink-0 text-right text-sm">...</span>
+								<span class="min-w-5 shrink-0 text-right text-sm">...</span>
 								<span class="text-sm">and {fileContent.split('\n').length - 5} more rows</span>
 							</div>
 						{/if}

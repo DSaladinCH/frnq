@@ -123,7 +123,7 @@
 	{#if isOpen && portalTarget}
 		<div 
 			bind:this={menuContentRef}
-			class="fixed z-[9999] min-w-[200px] rounded-lg border border-button bg-card p-2 shadow-lg {menuClass}" 
+			class="fixed z-9999 min-w-[200px] rounded-lg border border-button bg-card p-2 shadow-lg {menuClass}" 
 			class:animate-menu-slide-down={!positionAbove}
 			class:animate-menu-slide-up={positionAbove}
 			style="top: {menuPosition.top}px; left: {menuPosition.left}px;"
