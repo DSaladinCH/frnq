@@ -483,15 +483,18 @@
 	{#if latest}
 	
 		<div class="flex flex-wrap">
+			<div class="text-xs color-muted mb-1 w-full text-center md:text-left">
+				Total Profit (Unrealized + Realized)
+			</div>
 			<div class="text-4xl font-bold flex w-full justify-center md:justify-start">
-				<span class="text-left color-default"
-					>{totalProfit.toLocaleString(undefined, { style: 'currency', currency: 'CHF' })}</span
+				<span class="text-left" style="color: {profitColor}"
+					>{totalProfit >= 0 ? '+' : ''} {totalProfit.toLocaleString(undefined, { style: 'currency', currency: 'CHF' })}</span
 				>
 			</div>
 
-			<div class="flex items-center gap-3 w-full justify-center md:justify-start">
-				<span class="text-xl font-semibold px-1" style="color: {profitColor}">
-					{profitChange >= 0 ? '+' : ''}{profitChange.toLocaleString(undefined, {
+			<div class="flex items-center gap-3 w-full justify-center md:justify-start mt-1">
+				<span class="text-base font-semibold" style="color: {profitColor}">
+					{profitChange >= 0 ? '+' : ''} {profitChange.toLocaleString(undefined, {
 						style: 'currency',
 						currency: 'CHF'
 					})}
@@ -501,33 +504,25 @@
 
 				{#if profitChangePctDisplay === '+∞' || profitChangePctDisplay === '-∞'}
 					<span
-						class="text-xl font-semibold px-1"
+						class="text-base font-semibold"
 						style="color: {profitColor}"
 						title={profitChangePct.toFixed(2) + '%'}>{profitChangePctDisplay}%</span
 					>
 				{:else if profitChangePctDisplay === '+9999' || profitChangePctDisplay === '-9999'}
 					<span
-						class="text-xl font-semibold px-1"
+						class="text-base font-semibold"
 						style="color: {profitColor}"
 						title={profitChangePct.toFixed(2) + '%'}>{profitChangePctDisplay}%</span
 					>
 				{:else}
-					<span class="text-xl font-semibold px-1" style="color: {profitColor}"
+					<span class="text-base font-semibold" style="color: {profitColor}"
 						>{profitChangePctDisplay}%</span
 					>
 				{/if}
 			</div>
 		</div>
 
-		<div class="chart-options hidden w-80 gap-2 md:grid md:w-full md:grid-cols-[1fr]">
-			<PillToggle
-				options={chartOptionOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
-				selected={chartOption}
-				onSelect={selectChartOption}
-				direction="vertical"
-			/>
-		</div>
-		<div class="pt-2 hidden max-md:block">
+		<div class="max-md:pt-2 block">
 			<PillToggle
 				options={chartOptionOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
 				selected={chartOption}

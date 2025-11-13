@@ -94,14 +94,14 @@
 			<div class="profit-row">
 				<div class="profit-main">
 					<span class="profit-label">Position Gain:</span>
-					<span class="profit {profitClass}">
+					<span class="profit {unrealizedGain >= 0 ? 'positive' : 'negative'}">
 						{unrealizedGain >= 0 ? '+' : ''} {unrealizedGain.toLocaleString(undefined, {
 							style: 'currency',
 							currency: 'CHF'
 						})}
 					</span>
 				</div>
-				<span class="profit-percent {profitClass}">
+				<span class="profit-percent {unrealizedGain >= 0 ? 'positive' : 'negative'}">
 					({positionPerformancePct >= 0 ? '+' : ''} {positionPerformancePct.toLocaleString(undefined, {
 						maximumFractionDigits: 2
 					})}%)
