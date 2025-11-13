@@ -94,14 +94,14 @@
 			<div class="profit-row">
 				<div class="profit-main">
 					<span class="profit-label">Position Gain:</span>
-					<span class="profit {unrealizedGain >= 0 ? 'positive' : 'negative'}">
+					<span class="profit {unrealizedGain >= 0 ? 'color-success' : 'color-error'}">
 						{unrealizedGain >= 0 ? '+' : ''} {unrealizedGain.toLocaleString(undefined, {
 							style: 'currency',
 							currency: 'CHF'
 						})}
 					</span>
 				</div>
-				<span class="profit-percent {unrealizedGain >= 0 ? 'positive' : 'negative'}">
+				<span class="profit-percent {unrealizedGain >= 0 ? 'color-success' : 'color-error'}">
 					({positionPerformancePct >= 0 ? '+' : ''} {positionPerformancePct.toLocaleString(undefined, {
 						maximumFractionDigits: 2
 					})}%)
@@ -177,9 +177,6 @@
 		color: #f3f3f3;
 		font-weight: 600;
 	}
-	.summary-row .value.positive {
-		color: #2ecc40;
-	}
 	.divider {
 		height: 1px;
 		background: #444;
@@ -214,22 +211,10 @@
 		font-size: 1.3rem;
 		font-weight: 700;
 	}
-	.profit-positive {
-		color: #2ecc40;
-	}
-	.profit-negative {
-		color: #ff4d4f;
-	}
 	.profit-percent {
 		font-size: 0.95rem;
 		font-weight: 600;
 		align-self: flex-end;
-	}
-	.profit-percent.profit-positive {
-		color: #2ecc40;
-	}
-	.profit-percent.profit-negative {
-		color: #ff4d4f;
 	}
 	.realized-gains-note {
 		display: flex;
