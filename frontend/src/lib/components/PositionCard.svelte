@@ -1,21 +1,45 @@
 <script lang="ts">
-	// Best practice: Only export props you actually use in the component logic or markup.
-	// If you want to pass 'type' and 'groupName' as props, use them in your logic or markup.
-	export let type: 'group' | 'quote';
-	export let groupName: string = '';
-	export let summary: {
-		invested: number;
-		currentValue: number;
-		totalValue: number;
-		realized: number;
-		totalProfit: number;
-	} = { invested: 0, currentValue: 0, totalValue: 0, realized: 0, totalProfit: 0 };
-	export let title: string = '';
-	export let onView: (() => void) | null = null;
-	export let isActiveQuote: boolean = false;
-	export let viewLabel: string = '';
-	export let profitClass: string = '';
-	export let minimal: boolean = false; // new prop for minimal mode (e.g. back card)
+	interface Props {
+		type: 'group' | 'quote';
+		groupName?: string;
+		summary?: {
+			invested: number;
+			currentValue: number;
+			totalValue: number;
+			realized: number;
+			totalProfit: number;
+			unrealizedGain?: number;
+			totalInvestedCash?: number;
+		};
+		title?: string;
+		onView?: (() => void) | null;
+		isActiveQuote?: boolean;
+		viewLabel?: string;
+		profitClass?: string;
+		minimal?: boolean; // new prop for minimal mode (e.g. back card)
+	}
+
+	let {
+		type,
+		groupName = '',
+		summary = { invested: 0, currentValue: 0, totalValue: 0, realized: 0, totalProfit: 0 },
+		title = '',
+		onView = null,
+		isActiveQuote = false,
+		viewLabel = '',
+		profitClass = '',
+		minimal = false
+	}: Props = $props();
+
+	// Calculate metrics for display
+	let unrealizedGain = $derived(summary.unrealizedGain ?? (summary.currentValue - summary.invested));
+	
+	// Position performance % (excludes realized gains - shows how current holdings are performing)
+	let positionPerformancePct = $derived(
+		summary.invested > 0
+			? (unrealizedGain / summary.invested) * 100
+			: 0
+	);
 
 	function handleCardClick(e: MouseEvent) {
 		if (onView) {
@@ -25,16 +49,13 @@
 	}
 </script>
 
-<!-- Use the props in a non-visible way to avoid Svelte unused export warning -->
-{#if false}{type}{groupName}{/if}
-
 <div
 	class="card card-reactive group-card {minimal ? 'minimal-card' : ''}"
 	role={onView ? 'button' : undefined}
 	{...onView ? { tabindex: 0 } : {}}
 	aria-label={viewLabel || title}
-	on:click={handleCardClick}
-	on:keydown={(e) => {
+	onclick={handleCardClick}
+	onkeydown={(e) => {
 		if (onView && (e.key === 'Enter' || e.key === ' ')) {
 			e.preventDefault();
 			onView();
@@ -51,26 +72,52 @@
 	</div>
 	{#if !minimal}
 		<div class="group-summary">
-			<div class="invested">
-				Invested: <span class="amount"
+			<div class="summary-row">
+				<span class="label">Current Value:</span>
+				<span class="value"
+					>{summary.currentValue.toLocaleString(undefined, {
+						style: 'currency',
+						currency: 'CHF'
+					})}</span
+				>
+			</div>
+			<div class="summary-row">
+				<span class="label">Invested:</span>
+				<span class="value"
 					>{summary.invested.toLocaleString(undefined, {
 						style: 'currency',
 						currency: 'CHF'
 					})}</span
 				>
 			</div>
+			<div class="divider"></div>
 			<div class="profit-row">
-				<span class="profit {profitClass}">
-					{summary.totalProfit.toLocaleString(undefined, { style: 'currency', currency: 'CHF' })}
-				</span>
-				<span class="profit-percent">
-					({summary.invested
-						? ((summary.totalProfit / summary.invested) * 100).toLocaleString(undefined, {
-								maximumFractionDigits: 2
-							})
-						: '0.00'}%)
+				<div class="profit-main">
+					<span class="profit-label">Position Gain:</span>
+					<span class="profit {profitClass}">
+						{unrealizedGain >= 0 ? '+' : ''} {unrealizedGain.toLocaleString(undefined, {
+							style: 'currency',
+							currency: 'CHF'
+						})}
+					</span>
+				</div>
+				<span class="profit-percent {profitClass}">
+					({positionPerformancePct >= 0 ? '+' : ''} {positionPerformancePct.toLocaleString(undefined, {
+						maximumFractionDigits: 2
+					})}%)
 				</span>
 			</div>
+			{#if summary.realized !== 0}
+				<div class="realized-gains-note">
+					<i class="fa-solid fa-circle-info note-icon"></i>
+					<span class="note-text">
+						+ {summary.realized.toLocaleString(undefined, {
+							style: 'currency',
+							currency: 'CHF'
+						})} in realized gains
+					</span>
+				</div>
+			{/if}
 		</div>
 	{/if}
 </div>
@@ -114,7 +161,29 @@
 		width: 100%;
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 0.4rem;
+	}
+	.summary-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		font-size: 0.95rem;
+	}
+	.summary-row .label {
+		color: #b3b3b3;
+		font-weight: 500;
+	}
+	.summary-row .value {
+		color: #f3f3f3;
+		font-weight: 600;
+	}
+	.summary-row .value.positive {
+		color: #2ecc40;
+	}
+	.divider {
+		height: 1px;
+		background: #444;
+		margin: 0.3rem 0;
 	}
 	.invested {
 		color: #b3b3b3;
@@ -127,15 +196,23 @@
 	}
 	.profit-row {
 		display: flex;
+		flex-direction: column;
+		gap: 0.2rem;
+	}
+	.profit-main {
+		display: flex;
 		align-items: center;
+		justify-content: space-between;
 		gap: 0.5rem;
-		font-size: 1.1rem;
-		font-weight: 600;
+	}
+	.profit-label {
+		color: #b3b3b3;
+		font-size: 0.95rem;
+		font-weight: 500;
 	}
 	.profit {
-		font-size: 1.2rem;
+		font-size: 1.3rem;
 		font-weight: 700;
-		margin-right: 0.2rem;
 	}
 	.profit-positive {
 		color: #2ecc40;
@@ -144,8 +221,34 @@
 		color: #ff4d4f;
 	}
 	.profit-percent {
-		font-size: 1rem;
-		color: #b3b3b3;
+		font-size: 0.95rem;
+		font-weight: 600;
+		align-self: flex-end;
+	}
+	.profit-percent.profit-positive {
+		color: #2ecc40;
+	}
+	.profit-percent.profit-negative {
+		color: #ff4d4f;
+	}
+	.realized-gains-note {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		font-size: 0.85rem;
+		color: #2ecc40;
+		margin-top: 0.3rem;
+		padding: 0.3rem 0.5rem;
+		background: rgba(46, 204, 64, 0.1);
+		border-radius: 0.3rem;
+		border-left: 2px solid #2ecc40;
+	}
+	.note-icon {
+		font-size: 0.9rem;
+		opacity: 0.8;
+	}
+	.note-text {
+		font-weight: 500;
 	}
 	.minimal-card .group-header {
 		margin-bottom: 0;

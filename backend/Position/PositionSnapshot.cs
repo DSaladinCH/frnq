@@ -36,4 +36,19 @@ public class PositionSnapshot
 	/// This includes: (sale proceeds - cost basis) from all sells + all dividends received.
 	/// </summary>
 	public decimal RealizedGain { get; set; }
+
+	/// <summary>
+	/// Unrealized gain/loss on current holdings = CurrentValue - Invested
+	/// </summary>
+	public decimal UnrealizedGain => CurrentValue - Invested;
+
+	/// <summary>
+	/// Total profit = UnrealizedGain + RealizedGain
+	/// </summary>
+	public decimal TotalProfit => UnrealizedGain + RealizedGain;
+
+	/// <summary>
+	/// Total cash that has been invested over time (including what was sold and reinvested)
+	/// </summary>
+	public decimal TotalInvestedCash { get; set; }
 }

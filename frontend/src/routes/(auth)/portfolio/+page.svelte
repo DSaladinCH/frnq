@@ -48,12 +48,15 @@
 	function getSummaryFromLastSnapshots(snaps: PositionSnapshot[]) {
 		// Only use the last snapshot in the array
 		const last = snaps[snaps.length - 1];
+		const unrealizedGain = (last?.currentValue ?? 0) - (last?.invested ?? 0);
 		return {
 			invested: last?.invested ?? 0,
 			currentValue: last?.currentValue ?? 0,
 			totalValue: (last?.currentValue ?? 0) + (last?.realizedGain ?? 0),
 			realized: last?.realizedGain ?? 0,
-			totalProfit: ((last?.currentValue ?? 0) + (last?.realizedGain ?? 0)) - (last?.invested ?? 0)
+			totalProfit: unrealizedGain + (last?.realizedGain ?? 0),
+			unrealizedGain: unrealizedGain,
+			totalInvestedCash: last?.totalInvestedCash ?? (last?.invested ?? 0)
 		};
 	}
 
@@ -62,15 +65,18 @@
 		const lastSnaps = Object.values(quotes)
 			.map((snaps) => snaps[snaps.length - 1])
 			.filter(Boolean);
+		const invested = lastSnaps.reduce((sum, s) => sum + (s.invested ?? 0), 0);
+		const currentValue = lastSnaps.reduce((sum, s) => sum + (s.currentValue ?? 0), 0);
+		const realized = lastSnaps.reduce((sum, s) => sum + (s.realizedGain ?? 0), 0);
+		const unrealizedGain = currentValue - invested;
 		return {
-			invested: lastSnaps.reduce((sum, s) => sum + (s.invested ?? 0), 0),
-			currentValue: lastSnaps.reduce((sum, s) => sum + (s.currentValue ?? 0), 0),
-			realized: lastSnaps.reduce((sum, s) => sum + (s.realizedGain ?? 0), 0),
-			totalValue: lastSnaps.reduce((sum, s) => sum + (s.currentValue ?? 0), 0) +
-				lastSnaps.reduce((sum, s) => sum + (s.realizedGain ?? 0), 0),
-			totalProfit: lastSnaps.reduce((sum, s) => sum + (s.currentValue ?? 0), 0) +
-				lastSnaps.reduce((sum, s) => sum + (s.realizedGain ?? 0), 0) -
-				lastSnaps.reduce((sum, s) => sum + (s.invested ?? 0), 0)
+			invested,
+			currentValue,
+			realized,
+			totalValue: currentValue + realized,
+			totalProfit: unrealizedGain + realized,
+			unrealizedGain,
+			totalInvestedCash: lastSnaps.reduce((sum, s) => sum + (s.totalInvestedCash ?? s.invested ?? 0), 0)
 		};
 	}
 

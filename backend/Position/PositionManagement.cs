@@ -72,6 +72,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 			decimal totalFees = 0;           // lifetime fees for info
 			decimal realizedCash = 0;        // dividends + net sell proceeds
 			decimal realizedGain = 0;        // actual profit from sells and dividends
+			decimal totalInvestedCash = 0;   // all cash ever invested (including reinvested)
 			Queue<(decimal Amount, decimal PricePerUnit)> lots = new();
 
 			int invIndex = 0;
@@ -91,6 +92,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 					if (inv.Type == InvestmentType.Buy)
 					{
 						totalFees += inv.TotalFees;
+						totalInvestedCash += (inv.Amount * inv.PricePerUnit) + inv.TotalFees;
 
 						// track cost basis for remaining shares
 						decimal effectivePrice = inv.PricePerUnit + (inv.TotalFees / inv.Amount);
@@ -180,6 +182,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 					TotalFees = totalFees,
 					MarketPricePerUnit = marketPrice,
 					RealizedGain = realizedGain,     // actual profit from sells and dividends
+					TotalInvestedCash = totalInvestedCash  // all cash ever invested
 				});
 			}
 		}

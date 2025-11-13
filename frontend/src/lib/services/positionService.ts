@@ -16,6 +16,9 @@ export interface PositionSnapshot {
 	totalFees: number;
 	currentValue: number;
 	realizedGain: number;
+	unrealizedGain: number;
+	totalProfit: number;
+	totalInvestedCash: number;
 }
 
 export interface PositionsResponse {

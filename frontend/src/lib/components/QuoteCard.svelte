@@ -23,7 +23,20 @@
 		onUpdateCustomName: () => void;
 		onRemoveCustomName: () => Promise<void>;
 	} = $props();
-	let totalGain = $derived(snapshot.currentValue + snapshot.realizedGain - snapshot.invested);
+	
+	// Calculate metrics
+	let unrealizedGain = $derived(snapshot.currentValue - snapshot.invested);
+	let totalProfit = $derived(unrealizedGain + snapshot.realizedGain);
+	let positionPerformancePct = $derived(
+		snapshot.invested > 0 ? (unrealizedGain / snapshot.invested) * 100 : 0
+	);
+	let totalReturnPct = $derived(
+		snapshot.totalInvestedCash && snapshot.totalInvestedCash > 0
+			? (totalProfit / snapshot.totalInvestedCash) * 100
+			: snapshot.invested > 0
+				? (totalProfit / snapshot.invested) * 100
+				: 0
+	);
 
 	function formatCurrency(value: number): string {
 		return value.toLocaleString(undefined, { style: 'currency', currency: quote.currency });
@@ -47,7 +60,7 @@
 </script>
 
 <!-- Type, Name, Date, Market Value, Amount, Fee, Total -->
-<div class="card card-reactive no-click @container relative grid gap-1">
+<div class="card card-reactive no-click @container relative">
 	<!-- Menu button in top-right corner -->
 	<div class="absolute right-2 top-2">
 		<MenuButton>
@@ -75,40 +88,87 @@
 		</MenuButton>
 	</div>
 
-	<div class="color-muted flex items-center gap-2 text-sm">
-		<span class="uppercase color-secondary">{quote.group ? quote.group.name : 'No Group'}</span>
-		<span>•</span>
-		<span class="uppercase">{quote.typeDisposition}</span>
+	<!-- Top Section: Name & Symbol -->
+	<div class="flex items-start justify-between gap-3 pr-8">
+		<div class="flex flex-col">
+			<div class="flex items-baseline gap-2 flex-wrap">
+				<h3 class="text-xl font-bold leading-tight">{quote.customName || quote.name}</h3>
+				{#if quote.customName}
+					<span class="text-xs color-muted italic">({quote.name})</span>
+				{/if}
+			</div>
+			<div class="flex items-center gap-2 mt-0.5">
+				<span class="text-xs font-bold color-muted tracking-wider">{quote.symbol}</span>
+				<span class="text-xs color-muted">•</span>
+				<span class="text-xs uppercase color-secondary font-semibold"
+					>{quote.group ? quote.group.name : 'No Group'}</span
+				>
+			</div>
+		</div>
 	</div>
-	<div class="mb-2 mt-2">
-		<div class="leading-none">
-			<span class="font-bold">{quote.customName || quote.name}</span>
-			{#if quote.customName}
-				<span class="color-muted ml-2 text-sm">({quote.name})</span>
-			{/if}
+
+	<!-- All Values -->
+	<div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-3 mt-4">
+		<div class="flex flex-col">
+			<span class="text-xs color-muted mb-1">Amount</span>
+			<span class="text-sm font-semibold leading-none">{formatNumber(snapshot.amount)}</span>
 		</div>
-		<div>
-			<span class="color-muted text-sm font-bold">{quote.symbol}</span>
+
+		<div class="flex flex-col">
+			<span class="text-xs color-muted mb-1">Market Price</span>
+			<span class="text-sm font-semibold leading-none">{formatCurrency(snapshot.marketPricePerUnit)}</span>
+		</div>
+
+		<div class="flex flex-col">
+			<span class="text-xs color-muted mb-1">Current Value</span>
+			<span class="text-sm font-bold leading-none">{formatCurrency(snapshot.currentValue)}</span>
+		</div>
+
+		<div class="flex flex-col">
+			<span class="text-xs color-muted mb-1">Invested</span>
+			<span class="text-sm font-semibold leading-none">{formatCurrency(snapshot.invested)}</span>
+		</div>
+
+		<div class="flex flex-col">
+			<span class="text-xs color-muted mb-1">Total Fees</span>
+			<span class="text-sm font-semibold leading-none">{formatCurrency(snapshot.totalFees)}</span>
 		</div>
 	</div>
-	<div class="@md:grid-cols-3 @lg:grid-cols-4 grid grid-cols-2 gap-1 text-sm">
-		<div class="grid grid-rows-2">
-			<span class="color-muted">Amount</span>
-			<span class="font-bold">{formatNumber(snapshot.amount)}</span>
+
+	<!-- Performance -->
+	<div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 mt-4 border-t border-t-[#333]">
+		<div class="flex flex-col">
+			<span class="text-xs color-muted mb-1">Position Gain</span>
+			<div class="flex items-baseline gap-1.5">
+				<span class="text-sm font-bold leading-none {unrealizedGain < 0 ? 'color-error' : 'color-success'}"
+					>{unrealizedGain >= 0 ? '+' : ''} {formatCurrency(unrealizedGain)}</span
+				>
+				<span class="text-xs font-semibold leading-none {unrealizedGain < 0 ? 'color-error' : 'color-success'}"
+					>({positionPerformancePct >= 0 ? '+' : ''} {positionPerformancePct.toFixed(2)}%)</span
+				>
+			</div>
 		</div>
-		<div class="grid grid-rows-2">
-			<span class="color-muted">Current Value</span>
-			<span class="font-bold">{formatCurrency(snapshot.currentValue)}</span>
-		</div>
-		<div class="grid grid-rows-2">
-			<span class="color-muted">Total Fees</span>
-			<span class="font-bold">{formatCurrency(snapshot.totalFees)}</span>
-		</div>
-		<div class="grid grid-rows-2">
-			<span class="color-muted">Total Gain</span>
-			<span class="font-bold {totalGain < 0 ? 'color-error' : 'color-success'}"
-				>{formatCurrency(totalGain)}</span
-			>
+
+		{#if snapshot.realizedGain !== 0}
+			<div class="flex flex-col">
+				<span class="text-xs leading-none color-muted mb-1">Realized Gains</span>
+				<span
+					class="text-sm font-semibold leading-none {snapshot.realizedGain < 0 ? 'color-error' : 'color-success'}"
+					>{snapshot.realizedGain >= 0 ? '+' : ''} {formatCurrency(snapshot.realizedGain)}</span
+				>
+			</div>
+		{/if}
+
+		<div class="flex flex-col md:col-span-2 pt-2 border-t border-t-[#444]">
+			<span class="text-xs color-muted font-semibold mb-1">Total Profit</span>
+			<div class="flex items-baseline gap-1.5">
+				<span class="text-lg font-bold leading-none {totalProfit < 0 ? 'color-error' : 'color-success'}"
+					>{totalProfit >= 0 ? '+' : ''} {formatCurrency(totalProfit)}</span
+				>
+				<span class="text-sm font-semibold leading-none {totalProfit < 0 ? 'color-error' : 'color-success'}"
+					>({totalReturnPct >= 0 ? '+' : ''} {totalReturnPct.toFixed(2)}%)</span
+				>
+			</div>
 		</div>
 	</div>
 </div>

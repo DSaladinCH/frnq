@@ -25,13 +25,13 @@
 
 	// Chart option variables and handlers
 	const chartOptionOptions = [
-		{ value: 'both', label: 'Portfolio' },
-		{ value: 'profitOnly', label: 'Profit Only' }
+		{ value: 'totalValue', label: 'Total Value' },
+		{ value: 'profitOnly', label: 'Total Profit' }
 	] as const;
 
 	type ChartOption = (typeof chartOptionOptions)[number]['value'];
 	const CHART_OPTION_STORAGE_KEY = 'portfolioChart.chartOption';
-	let chartOption = $state<ChartOption>('both');
+	let chartOption = $state<ChartOption>('totalValue');
 
 	// Group snapshots by date and aggregate values
 	function groupSnapshotsByDate(snapshots: PositionSnapshot[]) {
@@ -42,21 +42,26 @@
 			grouped[date].push(snap);
 		});
 		const result = Object.entries(grouped).map(([date, snaps]) => {
-			// Aggregate: sum invested, unrealizedGain, realizedGain
+			// Aggregate across all positions for this date
 			const invested = snaps.reduce((sum, s) => sum + (s.invested ?? 0), 0);
 			const currentValue = snaps.reduce((sum, s) => sum + (s.currentValue ?? 0), 0);
 			const realizedGain = snaps.reduce((sum, s) => sum + (s.realizedGain ?? 0), 0);
-			// Total Value = invested + unrealized + realized
-			const totalValue = currentValue + realizedGain;
-			// Total Profit = unrealized + realized
-			const totalProfit = totalValue - invested;
+			const totalInvestedCash = snaps.reduce((sum, s) => sum + (s.totalInvestedCash ?? 0), 0);
+			
+			// Unrealized gain = current value - cost basis of current holdings
+			const unrealizedGain = currentValue - invested;
+			
+			// Total profit = unrealized + realized
+			const totalProfit = unrealizedGain + realizedGain;
 
 			return {
 				date,
-				invested,
-				totalValue,
-				totalProfit,
-				realizedGain
+				invested,              // cost basis of current holdings
+				currentValue,          // market value of current holdings
+				unrealizedGain,        // gain/loss on current holdings
+				realizedGain,          // profit from sells + dividends
+				totalProfit,           // total gain (unrealized + realized)
+				totalInvestedCash      // all cash ever invested
 			};
 		});
 
@@ -164,8 +169,8 @@
 		tooltipEl.style.left = left + 'px';
 		tooltipEl.style.top = top + 'px';
 		tooltipEl.style.opacity = '1';
-		tooltipEl.style.height = '115px'; // Fixed height
 
+		// Adjust tooltip height based on number of datasets shown
 		if (chartOption === 'profitOnly') {
 			tooltipEl.style.height = '85px';
 		} else {
@@ -266,22 +271,41 @@
 
 	// Total profit (realized + unrealized)
 	let totalProfit = $derived(latest ? latest.totalProfit : 0);
-	// Profit at start
+	
+	// Profit at start of period
 	let startProfit = $derived(first ? first.totalProfit : 0);
+	
 	// Profit change in this period
 	let profitChange = $derived(latest && first ? totalProfit - startProfit : 0);
-	// Profit change %
+	
+	// Total Return % = (Total Profit / Total Cash Invested) × 100
+	// This shows overall performance including realized gains
+	let totalReturnPct = $derived(
+		latest && latest.totalInvestedCash > 1e-6
+			? (latest.totalProfit / latest.totalInvestedCash) * 100
+			: 0
+	);
+	
+	// Position Performance % = (Unrealized Gain / Cost Basis of Current Holdings) × 100
+	// This shows how current holdings are performing
+	let positionPerformancePct = $derived(
+		latest && latest.invested > 1e-6
+			? (latest.unrealizedGain / latest.invested) * 100
+			: 0
+	);
+
+	// Period change % - change in total profit during the selected period
 	let profitChangePct = $derived(
 		latest && first && Math.abs(startProfit) > 1e-6
 			? (profitChange / Math.abs(startProfit)) * 100
-			: latest && first && Math.abs(latest.invested) > 1e-6
-				? (profitChange / Math.abs(latest.invested)) * 100
+			: latest && first && Math.abs(first.totalInvestedCash) > 1e-6
+				? (profitChange / Math.abs(first.totalInvestedCash)) * 100
 				: 0
 	);
 
 	// Display-friendly capped profitChangePct
 	let profitChangePctDisplay = $derived(
-		first && Math.abs(startProfit) < 1e-6 && latest && Math.abs(latest.invested) > 1e-6
+		first && Math.abs(startProfit) < 1e-6 && latest && Math.abs(first.totalInvestedCash) > 1e-6
 			? profitChange > 0
 				? '+∞'
 				: profitChange < 0
@@ -298,7 +322,11 @@
 	let profitColor = $derived(profitChange > 0 ? 'green' : profitChange < 0 ? 'red' : 'gray');
 
 	// Dynamic background fade color based on chartOption
-	let fadeColor = $derived(chartOption === 'profitOnly' ? 'rgb(60, 39, 82)' : 'rgb(42, 85, 108)');
+	let fadeColor = $derived(
+		chartOption === 'profitOnly' 
+			? 'rgb(60, 39, 82)' 
+			: 'rgb(42, 85, 108)'
+	);
 
 	function updateChartData() {
 		if (!chart || !groupedSnapshots) return;
@@ -310,27 +338,28 @@
 		const dataset1 = chart.data.datasets[1] as any;
 
 		if (chartOption === 'profitOnly') {
-			dataset0.label = 'Profit';
+			// Show total profit (unrealized + realized)
+			dataset0.label = 'Total Profit';
 			dataset0.data = groupedSnapshots.map((s) => roundValue(s.totalProfit));
-			dataset0.borderColor = 'rgba(168,85,247,1)'; // Purple for profit
+			dataset0.borderColor = 'rgba(168,85,247,1)'; // Purple
 			dataset0.backgroundColor = 'rgba(168,85,247,0.25)';
 			dataset0.pointBackgroundColor = 'rgba(168,85,247,1)';
+			dataset1.hidden = true; // Hide invested line
 		} else {
+			// totalValue: Show total value (position + realized gains) vs total invested
 			dataset0.label = 'Total Value';
-			dataset0.data = groupedSnapshots.map((s) => roundValue(s.totalValue));
-			dataset0.borderColor = 'rgba(16,185,129,1)'; // Green for total value
+			dataset0.data = groupedSnapshots.map((s) => roundValue(s.currentValue + s.realizedGain));
+			dataset0.borderColor = 'rgba(16,185,129,1)'; // Green
 			dataset0.backgroundColor = 'rgba(16,185,129,0.25)';
 			dataset0.pointBackgroundColor = 'rgba(16,185,129,1)';
+			
+			dataset1.label = 'Total Invested';
+			dataset1.data = groupedSnapshots.map((s) => roundValue(s.totalInvestedCash));
+			dataset1.borderColor = 'rgba(99,102,241,1)';
+			dataset1.backgroundColor = 'rgba(99,102,241,0.35)';
+			dataset1.pointBackgroundColor = 'rgba(99,102,241,1)';
+			dataset1.hidden = false;
 		}
-
-		// Always update the invested dataset
-		dataset1.data = groupedSnapshots.map((s) => roundValue(s.invested));
-		dataset1.borderColor = 'rgba(99,102,241,1)';
-		dataset1.backgroundColor = 'rgba(99,102,241,0.35)';
-		dataset1.pointBackgroundColor = 'rgba(99,102,241,1)';
-
-		// Show/hide the "Invested" line based on chartOption
-		dataset1.hidden = chartOption === 'profitOnly';
 
 		chart.update();
 	}
@@ -468,7 +497,7 @@
 					})}
 				</span>
 				
-				<div class="border-l-1 border-button h-3.5"></div>
+				<div class="border-l border-button h-3.5"></div>
 
 				{#if profitChangePctDisplay === '+∞' || profitChangePctDisplay === '-∞'}
 					<span
