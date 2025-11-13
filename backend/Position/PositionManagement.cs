@@ -158,7 +158,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 				else
 					lastKnownPrice = price;
 
-				decimal marketPrice = (price?.AdjustedClose ?? price?.Close) ?? 0m;
+				decimal marketPrice = price?.Close ?? 0m;
 				decimal currentShares = lots.Sum(l => l.Amount);
 				decimal marketValue = marketPrice * currentShares;
 
