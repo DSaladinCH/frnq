@@ -4,7 +4,7 @@ on:
     workflow_dispatch:
 
 permissions:
-    contents: write
+    contents: read
     packages: write
 
 jobs:
@@ -25,10 +25,37 @@ jobs:
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
 
+            - name: Read version from csproj (msbuild)
+              id: version
+              run: |
+                  VERSION=$(dotnet msbuild src/backend/frnq-api.csproj -nologo -t:GetVersion | tail -n 1 | xargs)
+                  echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+            - name: Validate version format
+              run: |
+                  VERSION="${{ steps.version.outputs.version }}"
+                  if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                    echo "❌ Invalid version: $VERSION"
+                    exit 1
+                  fi
+
+            - name: Fail if version already exists in GHCR
+              run: |
+                  IMAGE="ghcr.io/dsaladinch/frnq-api"
+                  TAG="${{ steps.version.outputs.version }}"
+
+                  if docker manifest inspect "$IMAGE:$TAG" > /dev/null 2>&1; then
+                    echo "❌ Image $IMAGE:$TAG already exists. Bump the version."
+                    exit 1
+                  fi
+
             - name: Build and push Docker image
               uses: docker/build-push-action@v5
               with:
                   context: ./
                   file: ./docker/Dockerfile.api
                   push: true
-                  tags: ghcr.io/dsaladinch/frnq-api:latest
+                  tags: |
+                      ghcr.io/dsaladinch/frnq-api:latest
+                      ghcr.io/dsaladinch/frnq-api:${{ steps.version.outputs.version }}
+                      ghcr.io/dsaladinch/frnq-api:sha-${{ github.sha }}
