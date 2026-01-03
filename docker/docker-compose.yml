@@ -26,6 +26,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
+      - Cors__AllowedOrigins__0=https://example.com
       - Cookies__Domain=example.com
       - ConnectionStrings__DatabaseConnection=Server=postgres;Port=5432;Database=frnq;User Id=frnq;Password=frnq_password;
       - JwtSettings__SecretKey=your-super-secret-key-that-should-be-at-least-256-bits-long-for-security-purposes-and-stored-securely

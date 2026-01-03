@@ -60,12 +60,13 @@ builder.Services.AddAuthentication(options =>
 	};
 });
 
-// Add CORS policy for development
+// Add CORS policy with configurable origins
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://localhost:5173"];
 builder.Services.AddCors(options =>
 {
-	options.AddPolicy("DevCorsPolicy", policy =>
+	options.AddPolicy("AppCorsPolicy", policy =>
 	{
-		policy.WithOrigins("http://localhost:5173")
+		policy.WithOrigins(allowedOrigins)
 				.AllowAnyHeader()
 				.AllowAnyMethod()
 				.AllowCredentials(); // Required for cookies
@@ -87,9 +88,10 @@ using (var localScope = app.Services.CreateScope())
 
 
 // Configure the HTTP request pipeline.
+app.UseCors("AppCorsPolicy");
+
 if (app.Environment.IsDevelopment())
 {
-	app.UseCors("DevCorsPolicy");
 	app.MapOpenApi();
 }
 
