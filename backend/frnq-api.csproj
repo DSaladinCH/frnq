@@ -1,21 +1,33 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>DSaladin.Frnq.Api</RootNamespace>
-    <AssemblyName>DSaladin.Frnq.Api</AssemblyName>
-  </PropertyGroup>
+	<PropertyGroup>
+		<Version>1.0.0</Version>
+		<TargetFramework>net9.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<RootNamespace>DSaladin.Frnq.Api</RootNamespace>
+		<AssemblyName>DSaladin.Frnq.Api</AssemblyName>
+		<PreserveCompilationContext>true</PreserveCompilationContext>
+		<AnalysisLevel>latest-recommended</AnalysisLevel>
+		<CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
+		<EnableNETAnalyzers>true</EnableNETAnalyzers>
+		<AnalysisMode>Recommended</AnalysisMode>
+		<InvariantGlobalization>true</InvariantGlobalization>
+		<NoWarn>IDE0011, CA1716, CA1848</NoWarn>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.9" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.5" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.6" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.6" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
-  </ItemGroup>
+	<Target Name="GetVersion">
+		<Message Text="$(Version)" Importance="High" />
+	</Target>
+
+	<ItemGroup>
+		<PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.9" />
+		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.5" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.6" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.6" />
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
+	</ItemGroup>
 
 </Project>
