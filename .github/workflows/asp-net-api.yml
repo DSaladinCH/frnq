@@ -28,7 +28,7 @@ jobs:
             - name: Read version from csproj (msbuild)
               id: version
               run: |
-                  VERSION=$(dotnet msbuild src/backend/frnq-api.csproj -nologo -t:GetVersion | tail -n 1 | xargs)
+                  VERSION=$(dotnet msbuild backend/frnq-api.csproj -nologo -t:GetVersion | tail -n 1 | xargs)
                   echo "version=$VERSION" >> $GITHUB_OUTPUT
 
             - name: Validate version format

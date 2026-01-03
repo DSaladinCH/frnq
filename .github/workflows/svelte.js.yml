@@ -27,7 +27,7 @@ jobs:
 
             - name: Read version from package.json
               id: pkg
-              working-directory: ./src/frontend
+              working-directory: ./frontend
               run: |
                   echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
