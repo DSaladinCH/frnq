@@ -3,11 +3,11 @@ FROM node:lts-alpine AS builder
 WORKDIR /app
 
 # install full deps (needed for build)
-COPY package.json package-lock.json ./
+COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 
 # copy source and build
-COPY . .
+COPY frontend/ .
 
 # prevent dev config from being bundled
 RUN rm -f static/config.js

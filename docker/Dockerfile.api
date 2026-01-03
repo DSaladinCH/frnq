@@ -3,11 +3,11 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Copy csproj and restore dependencies
-COPY ../backend/frnq-api.csproj ./
+COPY backend/frnq-api.csproj ./
 RUN dotnet restore
 
 # Copy everything else and build
-COPY ../backend/ ./
+COPY backend/ ./
 RUN dotnet build -c Release -o /app/build
 
 # Stage 2: Publish
