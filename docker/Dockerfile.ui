@@ -25,6 +25,10 @@ WORKDIR /app
 # runtime-only tooling
 RUN apk add --no-cache gettext
 
+# install ONLY production deps
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --omit=dev
+
 # Copy only what's needed from builder
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/static ./static
