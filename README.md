@@ -83,7 +83,7 @@
 ```bash
 # Pull pre-built images from GitHub Container Registry
 docker pull ghcr.io/dsaladinch/frnq-api:latest
-docker pull ghcr.io/dsaladinch/frnq-ui:latest
+docker pull ghcr.io/dsaladinch/frnq-web:latest
 
 # Navigate to docker directory
 cd docker

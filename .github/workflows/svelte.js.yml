@@ -41,7 +41,7 @@ jobs:
 
             - name: Fail if version already exists in GHCR
               run: |
-                  IMAGE="ghcr.io/dsaladinch/frnq-ui"
+                  IMAGE="ghcr.io/dsaladinch/frnq-web"
                   TAG="${{ steps.pkg.outputs.version }}"
 
                   if docker manifest inspect "$IMAGE:$TAG" > /dev/null 2>&1; then
@@ -56,6 +56,6 @@ jobs:
                   file: ./docker/Dockerfile.ui
                   push: true
                   tags: |
-                      ghcr.io/dsaladinch/frnq-ui:latest
-                      ghcr.io/dsaladinch/frnq-ui:${{ steps.pkg.outputs.version }}
-                      ghcr.io/dsaladinch/frnq-ui:sha-${{ github.sha }}
+                      ghcr.io/dsaladinch/frnq-web:latest
+                      ghcr.io/dsaladinch/frnq-web:${{ steps.pkg.outputs.version }}
+                      ghcr.io/dsaladinch/frnq-web:sha-${{ github.sha }}

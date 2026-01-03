@@ -20,7 +20,7 @@ Before running the services, you need to build the Docker images:
 docker build -t frnq-api:latest -f Dockerfile.api ..
 
 # Build UI image
-docker build -t frnq-ui:latest -f Dockerfile.ui ..
+docker build -t frnq-web:latest -f Dockerfile.ui ..
 
 # Or use the build script (recommended)
 .\build-images.ps1
@@ -82,7 +82,7 @@ docker-compose logs -f postgres
 docker build -t frnq-api:latest -f Dockerfile.api ..
 
 # Rebuild UI image (specify API URL at build time)
-docker build -t frnq-ui:latest --build-arg VITE_API_BASE_URL=http://localhost:8080 -f Dockerfile.ui ..
+docker build -t frnq-web:latest --build-arg VITE_API_BASE_URL=http://localhost:8080 -f Dockerfile.ui ..
 
 # Or use the build scripts
 # PowerShell

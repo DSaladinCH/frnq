@@ -67,9 +67,9 @@ services:
     networks:
       - frnq-network
 
-  frnq-ui:
-    image: ghcr.io/dsaladinch/frnq-ui:latest
-    container_name: frnq-ui
+  frnq-web:
+    image: ghcr.io/dsaladinch/frnq-web:latest
+    container_name: frnq-web
     restart: unless-stopped
     environment:
       - API_BASE_URL=https://example.com
