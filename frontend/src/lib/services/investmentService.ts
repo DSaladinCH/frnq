@@ -35,9 +35,9 @@ export interface PaginatedInvestmentsResponse {
 }
 
 export enum InvestmentType {
-	Buy = 0,
-	Sell = 1,
-	Dividend = 2
+	Buy = 'Buy',
+	Sell = 'Sell',
+	Dividend = 'Dividend'
 }
 
 type InvestmentRequest = Omit<InvestmentModel, 'provider'> & {
