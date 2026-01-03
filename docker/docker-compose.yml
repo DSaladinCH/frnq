@@ -1,10 +1,9 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
-  postgres:
+  frnq-db:
     image: postgres:17-alpine
-    container_name: frnq-postgres
+    container_name: frnq-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: frnq
@@ -22,23 +21,22 @@ services:
       timeout: 5s
       retries: 5
 
-  # Backend API (.NET)
-  api:
-    image: frnq-api:latest
+  frnq-api:
+    image: ghcr.io/dsaladinch/frnq-api:latest
     container_name: frnq-api
     restart: unless-stopped
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
-      - Cookies__Domain=localhost
+      - Cookies__Domain=example.com
       - ConnectionStrings__DatabaseConnection=Server=postgres;Port=5432;Database=frnq;User Id=frnq;Password=frnq_password;
       - JwtSettings__SecretKey=your-super-secret-key-that-should-be-at-least-256-bits-long-for-security-purposes-and-stored-securely
       - JwtSettings__Issuer=frnq-api
       - JwtSettings__Audience=frnq-client
       - JwtSettings__AccessTokenExpiryInMinutes=15
       - Features__SignupEnabled=true
-      - ApiBaseUrl=http://localhost:8080
-      - FrontendUrl=http://localhost:3000
+      - ApiBaseUrl=https://example.com
+      - FrontendUrl=https://example.com
     # OIDC Configuration Examples (uncomment and configure to enable)
     # Google OAuth2 Example:
     # - OidcProviders__google__Enabled=true
@@ -67,24 +65,23 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      postgres:
+      frnq-db:
         condition: service_healthy
     networks:
       - frnq-network
 
-  # Frontend UI (SvelteKit)
-  ui:
-    image: frnq-ui:latest
+  frnq-ui:
+    image: ghcr.io/dsaladinch/frnq-ui:latest
     container_name: frnq-ui
     restart: unless-stopped
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - VITE_API_BASE_URL=http://localhost:8080
+      - VITE_API_BASE_URL=https://example.com
     ports:
       - "3000:3000"
     depends_on:
-      - api
+      - frnq-api
     networks:
       - frnq-network
 
