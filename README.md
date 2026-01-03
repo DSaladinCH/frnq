@@ -1,6 +1,6 @@
-# 📊 FRNQ - Financial Portfolio Tracker
-
 <div align="center">
+
+<img src="frontend/static/banner.png" alt="FRNQ Banner" width="100%" />
 
 **A modern, full-stack investment portfolio tracking application**
 
