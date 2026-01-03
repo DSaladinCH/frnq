@@ -260,10 +260,13 @@
 	});
 
 	// Compute current portfolio info (latest date)
-	let filteredSnapshots = $derived(
+	// Optimize by caching filtered and grouped data
+	let filteredSnapshots = $derived.by(() => 
 		filterSnapshotsWithActivePositionsInPeriod(snapshots, selectedPeriod)
 	);
-	let groupedSnapshots = $derived(groupSnapshotsByDate(filteredSnapshots));
+	
+	let groupedSnapshots = $derived.by(() => groupSnapshotsByDate(filteredSnapshots));
+	
 	let latest = $derived(
 		groupedSnapshots.length ? groupedSnapshots[groupedSnapshots.length - 1] : null
 	);
@@ -405,19 +408,25 @@
 		const periodFiltered = filterSnapshotsByPeriod(snapshots, period);
 
 		// Group by quoteId to check which quotes had active positions in this period
-		const quoteGroups: Record<number, PositionSnapshot[]> = {};
-		periodFiltered.forEach((snap) => {
-			if (!quoteGroups[snap.quoteId]) quoteGroups[snap.quoteId] = [];
-			quoteGroups[snap.quoteId].push(snap);
-		});
-
-		// Find quotes that had at least one snapshot with amount > 0 in this period
-		const activeQuoteIds = Object.entries(quoteGroups)
-			.filter(([quoteId, snaps]) => snaps.some((snap) => snap.amount > 0))
-			.map(([quoteId, snaps]) => parseInt(quoteId));
+		const activeQuoteIds = new Set<number>();
+		const quoteGroups = new Map<number, PositionSnapshot[]>();
+		
+		for (const snap of periodFiltered) {
+			let group = quoteGroups.get(snap.quoteId);
+			if (!group) {
+				group = [];
+				quoteGroups.set(snap.quoteId, group);
+			}
+			group.push(snap);
+			
+			// Check if this snapshot has an active position
+			if (snap.amount > 0) {
+				activeQuoteIds.add(snap.quoteId);
+			}
+		}
 
 		// Return all snapshots (in the period) for quotes that were active during the period
-		return periodFiltered.filter((snap) => activeQuoteIds.includes(snap.quoteId));
+		return periodFiltered.filter((snap) => activeQuoteIds.has(snap.quoteId));
 	}
 	$effect(() => {
 		if (chart && groupedSnapshots) {

@@ -6,28 +6,21 @@
 	import { dataStore } from '$lib/stores/dataStore';
 	import PageHead from '$lib/components/PageHead.svelte';
 
-	// Reactive values that track the store
-	let snapshots = $state(dataStore.snapshots);
-	let quotes = $state(dataStore.quotes);
-	let loading = $state(dataStore.loading);
+	// Reactive values that track the store - use $derived for efficiency
+	let snapshots = $derived(dataStore.snapshots);
+	let quotes = $derived(dataStore.quotes);
+	let loading = $derived(dataStore.loading);
 
-	// Subscribe to store changes
-	$effect(() => {
-		const unsubscribe = dataStore.subscribe(() => {
-			snapshots = dataStore.snapshots;
-			quotes = dataStore.quotes;
-			loading = dataStore.loading;
-		});
-		return unsubscribe;
-	});
+	// Create quote lookup map for O(1) access
+	let quoteMap = $derived(new Map(quotes.map(q => [q.id, q])));
 
 	// Group by quote group (from quote), then by quoteId
-	let groupedSnapshots = $derived(() => {
+	let groupedSnapshots = $derived.by(() => {
 		const groups: Record<string, { name: string; quotes: Record<number, PositionSnapshot[]> }> = {};
 		const ungrouped: Record<number, PositionSnapshot[]> = {};
 
 		for (const snap of snapshots) {
-			const quote = quotes.find((q) => q.id === snap.quoteId);
+			const quote = quoteMap.get(snap.quoteId);
 			const groupId = quote?.group?.id;
 			const groupName = quote?.group?.name;
 			const quoteKey = snap.quoteId;
@@ -80,16 +73,11 @@
 		};
 	}
 
-	// Helper to get quote by quoteId
-	function getQuoteById(quoteId: number) {
-		return quotes.find((q) => q.id === quoteId);
-	}
-
-	// Helper to get display name for a quoteId
+	// Helper to get display name for a quoteId (using quoteMap for O(1) lookup)
 	function getQuoteDisplayName(quoteId: number) {
-		const quote = getQuoteById(quoteId);
+		const quote = quoteMap.get(quoteId);
 		if (!quote) return 'Unknown Quote';
-		return quote?.customName ? quote.customName : quote?.name;
+		return quote.customName ? quote.customName : quote.name;
 	}
 
 	// State for filtering (use Svelte runes for reactivity)
@@ -110,11 +98,11 @@
 		return firstNonZeroIdx === -1 ? [] : snaps.slice(firstNonZeroIdx);
 	}
 
-	let filteredSnapshots = $derived(() => {
+	let filteredSnapshots = $derived.by(() => {
 		let snaps: PositionSnapshot[];
 		if (filterMode === 'full') snaps = snapshots;
 		else if (filterMode === 'group' && filterGroupId) {
-			const group = groupedSnapshots().groups[filterGroupId];
+			const group = groupedSnapshots.groups[filterGroupId];
 			snaps = group ? Object.values(group.quotes).flat() : [];
 		} else if (filterMode === 'quote' && filterQuoteId != null) {
 			snaps = snapshots.filter((s) => s.quoteId === filterQuoteId);
@@ -175,11 +163,8 @@
 	}
 	type Card = GroupCard | QuoteCard;
 
-	// Helper to check if a quote has any active positions based on the chart's selected period
-	function hasActivePosition(snapshots: PositionSnapshot[]): boolean {
-		if (snapshots.length === 0) return false;
-		
-		// Calculate the date range based on the chart's selected period
+	// Memoize the date range calculation
+	let periodFromDate = $derived.by(() => {
 		const now = new Date();
 		let fromDate: Date;
 		
@@ -200,16 +185,26 @@
 				fromDate = new Date(now.getFullYear(), 0, 1);
 				break;
 			case 'all':
-				// For 'all', include all snapshots
-				return snapshots.some(snap => snap.amount > 0);
+				return null; // null means include all
 			default:
-				// Default to 3 months
 				fromDate = new Date(now);
 				fromDate.setMonth(now.getMonth() - 3);
 		}
 		
 		// Remove time from fromDate for comparison
-		fromDate = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
+		return new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
+	});
+
+	// Helper to check if a quote has any active positions based on the chart's selected period
+	function hasActivePosition(snapshots: PositionSnapshot[]): boolean {
+		if (snapshots.length === 0) return false;
+		
+		if (chartPeriod === 'all') {
+			return snapshots.some(snap => snap.amount > 0);
+		}
+		
+		const fromDate = periodFromDate;
+		if (!fromDate) return snapshots.some(snap => snap.amount > 0);
 		
 		const periodSnapshots = snapshots.filter(snap => new Date(snap.date) >= fromDate);
 		return periodSnapshots.some(snap => snap.amount > 0);
@@ -220,6 +215,25 @@
 		return Object.values(quotes).some(snaps => hasActivePosition(snaps));
 	}
 
+	// Cache active position checks to avoid redundant filtering
+	let activePositionsCache = $derived.by(() => {
+		const cache = new Map<string, boolean>();
+		
+		// Cache for all quotes in groups
+		for (const [groupId, { quotes: groupQuotes }] of Object.entries(groupedSnapshots.groups)) {
+			for (const [quoteKey, snaps] of Object.entries(groupQuotes)) {
+				cache.set(`${groupId}-${quoteKey}`, hasActivePosition(snaps));
+			}
+		}
+		
+		// Cache for ungrouped quotes
+		for (const [quoteKey, snaps] of Object.entries(groupedSnapshots.ungrouped)) {
+			cache.set(`ungrouped-${quoteKey}`, hasActivePosition(snaps));
+		}
+		
+		return cache;
+	});
+
 	function getQuoteCards(
 		groupedSnapshotsValue: {
 			groups: Record<string, { name: string; quotes: Record<number, PositionSnapshot[]> }>;
@@ -227,38 +241,53 @@
 		},
 		filterModeValue: 'full' | 'group' | 'quote',
 		filterGroupIdValue: string | null,
-		filterQuoteIdValue: number | null
+		filterQuoteIdValue: number | null,
+		cache: Map<string, boolean>
 	): Card[] {
 		if (filterModeValue === 'full') {
-			return [
-				...Object.entries(groupedSnapshotsValue.groups)
-					.filter(([groupId, { quotes }]) => hasActivePositionsInGroup(quotes))
-					.map(([groupId, { name: groupName, quotes }]) => ({
+			const result: Card[] = [];
+			
+			// Add group cards
+			for (const [groupId, { name: groupName, quotes: groupQuotes }] of Object.entries(groupedSnapshotsValue.groups)) {
+				const hasActive = Object.keys(groupQuotes).some(qk => cache.get(`${groupId}-${qk}`));
+				if (hasActive) {
+					result.push({
 						type: 'group' as const,
 						groupId,
 						groupName,
-						quotes
-					})),
-				...Object.entries(groupedSnapshotsValue.ungrouped)
-					.filter(([quoteKey, snaps]) => hasActivePosition(snaps))
-					.map(([quoteKey, snaps]) => ({
+						quotes: groupQuotes
+					});
+				}
+			}
+			
+			// Add ungrouped quote cards
+			for (const [quoteKey, snaps] of Object.entries(groupedSnapshotsValue.ungrouped)) {
+				if (cache.get(`ungrouped-${quoteKey}`)) {
+					result.push({
 						type: 'quote' as const,
 						quoteKey: +quoteKey,
 						snaps
-					}))
-			];
+					});
+				}
+			}
+			
+			return result;
 		} else if (filterModeValue === 'group' && filterGroupIdValue) {
-			// Only show quotes of the selected group that have active positions
 			const group = groupedSnapshotsValue.groups[filterGroupIdValue];
 			if (!group) return [];
-			return Object.entries(group.quotes)
-				.filter(([quoteKey, snaps]) => hasActivePosition(snaps))
-				.map(([quoteKey, snaps]) => ({
-					type: 'quote' as const,
-					quoteKey: +quoteKey,
-					snaps,
-					groupId: filterGroupIdValue
-				}));
+			
+			const result: Card[] = [];
+			for (const [quoteKey, snaps] of Object.entries(group.quotes)) {
+				if (cache.get(`${filterGroupIdValue}-${quoteKey}`)) {
+					result.push({
+						type: 'quote' as const,
+						quoteKey: +quoteKey,
+						snaps,
+						groupId: filterGroupIdValue
+					});
+				}
+			}
+			return result;
 		} else if (filterModeValue === 'quote' && filterQuoteIdValue != null) {
 			let snaps = null;
 			let groupId: string | undefined = filterGroupIdValue ?? undefined;
@@ -266,7 +295,7 @@
 				snaps = groupedSnapshotsValue.groups[groupId].quotes[filterQuoteIdValue];
 			} else if (groupedSnapshotsValue.ungrouped[filterQuoteIdValue]) {
 				snaps = groupedSnapshotsValue.ungrouped[filterQuoteIdValue];
-				groupId = undefined; // assign undefined for type compatibility
+				groupId = undefined;
 			}
 			if (snaps) {
 				return [
@@ -341,7 +370,7 @@
 	}
 
 	// Reactive cards array for the template
-	let cards = $derived(getQuoteCards(groupedSnapshots(), filterMode, filterGroupId, filterQuoteId));
+	let cards = $derived(getQuoteCards(groupedSnapshots, filterMode, filterGroupId, filterQuoteId, activePositionsCache));
 </script>
 
 <PageHead title="Portfolio" />
@@ -349,7 +378,7 @@
 {#if snapshots.length === 0}
 	<p>No data available.</p>
 {:else if snapshots.length}
-	<PortfolioChart snapshots={filteredSnapshots()} onPeriodChange={handlePeriodChange} />
+	<PortfolioChart snapshots={filteredSnapshots} onPeriodChange={handlePeriodChange} />
 
 	<div
 		class="quote-groups mx-auto mb-3 mt-4 grid w-full grid-cols-[repeat(auto-fit,_minmax(300px,_450px))] justify-center gap-5 px-3 xl:w-4/5"

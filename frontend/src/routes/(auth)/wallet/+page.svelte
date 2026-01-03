@@ -11,11 +11,24 @@
 	import { ContentWidth } from '$lib/types/ContentSize';
 	import { TextSize } from '$lib/types/TextSize';
 
-	let quotes = $state(dataStore.quotes);
-	let snapshots = $state(dataStore.snapshots);
-	let groups = $state(dataStore.groups);
+	// Use $derived for reactive store values (more efficient than $effect subscription)
+	let quotes = $derived(dataStore.quotes);
+	let snapshots = $derived(dataStore.snapshots);
+	let groups = $derived(dataStore.groups);
+	let secondaryLoading = $derived(dataStore.secondaryLoading);
 
-	let secondaryLoading = $state(dataStore.secondaryLoading);
+	// Create snapshot lookup map for O(1) access
+	let snapshotMap = $derived.by(() => {
+		const map = new Map<number, typeof snapshots[0]>();
+		for (const snapshot of snapshots) {
+			// Keep only the latest snapshot for each quote
+			const existing = map.get(snapshot.quoteId);
+			if (!existing || new Date(snapshot.date) > new Date(existing.date)) {
+				map.set(snapshot.quoteId, snapshot);
+			}
+		}
+		return map;
+	});
 
 	let assignGroupQuote = $state<QuoteModel | null>(null);
 	let assignGroupModalOpen = $state(false);
@@ -24,17 +37,6 @@
 	let customNameInput = $state('');
 	let customNameModalOpen = $state(false);
 	let customNameQuote = $state<QuoteModel | null>(null);
-
-	// Subscribe to store changes
-	$effect(() => {
-		const unsubscribe = dataStore.subscribe(() => {
-			quotes = dataStore.quotes;
-			snapshots = dataStore.snapshots;
-			groups = dataStore.groups;
-			secondaryLoading = dataStore.secondaryLoading;
-		});
-		return unsubscribe;
-	});
 
 	//#region Group Assignment Handlers
 	function handleAssignGroup(quote: QuoteModel) {
@@ -107,10 +109,11 @@
 	<div
 		class="investments-list 3xl:grid-cols-4 grid gap-2 overflow-y-auto py-1 pr-1 lg:grid-cols-2 2xl:grid-cols-3"
 	>
-		{#each quotes as quote}
+		{#each quotes as quote (quote.id)}
+			{@const snapshot = snapshotMap.get(quote.id)}
 			<QuoteCard
 				{quote}
-				snapshot={snapshots.filter((s) => s.quoteId === quote.id).slice(-1)[0]}
+				{snapshot}
 				onAssignGroup={() => handleAssignGroup(quote)}
 				onRemoveGroup={() => removeGroup(quote)}
 				onUpdateCustomName={() => handleUpdateCustomName(quote)}
