@@ -14,8 +14,6 @@ export function createDefaultInvestment(): InvestmentModel {
 		date: new Date().toISOString().slice(0, 16)
 	};
 }
-// src/lib/services/positionService.ts
-const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
 export interface InvestmentModel {
 	id: number;
@@ -77,7 +75,7 @@ export async function getInvestments(
 	take: number = 25, 
 	filters?: InvestmentFilters
 ): Promise<PaginatedInvestmentsResponse> {
-	let url = `${baseUrl}/api/investments?skip=${skip}&take=${take}`;
+	let url = `/api/investments?skip=${skip}&take=${take}`;
 	
 	if (filters) {
 		if (filters.fromDate) url += `&fromDate=${filters.fromDate}`;
@@ -97,8 +95,7 @@ export async function addInvestment(investment: InvestmentModel): Promise<void> 
 	const providerId = 'yahoo-finance';
 	const request: InvestmentRequest = { ...investment, providerId };
 
-	const url = `${baseUrl}/api/investments`;
-	const res = await fetchWithAuth(url, {
+	const res = await fetchWithAuth('/api/investments', {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'
@@ -114,8 +111,7 @@ export async function addInvestmentsBulk(investments: InvestmentModel[]): Promis
 	const providerId = 'yahoo-finance';
 	const requests: InvestmentRequest[] = investments.map(investment => ({ ...investment, providerId }));
 
-	const url = `${baseUrl}/api/investments/bulk`;
-	const res = await fetchWithAuth(url, {
+	const res = await fetchWithAuth('/api/investments/bulk', {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'
@@ -130,8 +126,7 @@ export async function addInvestmentsBulk(investments: InvestmentModel[]): Promis
 export async function updateInvestment(investment: InvestmentModel): Promise<InvestmentModel> {
 	investment.quoteId = 0; // ensure quoteId is not sent in the payload
 
-	const url = `${baseUrl}/api/investments/${investment.id}`;
-	const res = await fetchWithAuth(url, {
+	const res = await fetchWithAuth(`/api/investments/${investment.id}`, {
 		method: 'PUT',
 		headers: {
 			'Content-Type': 'application/json'
@@ -144,8 +139,7 @@ export async function updateInvestment(investment: InvestmentModel): Promise<Inv
 }
 
 export async function deleteInvestment(investmentId: number): Promise<void> {
-	const url = `${baseUrl}/api/investments/${investmentId}`;
-	const res = await fetchWithAuth(url, {
+	const res = await fetchWithAuth(`/api/investments/${investmentId}`, {
 		method: 'DELETE'
 	});
 

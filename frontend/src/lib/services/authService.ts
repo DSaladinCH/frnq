@@ -1,7 +1,6 @@
 import { browser } from '$app/environment';
+import { getApiBaseUrl } from '$lib/config';
 import { writable, derived } from 'svelte/store';
-
-const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
 
 export interface AuthResponse {
 	accessToken: string;
@@ -17,6 +16,12 @@ export const isLoggedIn = derived(
 	[accessToken, expiresAt],
 	([$accessToken, $expiresAt]) => !!$accessToken && !!$expiresAt && $expiresAt > Date.now()
 );
+
+export function getFullUrl(relativeUrl: string): string {
+    const baseUrl = getApiBaseUrl();
+    const url = baseUrl.replace(/\/$/, '') + '/' + relativeUrl.replace(/^\//, '');
+    return url;
+}
 
 /**
  * Schedule automatic refresh ~30s before expiry
@@ -56,7 +61,7 @@ export async function bootstrapAuth(fetchFn: typeof fetch) {
 		process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 	}
 
-	const res = await fetchFn(`${baseUrl}/api/auth/refresh`, {
+	const res = await fetchFn(`${getFullUrl('/api/auth/refresh')}`, {
 		method: 'POST',
 		credentials: 'include'
 	});
@@ -75,7 +80,7 @@ export async function bootstrapAuth(fetchFn: typeof fetch) {
  * Signup with email/password/firstname
  */
 export async function signup(email: string, password: string, firstname: string): Promise<void> {
-	const res = await fetch(`${baseUrl}/api/auth/signup`, {
+	const res = await fetch(`${getFullUrl('/api/auth/signup')}`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ email, password, firstname }),
@@ -92,7 +97,7 @@ export async function signup(email: string, password: string, firstname: string)
  * Login with email/password
  */
 export async function login(email: string, password: string): Promise<void> {
-	const res = await fetch(`${baseUrl}/api/auth/login`, {
+	const res = await fetch(`${getFullUrl('/api/auth/login')}`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ email, password }),
@@ -109,7 +114,7 @@ export async function login(email: string, password: string): Promise<void> {
  * Refresh token using refresh cookie
  */
 export async function refreshToken(): Promise<boolean> {
-	const res = await fetch(`${baseUrl}/api/auth/refresh`, {
+	const res = await fetch(`${getFullUrl('/api/auth/refresh')}`, {
 		method: 'POST',
 		credentials: 'include'
 	});
@@ -135,7 +140,7 @@ export async function logout(): Promise<void> {
 
 	// Call backend to invalidate refresh token session
 	try {
-		await fetch(`${baseUrl}/api/auth/logout`, {
+		await fetch(`${getFullUrl('/api/auth/logout')}`, {
 			method: 'POST',
 			credentials: 'include',
 			headers: {
@@ -158,6 +163,10 @@ export async function logout(): Promise<void> {
  * Authenticated fetch wrapper
  */
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+	if (!browser && process.env.NODE_ENV === 'development') {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    }
+
 	let token: string | null = null;
 	accessToken.subscribe((v) => (token = v))();
 
@@ -166,7 +175,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
 		Authorization: token ? `Bearer ${token}` : ''
 	};
 
-	let res = await fetch(url, options);
+	let res = await fetch(getFullUrl(url), options);
 
 	if (res.status === 401) {
 		// Try to refresh the token
@@ -208,7 +217,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
  */
 export async function checkSignupEnabled(): Promise<boolean> {
 	try {
-		const res = await fetch(`${baseUrl}/api/auth/signup-enabled`);
+		const res = await fetch(`${getFullUrl('/api/auth/signup-enabled')}`);
 		if (!res.ok) return false;
 		const data = await res.json();
 		return data.signupEnabled ?? false;
@@ -245,7 +254,7 @@ export interface ExternalLink {
  */
 export async function getOidcProviders(): Promise<OidcProvider[]> {
 	try {
-		const res = await fetch(`${baseUrl}/api/authoidc/providers`);
+		const res = await fetch(`${getFullUrl('/api/authoidc/providers')}`);
 		if (!res.ok) return [];
 		return await res.json();
 	} catch (error) {
@@ -259,8 +268,8 @@ export async function getOidcProviders(): Promise<OidcProvider[]> {
  */
 export function initiateOidcLogin(providerId: string, returnUrl?: string): void {
 	const url = returnUrl 
-		? `${baseUrl}/api/authoidc/login/${providerId}?returnUrl=${encodeURIComponent(returnUrl)}`
-		: `${baseUrl}/api/authoidc/login/${providerId}`;
+		? `${getFullUrl(`/api/authoidc/login/${providerId}`)}?returnUrl=${encodeURIComponent(returnUrl)}`
+		: `${getFullUrl(`/api/authoidc/login/${providerId}`)}`;
 	window.location.href = url;
 }
 
@@ -269,7 +278,7 @@ export function initiateOidcLogin(providerId: string, returnUrl?: string): void 
  */
 export async function getExternalLinks(): Promise<ExternalLink[]> {
 	try {
-		const res = await fetchWithAuth(`${baseUrl}/api/authexternallinks`);
+		const res = await fetchWithAuth(`${getFullUrl('/api/authexternallinks')}`);
 		if (!res.ok) return [];
 		return await res.json();
 	} catch (error) {
@@ -284,7 +293,7 @@ export async function getExternalLinks(): Promise<ExternalLink[]> {
  */
 export async function linkExternalAccount(providerId: string): Promise<{ authorizationUrl: string } | null> {
 	try {
-		const res = await fetchWithAuth(`${baseUrl}/api/authexternallinks/link/${providerId}`, {
+		const res = await fetchWithAuth(`${getFullUrl(`/api/authexternallinks/link/${providerId}`)}`, {
 			method: 'POST'
 		});
 		if (!res.ok) return null;
@@ -300,7 +309,7 @@ export async function linkExternalAccount(providerId: string): Promise<{ authori
  */
 export async function unlinkExternalAccount(linkId: string): Promise<boolean> {
 	try {
-		const res = await fetchWithAuth(`${baseUrl}/api/authexternallinks/${linkId}`, {
+		const res = await fetchWithAuth(`${getFullUrl(`/api/authexternallinks/${linkId}`)}`, {
 			method: 'DELETE'
 		});
 		return res.ok;

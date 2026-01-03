@@ -2,6 +2,7 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=csharp,aspnetcore,svelte,node
 
 appsettings.*.json
+*/static/config.js
 
 ### ASPNETCore ###
 ## Ignore Visual Studio temporary files, build results, and

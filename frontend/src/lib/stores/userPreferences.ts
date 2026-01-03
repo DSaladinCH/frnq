@@ -2,8 +2,6 @@ import { writable } from 'svelte/store';
 import { fetchWithAuth } from '$lib/services/authService';
 import type { DateFormatType } from '$lib/utils/dateFormat';
 
-const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
-
 export interface UserPreferences {
 	dateFormat: DateFormatType;
 }
@@ -25,7 +23,7 @@ function createUserPreferencesStore() {
 		 */
 		async load(): Promise<void> {
 			try {
-				const res = await fetchWithAuth(`${baseUrl}/api/auth/me`);
+				const res = await fetchWithAuth('/api/auth/me');
 				if (res.ok) {
 					const userData = await res.json();
 					set({

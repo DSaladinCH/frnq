@@ -4,11 +4,9 @@
 	import Button from '$lib/components/Button.svelte';
 	import Input from '$lib/components/Input.svelte';
 	import PasswordInput from '$lib/components/PasswordInput.svelte';
-	import { signup } from '$lib/services/authService';
+	import { checkSignupEnabled, signup } from '$lib/services/authService';
 	import { notify } from '$lib/services/notificationService';
 	import { ContentWidth } from '$lib/types/ContentSize';
-
-	const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
 
 	let email = $state('');
 	let password = $state('');
@@ -24,11 +22,7 @@
 
 	onMount(async () => {
 		try {
-			const response = await fetch(`${baseUrl}/api/auth/signup-enabled`);
-			if (response.ok) {
-				const data = await response.json();
-				signupEnabled = data.signupEnabled;
-			}
+			signupEnabled = await checkSignupEnabled();
 		} catch (error) {
 			console.error('Failed to check signup status:', error);
 		} finally {

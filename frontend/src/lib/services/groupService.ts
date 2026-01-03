@@ -1,12 +1,8 @@
 import type { QuoteGroup } from '$lib/Models/QuoteGroup';
 import { fetchWithAuth } from './authService';
 
-// src/lib/services/positionService.ts
-const baseUrl = import.meta.env.VITE_API_BASE_URL;
-
 export async function getQuoteGroups(): Promise<QuoteGroup[]> {
-	const url = `${baseUrl}/api/groups`;
-	const res = await fetchWithAuth(url);
+	const res = await fetchWithAuth('/api/groups');
 
 	if (!res.ok) throw new Error('Failed to fetch quote groups');
 	return res.json();
@@ -15,8 +11,7 @@ export async function getQuoteGroups(): Promise<QuoteGroup[]> {
 export async function createQuoteGroup(name: string): Promise<void> {
 	const quoteGroup: QuoteGroup = { id: 0, name }; // id will be set by the server
 
-	const url = `${baseUrl}/api/groups`;
-	const res = await fetchWithAuth(url, {
+	const res = await fetchWithAuth('/api/groups', {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'
@@ -31,8 +26,7 @@ export async function createQuoteGroup(name: string): Promise<void> {
 export async function updateQuoteGroup(id: number, name: string): Promise<QuoteGroup> {
 	const quoteGroup: QuoteGroup = { id, name };
 
-	const url = `${baseUrl}/api/groups/${quoteGroup.id}`;
-	const res = await fetchWithAuth(url, {
+	const res = await fetchWithAuth(`/api/groups/${quoteGroup.id}`, {
 		method: 'PUT',
 		headers: {
 			'Content-Type': 'application/json'
@@ -45,8 +39,7 @@ export async function updateQuoteGroup(id: number, name: string): Promise<QuoteG
 }
 
 export async function deleteQuoteGroup(id: number): Promise<void> {
-	const url = `${baseUrl}/api/groups/${id}`;
-	const res = await fetchWithAuth(url, {
+	const res = await fetchWithAuth(`/api/groups/${id}`, {
 		method: 'DELETE'
 	});
 
@@ -55,8 +48,7 @@ export async function deleteQuoteGroup(id: number): Promise<void> {
 }
 
 export async function assignQuoteToGroup(quoteId: number, groupId: number): Promise<void> {
-	const url = `${baseUrl}/api/groups/${groupId}/${quoteId}`;
-	const res = await fetchWithAuth(url, {
+	const res = await fetchWithAuth(`/api/groups/${groupId}/${quoteId}`, {
 		method: 'POST'
 	});
 
@@ -65,8 +57,7 @@ export async function assignQuoteToGroup(quoteId: number, groupId: number): Prom
 }
 
 export async function removeQuoteFromGroup(quoteId: number, groupId: number): Promise<void> {
-	const url = `${baseUrl}/api/groups/${groupId}/${quoteId}`;
-	const res = await fetchWithAuth(url, {
+	const res = await fetchWithAuth(`/api/groups/${groupId}/${quoteId}`, {
 		method: 'DELETE'
 	});
 

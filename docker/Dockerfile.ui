@@ -2,46 +2,41 @@
 FROM node:lts-alpine AS builder
 WORKDIR /app
 
-# Build argument for API URL
-ARG VITE_API_BASE_URL=http://localhost:8080
-ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+# install full deps (needed for build)
+COPY package.json package-lock.json ./
+RUN npm ci
 
-# Enable pnpm via corepack
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# copy source and build
+COPY . .
 
-# Copy package files and .npmrc
-COPY ../frontend/package.json ../frontend/pnpm-lock.yaml ../frontend/.npmrc ./
+# prevent dev config from being bundled
+RUN rm -f static/config.js
 
-# Configure pnpm to use hoisted node-linker for Docker compatibility
-RUN echo "node-linker=hoisted" >> .npmrc
+RUN npm run build
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
-
-# Copy source files (excluding node_modules via .dockerignore)
-COPY ../frontend/src ./src
-COPY ../frontend/static ./static
-COPY ../frontend/*.js ./
-COPY ../frontend/*.ts ./
-COPY ../frontend/*.json ./
-COPY ../frontend/*.html ./
-
-# Build the application
-RUN pnpm run build
+# prepare runtime config template
+RUN cp static/config.template.js build/client/config.template.js
+RUN rm -f build/client/config.js.br build/client/config.js.gz
 
 # 2) Runtime stage: slim down image
 FROM node:lts-alpine AS runner
 WORKDIR /app
 
+# runtime-only tooling
+RUN apk add --no-cache gettext
+
 # Copy only what's needed from builder
 COPY --from=builder /app/build ./build
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/static ./static
 
-# Set NODE_ENV just in case
+# entrypoint
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 ENV NODE_ENV=production
 ENV PORT=3000
-ENV HOST=0.0.0.0
+
 EXPOSE 3000
 
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "build/index.js"]

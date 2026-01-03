@@ -19,8 +19,8 @@ Before running the services, you need to build the Docker images:
 # Build API image
 docker build -t frnq-api:latest -f Dockerfile.api ..
 
-# Build UI image (with default API URL: http://localhost:8080)
-docker build -t frnq-ui:latest --build-arg VITE_API_BASE_URL=http://localhost:8080 -f Dockerfile.ui ..
+# Build UI image
+docker build -t frnq-ui:latest -f Dockerfile.ui ..
 
 # Or use the build script (recommended)
 .\build-images.ps1

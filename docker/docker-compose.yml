@@ -9,8 +9,6 @@ services:
       POSTGRES_USER: frnq
       POSTGRES_PASSWORD: frnq_password
       POSTGRES_DB: frnq
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -62,8 +60,6 @@ services:
     # - OidcProviders__azure__IconClass=fa-brands fa-microsoft
     # - OidcProviders__azure__AutoRedirect=false
     # - OidcProviders__azure__DisplayOrder=1
-    ports:
-      - "8080:8080"
     depends_on:
       frnq-db:
         condition: service_healthy
@@ -75,11 +71,7 @@ services:
     container_name: frnq-ui
     restart: unless-stopped
     environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - VITE_API_BASE_URL=https://example.com
-    ports:
-      - "3000:3000"
+      - API_BASE_URL=https://example.com
     depends_on:
       - frnq-api
     networks:
