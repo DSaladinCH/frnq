@@ -20,7 +20,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 	{
 		// Disable warning, as other solutions cause issues in postgres and memory db
 #pragma warning disable CA1862 // Use the 'StringComparison' method overloads to perform case-insensitive string comparisons
-		return await databaseContext.Users.FirstOrDefaultAsync(u => u.Email.ToLowerInvariant() == email.ToLowerInvariant());
+		return await databaseContext.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
 #pragma warning restore CA1862 // Use the 'StringComparison' method overloads to perform case-insensitive string comparisons
 	}
 
@@ -71,7 +71,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 	{
 		// Check if signup is enabled
 		bool signupEnabled = configuration.GetValue("Features:SignupEnabled", true);
-		
+
 		if (!signupEnabled)
 			return ApiResponse.Create(ResponseCodes.Signup.SignupDisabled, System.Net.HttpStatusCode.Forbidden);
 
