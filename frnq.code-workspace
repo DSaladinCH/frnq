@@ -18,7 +18,9 @@
 		"editor.detectIndentation": false,
 		"chat.instructionsFilesLocations": {
 			"../.github/instructions": true
-		}
+		},
+        "dotnet.backgroundAnalysis.analyzerDiagnosticsScope": "fullSolution",
+        "dotnet.backgroundAnalysis.compilerDiagnosticsScope": "fullSolution",
 	},
 	"tasks": {
 		"version": "2.0.0",

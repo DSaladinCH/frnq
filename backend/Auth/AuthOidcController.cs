@@ -1,3 +1,4 @@
+using DSaladin.Frnq.Api.Result;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DSaladin.Frnq.Api.Auth;
@@ -13,10 +14,9 @@ public class AuthOidcController(OidcManagement oidcManagement, IConfiguration co
     /// Get list of enabled OIDC providers
     /// </summary>
     [HttpGet("providers")]
-    public async Task<IActionResult> GetProviders()
+    public async Task<ApiResponse> GetProviders()
     {
-        var providers = await oidcManagement.GetEnabledProvidersAsync();
-        return Ok(providers);
+        return await oidcManagement.GetEnabledProvidersAsync();
     }
 
     /// <summary>
@@ -28,9 +28,9 @@ public class AuthOidcController(OidcManagement oidcManagement, IConfiguration co
     [HttpGet("login/{providerId}")]
     public async Task<IActionResult> InitiateLogin(string providerId, [FromQuery] string? returnUrl = null)
     {
-        var result = await oidcManagement.InitiateLoginAsync(providerId, returnUrl);
+		ApiResponse<string> result = await oidcManagement.InitiateLoginAsync(providerId, returnUrl);
         
-        if (!result.Success || result.Value == null)
+        if (result.Failed || result.Value == null)
             return result;
 
         // Redirect to the authorization URL
@@ -51,12 +51,12 @@ public class AuthOidcController(OidcManagement oidcManagement, IConfiguration co
         [FromQuery] string? error,
         [FromQuery] string? error_description)
     {
-        var frontendUrl = configuration.GetValue<string>("FrontendUrl") ?? "http://localhost:5173";
+		string frontendUrl = configuration.GetValue<string>("FrontendUrl") ?? "http://localhost:5173";
 
         // Handle OAuth errors
         if (!string.IsNullOrEmpty(error))
         {
-            var errorMessage = Uri.EscapeDataString(error_description ?? error);
+			string errorMessage = Uri.EscapeDataString(error_description ?? error);
             return Redirect($"{frontendUrl}/login?error={errorMessage}");
         }
 
@@ -66,8 +66,8 @@ public class AuthOidcController(OidcManagement oidcManagement, IConfiguration co
             return Redirect($"{frontendUrl}/login?error=invalid_callback");
         }
 
-        // Process the callback
-        var result = await oidcManagement.HandleCallbackAsync(providerId, code, state);
+		// Process the callback
+		ApiResponse<LoginResponseModel> result = await oidcManagement.HandleCallbackAsync(providerId, code, state);
         
         if (result.Code == "LINK_SUCCESS")
         {

@@ -20,7 +20,7 @@ public class GroupManagement(DatabaseContext databaseContext, AuthManagement aut
 			return ApiResponses.EmptyFields400;
 
 		if (await databaseContext.QuoteGroups.AnyAsync(g => g.UserId == userId && g.Name == quoteGroup.Name))
-			return ApiResponses.Conflict409.Convert<QuoteGroupViewDto>();
+			return ApiResponses.Conflict409;
 
 		QuoteGroup newGroup = new() { Name = quoteGroup.Name, UserId = userId };
 

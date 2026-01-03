@@ -22,9 +22,9 @@ public class OidcManagement(
     /// <summary>
     /// Get all enabled OIDC providers for display on login page
     /// </summary>
-    public async Task<List<OidcProviderDto>> GetEnabledProvidersAsync()
+    public async Task<ApiResponse<List<OidcProviderDto>>> GetEnabledProvidersAsync()
     {
-        var providers = await databaseContext.OidcProviders
+		List<OidcProviderDto> providers = await databaseContext.OidcProviders
             .Where(p => p.IsEnabled)
             .OrderBy(p => p.DisplayOrder)
             .Select(p => new OidcProviderDto
@@ -36,7 +36,7 @@ public class OidcManagement(
             })
             .ToListAsync();
 
-        return providers;
+        return ApiResponse.Create(providers, System.Net.HttpStatusCode.OK);
     }
 
     /// <summary>
@@ -51,7 +51,7 @@ public class OidcManagement(
             .FirstOrDefaultAsync(p => p.ProviderId == providerId && p.IsEnabled);
 
         if (provider == null)
-            return ApiResponse<string>.Create(null, "PROVIDER_NOT_FOUND", "Provider not found or disabled", System.Net.HttpStatusCode.NotFound);
+            return ApiResponse.Create("PROVIDER_NOT_FOUND", "Provider not found or disabled", System.Net.HttpStatusCode.NotFound);
 
         // Generate secure random state and nonce
         var state = GenerateSecureToken(32);
@@ -94,13 +94,13 @@ public class OidcManagement(
         if (oidcState == null)
         {
             logger.LogWarning("Invalid or expired OIDC state: {State}", state);
-            return ApiResponse<LoginResponseModel>.Create(null, "INVALID_STATE", "Invalid or expired state", System.Net.HttpStatusCode.BadRequest);
+            return ApiResponse.Create("INVALID_STATE", "Invalid or expired state", System.Net.HttpStatusCode.BadRequest);
         }
 
         if (oidcState.Provider == null || oidcState.Provider.ProviderId != providerId)
         {
             logger.LogWarning("State provider mismatch. Expected: {Expected}, Got: {Got}", oidcState.Provider?.ProviderId, providerId);
-            return ApiResponse<LoginResponseModel>.Create(null, "PROVIDER_MISMATCH", "Provider mismatch", System.Net.HttpStatusCode.BadRequest);
+            return ApiResponse.Create("PROVIDER_MISMATCH", "Provider mismatch", System.Net.HttpStatusCode.BadRequest);
         }
 
         // Mark state as used
@@ -116,7 +116,7 @@ public class OidcManagement(
             if (tokenResponse == null)
             {
                 logger.LogError("Failed to exchange code for tokens with provider {Provider}", providerId);
-                return ApiResponse<LoginResponseModel>.Create(null, "TOKEN_EXCHANGE_FAILED", "Failed to obtain tokens", System.Net.HttpStatusCode.BadGateway);
+                return ApiResponse.Create("TOKEN_EXCHANGE_FAILED", "Failed to obtain tokens", System.Net.HttpStatusCode.BadGateway);
             }
 
             // Get user info from ID token or UserInfo endpoint
@@ -124,7 +124,7 @@ public class OidcManagement(
             if (userInfo == null)
             {
                 logger.LogError("Failed to get user info from provider {Provider}", providerId);
-                return ApiResponse<LoginResponseModel>.Create(null, "USERINFO_FAILED", "Failed to get user information", System.Net.HttpStatusCode.BadGateway);
+                return ApiResponse.Create("USERINFO_FAILED", "Failed to get user information", System.Net.HttpStatusCode.BadGateway);
             }
 
             // Check if this is a linking flow
@@ -136,11 +136,11 @@ public class OidcManagement(
                 if (linkResult.Success)
                 {
                     // Return a special response indicating linking succeeded
-                    return ApiResponse<LoginResponseModel>.Create(null, "LINK_SUCCESS", "Account linked successfully", System.Net.HttpStatusCode.OK);
+                    return ApiResponse.Create("LINK_SUCCESS", "Account linked successfully", System.Net.HttpStatusCode.OK);
                 }
                 else
                 {
-                    return ApiResponse<LoginResponseModel>.Create(null, linkResult.Code, linkResult.Description, linkResult.StatusCode);
+                    return ApiResponse.Create(linkResult.Code, linkResult.Description, linkResult.StatusCode);
                 }
             }
 
@@ -151,7 +151,7 @@ public class OidcManagement(
             {
                 // No linked account found - return error with user info for linking
                 logger.LogInformation("No linked account found for OIDC user {Sub} from provider {Provider}", userInfo.Sub, providerId);
-                return ApiResponse<LoginResponseModel>.Create(null, "NOT_LINKED", "No linked account found. Please log in with your credentials and link this account.", System.Net.HttpStatusCode.Unauthorized);
+                return ApiResponse.Create("NOT_LINKED", "No linked account found. Please log in with your credentials and link this account.", System.Net.HttpStatusCode.Unauthorized);
             }
 
             // Generate our own JWT tokens
@@ -162,7 +162,7 @@ public class OidcManagement(
         catch (Exception ex)
         {
             logger.LogError(ex, "Error during OIDC callback for provider {Provider}", providerId);
-            return ApiResponse<LoginResponseModel>.Create(null, "OIDC_ERROR", "Authentication failed", System.Net.HttpStatusCode.InternalServerError);
+            return ApiResponse.Create("OIDC_ERROR", "Authentication failed", System.Net.HttpStatusCode.InternalServerError);
         }
     }
 
@@ -444,9 +444,9 @@ public class OidcManagement(
     /// <summary>
     /// Get all external links for a user
     /// </summary>
-    public async Task<List<ExternalLinkDto>> GetUserLinksAsync(Guid userId)
+    public async Task<ApiResponse<List<ExternalLinkDto>>> GetUserLinksAsync(Guid userId)
     {
-        return await databaseContext.ExternalUserLinks
+        return ApiResponse.Create(await databaseContext.ExternalUserLinks
             .Where(l => l.UserId == userId)
             .Include(l => l.Provider)
             .Select(l => new ExternalLinkDto
@@ -458,7 +458,7 @@ public class OidcManagement(
                 LinkedAt = l.CreatedAt,
                 LastLoginAt = l.LastLoginAt
             })
-            .ToListAsync();
+            .ToListAsync(), System.Net.HttpStatusCode.OK);
     }
 
     private static string GenerateSecureToken(int length)

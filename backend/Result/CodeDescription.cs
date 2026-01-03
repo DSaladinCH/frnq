@@ -41,4 +41,6 @@ public class CodeDescriptionModel
 	public static CodeDescriptionModel NotFound => new("notfound", "The resource you tried to access was not found.");
 	public static CodeDescriptionModel Conflict => new("conflict", "The request could not be completed due to a conflict with the current state of the resource.");
 	public static CodeDescriptionModel InternalError => new("internalservererror", "There was a internal server error. Please try again later.");
+    public static CodeDescriptionModel Ok => new("ok", "The request was successful.");
+    public static CodeDescriptionModel NoContent => new("nocontent", "The request was successful but there is no content to return.");
 }

@@ -1,6 +1,7 @@
 using DSaladin.Frnq.Api.Auth;
 using DSaladin.Frnq.Api.Investment;
 using DSaladin.Frnq.Api.Quote.Providers;
+using DSaladin.Frnq.Api.Result;
 using Microsoft.EntityFrameworkCore;
 
 namespace DSaladin.Frnq.Api.Quote;
@@ -53,7 +54,7 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 		return quote;
 	}
 
-	public async Task<List<QuotePrice>> GetHistoricalPricesAsync(string providerId, string symbol, DateTime from, DateTime to)
+	public async Task<ApiResponse<List<QuotePrice>>> GetHistoricalPricesAsync(string providerId, string symbol, DateTime from, DateTime to)
 	{
 		if (from > to)
 			throw new ArgumentException("The 'from' date cannot be later than the 'to' date.", nameof(from));
@@ -62,7 +63,7 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 		return await GetHistoricalPricesAsync(quote.Id, from, to);
 	}
 
-	public async Task<List<QuotePrice>> GetHistoricalPricesAsync(int quoteId, DateTime from, DateTime to)
+	public async Task<ApiResponse<List<QuotePrice>>> GetHistoricalPricesAsync(int quoteId, DateTime from, DateTime to)
 	{
 		QuoteModel? quote = await databaseProvider.GetQuoteAsync(quoteId) ?? throw new ArgumentException($"Quote with id '{quoteId}' not found.", nameof(quoteId));
 
@@ -102,7 +103,7 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 			.Where(p => p.Date >= from && p.Date <= to)
 			.OrderBy(p => p.Date)];
 
-		return allCombined;
+		return ApiResponse.Create(allCombined, System.Net.HttpStatusCode.OK);
 	}
 
 	private async Task<IEnumerable<QuotePrice>> GetExternalHistoricalPricesAsync(QuoteModel quote, DateTime? fetchStart, DateTime? fetchEnd)
@@ -132,12 +133,12 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 		return [];
 	}
 
-	public async Task<bool> UpdateCustomNameAsync(int quoteId, string customName)
+	public async Task<ApiResponse> UpdateCustomNameAsync(int quoteId, string customName)
 	{
 		QuoteModel? quote = await databaseContext.Quotes.FirstOrDefaultAsync(q => q.Id == quoteId);
 
 		if (quote is null)
-			return false;
+			return ApiResponses.NotFound404;
 
 		QuoteName? existingName = await databaseContext.QuoteNames.FirstOrDefaultAsync(n => n.UserId == userId && n.QuoteId == quoteId);
 		if (existingName is null)
@@ -154,15 +155,15 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 			existingName.CustomName = customName;
 
 		await databaseContext.SaveChangesAsync();
-		return true;
+		return ApiResponses.NoContent204;
 	}
 
-	public async Task<bool> DeleteCustomNameAsync(int quoteId)
+	public async Task<ApiResponse> DeleteCustomNameAsync(int quoteId)
 	{
 		QuoteModel? quote = await databaseContext.Quotes.FirstOrDefaultAsync(q => q.Id == quoteId);
 
 		if (quote is null)
-			return false;
+			return ApiResponses.NotFound404;
 
 		QuoteName? existingName = await databaseContext.QuoteNames.FirstOrDefaultAsync(n => n.UserId == userId && n.QuoteId == quoteId);
 
@@ -172,6 +173,6 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 			await databaseContext.SaveChangesAsync();
 		}
 
-		return true;
+		return ApiResponses.NoContent204;
 	}
 }

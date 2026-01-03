@@ -22,6 +22,14 @@ public class DatabaseContext : DbContext
     public DbSet<OidcState> OidcStates { get; set; } = null!;
     public DbSet<ExternalUserLink> ExternalUserLinks { get; set; } = null!;
 
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        // Configure enums to be stored as strings in the database
+        configurationBuilder
+            .Properties<Enum>()
+            .HaveConversion<string>();
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<QuoteModel>()

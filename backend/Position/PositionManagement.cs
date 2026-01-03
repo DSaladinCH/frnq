@@ -1,6 +1,7 @@
 using DSaladin.Frnq.Api.Auth;
 using DSaladin.Frnq.Api.Investment;
 using DSaladin.Frnq.Api.Quote;
+using DSaladin.Frnq.Api.Result;
 using Microsoft.EntityFrameworkCore;
 
 namespace DSaladin.Frnq.Api.Position;
@@ -9,7 +10,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 {
 	private readonly Guid userId = authManagement.GetCurrentUserId();
 
-	public async Task<PositionsResponse> GetPositionsAsync(DateTime? from, DateTime? to)
+	public async Task<ApiResponse<PositionsResponse>> GetPositionsAsync(DateTime? from, DateTime? to)
 	{
 		from ??= DateTime.MinValue;
 		to ??= DateTime.UtcNow;
@@ -30,7 +31,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 
 		// Get all quotes that have been invested in
 		if (investments.Count == 0)
-			return new PositionsResponse { Snapshots = [], Quotes = [] };
+			return ApiResponse.Create(new PositionsResponse { Snapshots = [], Quotes = [] }, System.Net.HttpStatusCode.OK);
 
 		HashSet<int> quoteIds = investments.Select(i => i.QuoteId).ToHashSet();
 
@@ -58,7 +59,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 		DateTime? firstInvestmentDate = investments.Count > 0 ? investments.Min(i => i.Date.Date) : (DateTime?)null;
 
 		if (firstInvestmentDate == null)
-			return new PositionsResponse { Snapshots = [], Quotes = [] };
+			return ApiResponse.Create(new PositionsResponse { Snapshots = [], Quotes = [] }, System.Net.HttpStatusCode.OK);
 
 		List<DateTime> days = [.. Enumerable.Range(0, (((DateTime)to).Date
 			- firstInvestmentDate.Value).Days + 1).Select(offset => firstInvestmentDate.Value.AddDays(offset))];
@@ -198,10 +199,10 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 			.GroupBy(q => q.Id)
 			.Select(g => g.First())];
 
-		return new PositionsResponse
+		return ApiResponse.Create(new PositionsResponse
 		{
 			Snapshots = filteredSnapshots,
 			Quotes = [.. uniqueQuotes.Select(QuoteDto.FromModel)]
-		};
+		}, System.Net.HttpStatusCode.OK);
 	}
 }

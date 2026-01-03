@@ -18,7 +18,10 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 
 	private async Task<UserModel?> GetUserByEmailAsync(string email)
 	{
-		return await databaseContext.Users.FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant());
+		// Disable warning, as other solutions cause issues in postgres and memory db
+#pragma warning disable CA1862 // Use the 'StringComparison' method overloads to perform case-insensitive string comparisons
+		return await databaseContext.Users.FirstOrDefaultAsync(u => u.Email.ToLowerInvariant() == email.ToLowerInvariant());
+#pragma warning restore CA1862 // Use the 'StringComparison' method overloads to perform case-insensitive string comparisons
 	}
 
 	public async Task<UserModel?> GetUserByIdAsync(Guid userId)
@@ -32,9 +35,9 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 		UserModel? user = await GetUserByIdAsync(userId);
 
 		if (user is null)
-			return ApiResponses.Unauthorized401.Convert<UserViewDto>();
+			return ApiResponses.Unauthorized401;
 
-		return ApiResponse<UserViewDto>.Create(new UserViewDto
+		return ApiResponse.Create(new UserViewDto
 		{
 			UserId = user.Id,
 			Email = user.Email,
@@ -67,7 +70,8 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 	public async Task<ApiResponse> SignupUserAsync(SignupModel signup)
 	{
 		// Check if signup is enabled
-		bool signupEnabled = configuration.GetValue<bool>("Features:SignupEnabled", true);
+		bool signupEnabled = configuration.GetValue("Features:SignupEnabled", true);
+		
 		if (!signupEnabled)
 			return ApiResponse.Create(ResponseCodes.Signup.SignupDisabled, System.Net.HttpStatusCode.Forbidden);
 
@@ -106,12 +110,12 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 	{
 		// Validate required fields
 		if (string.IsNullOrWhiteSpace(login.Email) || string.IsNullOrWhiteSpace(login.Password))
-			return ApiResponse<LoginResponseModel>.Create(null, ResponseCodes.Login.UserInvalid, System.Net.HttpStatusCode.Unauthorized);
+			return ApiResponse.Create(ResponseCodes.Login.UserInvalid, System.Net.HttpStatusCode.Unauthorized);
 
 		UserModel? user = await GetUserByEmailAsync(login.Email);
 
 		if (user is null || !BCrypt.Net.BCrypt.Verify(login.Password, user.PasswordHash))
-			return ApiResponse<LoginResponseModel>.Create(null, ResponseCodes.Login.UserInvalid, System.Net.HttpStatusCode.Unauthorized);
+			return ApiResponse.Create(ResponseCodes.Login.UserInvalid, System.Net.HttpStatusCode.Unauthorized);
 
 		return await LoginUserByUserModelAsync(user);
 	}
@@ -231,14 +235,14 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 		var refreshToken = httpContextAccessor.HttpContext?.Request.Cookies["refreshToken"];
 
 		if (string.IsNullOrEmpty(refreshToken))
-			return ApiResponse<LoginResponseModel>.Create(null, ResponseCodes.Login.UserInvalid, System.Net.HttpStatusCode.Unauthorized);
+			return ApiResponse.Create(ResponseCodes.Login.UserInvalid, System.Net.HttpStatusCode.Unauthorized);
 
 		var tokenSession = await databaseContext.RefreshTokenSessions
 			.Include(rts => rts.User)
 			.FirstOrDefaultAsync(rts => rts.Token == refreshToken && rts.IsActive && rts.ExpiryTime > DateTime.UtcNow);
 
 		if (tokenSession == null)
-			return ApiResponse<LoginResponseModel>.Create(null, ResponseCodes.Login.UserInvalid, System.Net.HttpStatusCode.Unauthorized);
+			return ApiResponse.Create(ResponseCodes.Login.UserInvalid, System.Net.HttpStatusCode.Unauthorized);
 
 		// Generate new access token
 		var accessToken = GenerateAccessToken(tokenSession.User);

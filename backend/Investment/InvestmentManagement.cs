@@ -1,5 +1,6 @@
 using DSaladin.Frnq.Api.Auth;
 using DSaladin.Frnq.Api.Quote;
+using DSaladin.Frnq.Api.Result;
 using Microsoft.EntityFrameworkCore;
 
 namespace DSaladin.Frnq.Api.Investment;
@@ -8,7 +9,7 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 {
     private readonly Guid userId = authManagement.GetCurrentUserId();
     
-    public async Task<PaginatedInvestmentsResponse> GetInvestmentsAsync(
+    public async Task<ApiResponse<PaginatedInvestmentsResponse>> GetInvestmentsAsync(
         int skip = 0, 
         int take = 50,
         DateTime? fromDate = null,
@@ -59,21 +60,26 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
             .Take(take)
             .ToListAsync();
         
-        return new PaginatedInvestmentsResponse
+        return ApiResponse<PaginatedInvestmentsResponse>.Create(new PaginatedInvestmentsResponse
         {
             Items = investments,
             TotalCount = totalCount,
             Skip = skip,
             Take = take
-        };
+        }, System.Net.HttpStatusCode.OK);
     }
 
-    public async Task<InvestmentModel?> GetInvestmentByIdAsync(int id)
+    public async Task<ApiResponse<InvestmentModel>> GetInvestmentByIdAsync(int id)
     {
-        return await databaseContext.Investments.Where(i => i.UserId == userId && i.Id == id).FirstOrDefaultAsync();
+        InvestmentModel? investment = await databaseContext.Investments.Where(i => i.UserId == userId && i.Id == id).FirstOrDefaultAsync();
+        
+		if (investment is null)
+			return ApiResponses.NotFound404;
+
+		return ApiResponse.Create(investment, System.Net.HttpStatusCode.OK);
     }
 
-    public async Task<InvestmentModel> CreateInvestmentAsync(InvestmentRequest investmentRequest)
+    public async Task<ApiResponse<InvestmentModel>> CreateInvestmentAsync(InvestmentRequest investmentRequest)
     {
         QuoteModel? quote = await quoteManagement.GetQuoteAsync(investmentRequest);
 
@@ -84,7 +90,7 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
         }
 
         if (quote is null)
-            throw new ArgumentException($"Referenced quote does not exist.");
+			return ApiResponses.NotFound404;
 
         InvestmentModel investment = new()
         {
@@ -100,10 +106,10 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
         databaseContext.Investments.Add(investment);
         await databaseContext.SaveChangesAsync();
 
-        return investment;
+        return ApiResponses.Created201;
     }
 
-    public async Task<List<InvestmentModel>> CreateInvestmentsAsync(List<InvestmentRequest> investmentRequests)
+    public async Task<ApiResponse<List<InvestmentModel>>> CreateInvestmentsAsync(List<InvestmentRequest> investmentRequests)
     {
         var investments = new List<InvestmentModel>();
         
@@ -118,7 +124,7 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
             }
 
             if (quote is null)
-                throw new ArgumentException($"Referenced quote does not exist for symbol {investmentRequest.QuoteSymbol}.");
+				return ApiResponses.NotFound404;
 
             InvestmentModel investment = new()
             {
@@ -137,21 +143,18 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
         databaseContext.Investments.AddRange(investments);
         await databaseContext.SaveChangesAsync();
 
-        return investments;
+        return ApiResponse.Create(investments, System.Net.HttpStatusCode.Created);
     }
 
-    public async Task<InvestmentModel> UpdateInvestmentAsync(int id, InvestmentRequest investmentRequest)
+    public async Task<ApiResponse<InvestmentModel>> UpdateInvestmentAsync(int id, InvestmentRequest investmentRequest)
     {
-        if (investmentRequest is null)
-            throw new ArgumentNullException(nameof(investmentRequest));
-
         InvestmentModel? investment = await databaseContext.Investments.FindAsync(id);
 
         if (investment is null)
-            throw new KeyNotFoundException($"Investment with ID {id} not found.");
+            return ApiResponses.NotFound404;
 
         if (investment.UserId != userId)
-            throw new UnauthorizedAccessException("You do not have permission to update this investment.");
+            return ApiResponses.Unauthorized401;
 
         QuoteModel? quote = await quoteManagement.GetQuoteAsync(investmentRequest);
 
@@ -162,7 +165,7 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
         }
 
         if (quote is null)
-            throw new ArgumentException($"Referenced quote does not exist.");
+			return ApiResponses.NotFound404;
 
         investment.QuoteId = quote.Id;
         investment.Date = DateTime.SpecifyKind(investmentRequest.Date, DateTimeKind.Utc);
@@ -174,20 +177,19 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
         databaseContext.Investments.Update(investment);
         await databaseContext.SaveChangesAsync();
 
-        return investment;
+        return ApiResponse.Create(investment, System.Net.HttpStatusCode.OK);
     }
 
-    public async Task DeleteInvestmentAsync(int id)
+    public async Task<ApiResponse> DeleteInvestmentAsync(int id)
     {
-        InvestmentModel? investment = await GetInvestmentByIdAsync(id);
+        ApiResponse<InvestmentModel> investmentResponse = await GetInvestmentByIdAsync(id);
 
-        if (investment is null)
-            throw new KeyNotFoundException($"Investment with ID {id} not found.");
+        if (investmentResponse.Failed)
+            return investmentResponse;
 
-        if (investment.UserId != userId)
-            throw new UnauthorizedAccessException("You do not have permission to delete this investment.");
-
-        databaseContext.Investments.Remove(investment);
+        databaseContext.Investments.Remove(investmentResponse.Value);
         await databaseContext.SaveChangesAsync();
+
+        return ApiResponses.NoContent204;
     }
 }
