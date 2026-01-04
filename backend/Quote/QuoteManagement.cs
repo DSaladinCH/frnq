@@ -40,10 +40,11 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 				dbQuote.Name = customName.CustomName;
 		}
 
-		results = dbQuotes.Concat(results);
-
-		// Remove duplicates based on Symbol, keeping the first occurrence
-		results = results.GroupBy(q => q.Symbol).Select(g => g.First());
+		// Filter external results to exclude symbols already present in dbQuotes
+		HashSet<string> existingSymbols = [.. dbQuotes.Select(q => q.Symbol)];
+		IEnumerable<QuoteModel> externalResults = results.Where(r => !existingSymbols.Contains(r.Symbol));
+		results = dbQuotes.Concat(externalResults);
+		
 		return ApiResponse.Create(results.ToList(), System.Net.HttpStatusCode.OK);
 	}
 
