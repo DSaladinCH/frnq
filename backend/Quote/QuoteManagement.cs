@@ -26,16 +26,16 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 		// and the results should be above the ones from the external provider
 
 		List<QuoteModel> dbQuotes = await databaseContext.Quotes
-			.Include(q => q.Names)
+			.Include(q => q.Names.Where(n => n.UserId == userId))
 			.Where(q => q.ProviderId == providerId && (q.Symbol.ToLower().Contains(query.ToLower()) || q.Name.ToLower().Contains(query.ToLower()) ||
-				q.Names.Any(n => n.UserId == userId && n.QuoteId == q.Id && n.CustomName.ToLower().Contains(query.ToLower()))))
+				q.Names.Any(n => n.UserId == userId && n.CustomName.ToLower().Contains(query.ToLower()))))
 			.ToListAsync();
 #pragma warning restore CA1862 // Use the 'StringComparison' method overloads to perform case-insensitive string comparisons
 
 		// Use custom names from the database quotes if they exist
 		foreach (QuoteModel dbQuote in dbQuotes)
 		{
-			QuoteName? customName = dbQuote.Names.FirstOrDefault(n => n.UserId == userId && n.QuoteId == dbQuote.Id);
+			QuoteName? customName = dbQuote.Names.FirstOrDefault();
 			if (customName is not null)
 				dbQuote.Name = customName.CustomName;
 		}
