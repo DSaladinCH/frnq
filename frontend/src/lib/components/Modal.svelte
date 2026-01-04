@@ -18,34 +18,19 @@
 		else dialog.close();
 	});
 
-	let mouseDownOutside = false;
+	let mouseDownOnBackdrop = false;
 	onMount(() => {
 		dialog.addEventListener('mousedown', (e: MouseEvent) => {
-			const contentDiv = dialog.querySelector('#dialog-content > div');
-			if (contentDiv) {
-				const rect = contentDiv.getBoundingClientRect();
-				mouseDownOutside =
-					e.clientX < rect.left ||
-					e.clientX > rect.right ||
-					e.clientY < rect.top ||
-					e.clientY > rect.bottom;
-			}
+			// Check if the click is directly on the dialog element (backdrop)
+			mouseDownOnBackdrop = (e.target as HTMLElement).id === 'dialog-content';
 		});
 
 		dialog.addEventListener('mouseup', (e: MouseEvent) => {
-			const contentDiv = dialog.querySelector('#dialog-content > div');
-			if (contentDiv) {
-				const rect = contentDiv.getBoundingClientRect();
-				const mouseUpOutside =
-					e.clientX < rect.left ||
-					e.clientX > rect.right ||
-					e.clientY < rect.top ||
-					e.clientY > rect.bottom;
-				if (mouseDownOutside && mouseUpOutside) {
-					dialog.close();
-				}
+			// Only close if both mousedown and mouseup happened on the backdrop
+			if (mouseDownOnBackdrop && (e.target as HTMLElement).id === 'dialog-content') {
+				dialog.close();
 			}
-			mouseDownOutside = false;
+			mouseDownOnBackdrop = false;
 		});
 	});
 </script>
