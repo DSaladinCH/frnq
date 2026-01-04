@@ -10,6 +10,44 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 {
 	private readonly Guid userId = authManagement.GetCurrentUserId();
 
+	public async Task<ApiResponse<List<QuoteModel>>> SearchQuotesAsync(string query, string providerId = "yahoo-finance")
+	{
+		IFinanceProvider? financeProvider = registry.GetProvider(providerId);
+
+		if (financeProvider is null)
+			return ApiResponse.Create(ResponseCodes.Quote.ProviderNotFound, System.Net.HttpStatusCode.BadRequest);
+
+		IEnumerable<QuoteModel> results = await financeProvider.SearchAsync(query);
+
+		// Ignoring CA1862 because of EF Core query translation limitations
+#pragma warning disable CA1862 // Use the 'StringComparison' method overloads to perform case-insensitive string comparisons
+		// Flavor the results with quotes from the database that match the query (quote symbol, name or custom name)
+		// The results should use custom names if they exist
+		// and the results should be above the ones from the external provider
+
+		List<QuoteModel> dbQuotes = await databaseContext.Quotes
+			.Include(q => q.Names.Where(n => n.UserId == userId))
+			.Where(q => q.ProviderId == providerId && (q.Symbol.ToLower().Contains(query.ToLower()) || q.Name.ToLower().Contains(query.ToLower()) ||
+				q.Names.Any(n => n.UserId == userId && n.CustomName.ToLower().Contains(query.ToLower()))))
+			.ToListAsync();
+#pragma warning restore CA1862 // Use the 'StringComparison' method overloads to perform case-insensitive string comparisons
+
+		// Use custom names from the database quotes if they exist
+		foreach (QuoteModel dbQuote in dbQuotes)
+		{
+			QuoteName? customName = dbQuote.Names.FirstOrDefault();
+			if (customName is not null)
+				dbQuote.Name = customName.CustomName;
+		}
+
+		// Filter external results to exclude symbols already present in dbQuotes
+		HashSet<string> existingSymbols = [.. dbQuotes.Select(q => q.Symbol)];
+		IEnumerable<QuoteModel> externalResults = results.Where(r => !existingSymbols.Contains(r.Symbol));
+		results = dbQuotes.Concat(externalResults);
+		
+		return ApiResponse.Create(results.ToList(), System.Net.HttpStatusCode.OK);
+	}
+
 	public async Task<QuoteModel?> GetQuoteAsync(int quoteId)
 	{
 		return await databaseContext.Quotes.FirstOrDefaultAsync(q => q.Id == quoteId);

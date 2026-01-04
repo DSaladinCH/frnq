@@ -15,4 +15,9 @@ public static class ResponseCodes
 		public static readonly CodeDescriptionModel PasswordWeak = new("PASSWORD_WEAK", "The password must be at least 12 characters long and contain uppercase, lowercase, digit, and special character.");
 		public static readonly CodeDescriptionModel SignupDisabled = new("SIGNUP_DISABLED", "New user registrations are currently disabled.");
 	}
+
+	public static class Quote
+	{
+		public static readonly CodeDescriptionModel ProviderNotFound = new("PROVIDER_NOT_FOUND", "The requested provider was not found.");
+	}
 }

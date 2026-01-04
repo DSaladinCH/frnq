@@ -37,7 +37,7 @@
 	} = $props();
 
 	// Update investment fields when quote changes
-	$effect(() => {		
+	$effect(() => {
 		if (quote) {
 			// Check if the quote exists in database (has a valid ID > 0)
 			if (quote.id > 0) {
@@ -93,8 +93,11 @@
 			}
 		}
 
+		// Create a snapshot of the investment to prevent reactive updates from affecting the saved data
+		const investmentSnapshot = { ...investment };
+
 		isLoading = true;
-		await saveInvestment(investment);
+		await saveInvestment(investmentSnapshot);
 		isLoading = false;
 	}
 </script>
