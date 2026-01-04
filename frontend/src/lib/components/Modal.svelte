@@ -23,11 +23,9 @@
 		dialog.addEventListener('mousedown', (e: MouseEvent) => {
 			// Check if the click is directly on the dialog element (backdrop)
 			mouseDownOnBackdrop = (e.target as HTMLElement).id === 'dialog-content';
-			console.log(e.target);
 		});
 
 		dialog.addEventListener('mouseup', (e: MouseEvent) => {
-			console.log(e.target);
 			// Only close if both mousedown and mouseup happened on the backdrop
 			if (mouseDownOnBackdrop && (e.target as HTMLElement).id === 'dialog-content') {
 				dialog.close();
