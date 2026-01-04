@@ -14,25 +14,12 @@ public class QuoteController(QuoteManagement quoteManagement, ProviderRegistry r
 	// GET: api/quote/search?query=apple&providerId=yahoo-finance
 	[HttpGet("search")]
 	public async Task<ApiResponse> Search([FromQuery] string query, [FromQuery] string providerId = "yahoo-finance")
-	{
-		IFinanceProvider? financeProvider = registry.GetProvider(providerId);
-
-		if (financeProvider is null)
-			return ApiResponse.Create($"Provider with ID '{providerId}' not found.", System.Net.HttpStatusCode.BadRequest);
-
-		IEnumerable<QuoteModel> results = await financeProvider.SearchAsync(query);
-
-		// Remove duplicates based on Symbol, keeping the first occurrence
-		results = results.GroupBy(q => q.Symbol).Select(g => g.First());
-		return ApiResponse.Create(results, System.Net.HttpStatusCode.OK);
-	}
+		=> await quoteManagement.SearchQuotesAsync(query, providerId);
 
 	// GET: api/quote/historical?symbol=AAPL&from=2024-01-01&to=2024-01-10
 	[HttpGet("historical")]
 	public async Task<ApiResponse> GetHistoricalPrices([FromQuery] string symbol, [ModelBinder(BinderType = typeof(FlexibleDateTimeBinder))] DateTime from, [ModelBinder(BinderType = typeof(FlexibleDateTimeBinder))] DateTime to, [FromQuery] string providerId = "yahoo-finance")
-	{
-		return await quoteManagement.GetHistoricalPricesAsync(providerId, symbol, from, to);
-	}
+		=> await quoteManagement.GetHistoricalPricesAsync(providerId, symbol, from, to);
 
 	[HttpPut("{quoteId}/customName")]
 	public async Task<IActionResult> UpdateCustomName([FromRoute] int quoteId, [FromBody] CustomNameDto customName)
