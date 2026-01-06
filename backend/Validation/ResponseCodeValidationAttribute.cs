@@ -21,11 +21,16 @@ public abstract class ResponseCodeValidationAttribute : ValidationAttribute
 		ErrorMessage = responseCode.Description;
 	}
 
-	public override string FormatErrorMessage(string name)
+	protected sealed override ValidationResult? IsValid(object? value, ValidationContext validationContext)
 	{
-		if (ResponseCode != null)
-			return $"{ResponseCode.Code}|{ResponseCode.Description}";
-			
-		return base.FormatErrorMessage(name);
+		if (ResponseCode is null)
+			throw new InvalidOperationException($"{GetType().Name} requires ResponseCode to be set");
+
+		return IsValidCore(value, validationContext);
 	}
+
+	protected abstract ValidationResult? IsValidCore(object? value, ValidationContext validationContext);
+
+	public override string FormatErrorMessage(string name)
+		=> $"{ResponseCode!.Code}|{ResponseCode!.Description}";
 }

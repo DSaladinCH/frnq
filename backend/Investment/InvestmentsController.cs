@@ -32,19 +32,19 @@ public class InvestmentsController(InvestmentManagement investmentManagement) : 
 	}
 
 	[HttpPost]
-	public async Task<ApiResponse> CreateInvestment([FromBody] InvestmentRequest investment)
+	public async Task<ApiResponse> CreateInvestment([FromBody] InvestmentDto investment)
 	{
 		return await investmentManagement.CreateInvestmentAsync(investment);
 	}
 
 	[HttpPost("bulk")]
-	public async Task<ApiResponse> CreateInvestmentsBulk([FromBody] List<InvestmentRequest> investments)
+	public async Task<ApiResponse> CreateInvestmentsBulk([FromBody] List<InvestmentDto> investments)
 	{
 		return await investmentManagement.CreateInvestmentsAsync(investments);
 	}
 
 	[HttpPut("{id}")]
-	public async Task<ApiResponse> UpdateInvestment(int id, [FromBody] InvestmentRequest investment)
+	public async Task<ApiResponse> UpdateInvestment(int id, [FromBody] InvestmentDto investment)
 	{
 		return await investmentManagement.UpdateInvestmentAsync(id, investment);
 	}

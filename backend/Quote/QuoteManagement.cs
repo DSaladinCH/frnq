@@ -58,7 +58,7 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 		return await databaseContext.Quotes.FirstOrDefaultAsync(q => q.ProviderId == providerId && q.Symbol == symbol);
 	}
 
-	public async Task<QuoteModel?> GetQuoteAsync(InvestmentRequest investment)
+	public async Task<QuoteModel?> GetQuoteAsync(InvestmentDto investment)
 	{
 		if (investment.QuoteId > 0)
 			return await GetQuoteAsync(investment.QuoteId);

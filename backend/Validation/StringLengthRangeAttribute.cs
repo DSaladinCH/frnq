@@ -18,11 +18,8 @@ public class StringLengthRangeAttribute : ResponseCodeValidationAttribute
         ResponseCode = CodeDescriptionModel.InvalidFields;
     }
 
-    protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+    protected override ValidationResult? IsValidCore(object? value, ValidationContext validationContext)
     {
-        if (ResponseCode == null)
-            throw new InvalidOperationException("ResponseCode must be set");
-
         if (value == null || value is not string stringValue)
             return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));
 
