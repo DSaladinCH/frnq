@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 
 namespace DSaladin.Frnq.Api.Result;
 
+[ExcludeFromCodeCoverage]
 public class CodeDescriptionModel
 {
 	/// <summary>
@@ -14,6 +16,8 @@ public class CodeDescriptionModel
 	/// </summary>
 	[Required]
 	public string Description { get; set; } = string.Empty;
+
+    public CodeDescriptionModel() { }
 
 	public CodeDescriptionModel(string code)
 	{

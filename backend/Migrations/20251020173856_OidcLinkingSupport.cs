@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace DSaladin.Frnq.Api.Migrations
 {
 	/// <inheritdoc />
+	[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 	public partial class OidcLinkingSupport : Migration
 	{
 		/// <inheritdoc />

@@ -5,6 +5,7 @@
 namespace DSaladin.Frnq.Api.Migrations
 {
     /// <inheritdoc />
+	[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     public partial class FixGroupMapping : Migration
     {
         /// <inheritdoc />
