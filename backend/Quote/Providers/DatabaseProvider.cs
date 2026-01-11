@@ -7,39 +7,41 @@ public class DatabaseProvider(DatabaseContext databaseContext)
 	public string InternalId => "database";
 	public string Name => "Database";
 
-	public async Task<QuoteModel?> GetQuoteAsync(int quoteId)
+	public async Task<QuoteModel?> GetQuoteAsync(int quoteId, CancellationToken cancellationToken)
 	{
 		return await databaseContext.Quotes
-			.FirstOrDefaultAsync(q => q.Id == quoteId);
+			.FirstOrDefaultAsync(q => q.Id == quoteId, cancellationToken);
 	}
 
-	public async Task<QuoteModel?> GetQuoteAsync(string providerId, string symbol)
+	public async Task<QuoteModel?> GetQuoteAsync(string providerId, string symbol, CancellationToken cancellationToken)
 	{
 		return await databaseContext.Quotes
-			.FirstOrDefaultAsync(q => q.ProviderId == providerId && q.Symbol == symbol);
+			.FirstOrDefaultAsync(q => q.ProviderId == providerId && q.Symbol == symbol, cancellationToken);
 	}
 
-	public async Task<IEnumerable<QuoteModel>> SearchAsync(string query)
+	public async Task<IEnumerable<QuoteModel>> SearchAsync(string query, CancellationToken cancellationToken)
 	{
 		return await databaseContext.Quotes
+			.AsNoTracking()
 			.Where(q => q.Name.Contains(query, StringComparison.OrdinalIgnoreCase) || q.Symbol.Contains(query, StringComparison.OrdinalIgnoreCase))
-			.ToListAsync();
+			.ToListAsync(cancellationToken);
 	}
 
-	public async Task<IEnumerable<QuotePrice>> GetHistoricalPricesAsync(int quoteId, DateTime from, DateTime to)
+	public async Task<IEnumerable<QuotePrice>> GetHistoricalPricesAsync(int quoteId, DateTime from, DateTime to, CancellationToken cancellationToken)
 	{
 		return await databaseContext.QuotePrices
+			.AsNoTracking()
 			.Where(qp => qp.QuoteId == quoteId && qp.Date >= from && qp.Date <= to)
 			.OrderBy(qp => qp.Date)
-			.ToListAsync();
+			.ToListAsync(cancellationToken);
 	}
 
-	public async Task<QuoteModel?> AddOrUpdateQuoteAsync(QuoteModel? quote)
+	public async Task<QuoteModel?> AddOrUpdateQuoteAsync(QuoteModel? quote, CancellationToken cancellationToken)
 	{
 		if (quote is null)
 			return null;
 
-		QuoteModel? existing = await GetQuoteAsync(quote.ProviderId, quote.Symbol);
+		QuoteModel? existing = await GetQuoteAsync(quote.ProviderId, quote.Symbol, cancellationToken);
 
 		if (existing is not null)
 		{
@@ -48,18 +50,18 @@ public class DatabaseProvider(DatabaseContext databaseContext)
 			databaseContext.Entry(existing).CurrentValues.SetValues(quote);
 		}
 		else
-			await databaseContext.Quotes.AddAsync(quote);
+			await databaseContext.Quotes.AddAsync(quote, cancellationToken);
 
-		await databaseContext.SaveChangesAsync();
+		await databaseContext.SaveChangesAsync(cancellationToken);
 		return quote;
 	}
 
-	public async Task AddOrUpdateQuotePricesAsync(IEnumerable<QuotePrice> prices)
+	public async Task AddOrUpdateQuotePricesAsync(IEnumerable<QuotePrice> prices, CancellationToken cancellationToken)
 	{
 		if (!prices.Any())
 			return;
 
-		QuoteModel? quote = await GetQuoteAsync(prices.First().QuoteId);
+		QuoteModel? quote = await GetQuoteAsync(prices.First().QuoteId, cancellationToken);
 
 		if (quote is null)
 			return;
@@ -68,7 +70,7 @@ public class DatabaseProvider(DatabaseContext databaseContext)
 		var priceDates = prices.Select(x => x.Date.Date).Distinct().ToList();
 		List<QuotePrice> existingPrices = await databaseContext.QuotePrices
 			.Where(p => p.QuoteId == quote.Id && priceDates.Contains(p.Date.Date))
-			.ToListAsync();
+			.ToListAsync(cancellationToken);
 
 		// Group existing prices by date (date only) to handle multiple entries per day
 		Dictionary<DateTime, List<QuotePrice>> existingByDate = existingPrices
@@ -81,7 +83,7 @@ public class DatabaseProvider(DatabaseContext databaseContext)
 		{
 			DateTime dateOnly = price.Date.Date;
 
-			if (existingByDate.TryGetValue(dateOnly, out var existingForDate))
+			if (existingByDate.TryGetValue(dateOnly, out List<QuotePrice>? existingForDate))
 			{
 				// Find the existing price with the latest time for this date
 				QuotePrice? latestExisting = existingForDate.OrderByDescending(p => p.Date).FirstOrDefault();
@@ -111,7 +113,7 @@ public class DatabaseProvider(DatabaseContext databaseContext)
 		}
 
 		if (newPrices.Count > 0)
-			await databaseContext.QuotePrices.AddRangeAsync(newPrices);
+			await databaseContext.QuotePrices.AddRangeAsync(newPrices, cancellationToken);
 
 		if (string.IsNullOrEmpty(quote.Currency) && prices.First().Currency is not null)
 			quote.Currency = prices.First().Currency;
@@ -119,6 +121,6 @@ public class DatabaseProvider(DatabaseContext databaseContext)
 		quote.LastUpdatedPrices = DateTime.UtcNow;
 		databaseContext.Entry(quote).State = EntityState.Modified;
 
-		await databaseContext.SaveChangesAsync();
+		await databaseContext.SaveChangesAsync(cancellationToken);
 	}
 }

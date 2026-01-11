@@ -10,7 +10,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 {
 	private readonly Guid userId = authManagement.GetCurrentUserId();
 
-	public async Task<ApiResponse<PositionsResponse>> GetPositionsAsync(DateTime? from, DateTime? to)
+	public async Task<ApiResponse<PositionsResponse>> GetPositionsAsync(DateTime? from, DateTime? to, CancellationToken cancellationToken)
 	{
 		from ??= DateTime.MinValue;
 		to ??= DateTime.UtcNow;
@@ -20,6 +20,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 
 		// Get all investments up to the requested 'to' date
 		List<InvestmentModel> investments = await databaseContext.Investments
+			.AsNoTracking()
 			.Where(i => userId == i.UserId && i.Date <= to)
 			.OrderBy(i => i.Date)
 			.Include(i => i.Quote)
@@ -27,7 +28,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 					.ThenInclude(m => m.Group)
 			.Include(i => i.Quote)
 				.ThenInclude(q => q.Names.Where(n => n.UserId == userId))
-			.ToListAsync();
+			.ToListAsync(cancellationToken);
 
 		// Get all quotes that have been invested in
 		if (investments.Count == 0)
@@ -42,14 +43,15 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 			using IServiceScope scope = serviceProvider.CreateScope();
 			QuoteManagement scopedQuoteManagement = scope.ServiceProvider.GetRequiredService<QuoteManagement>();
 
-			await scopedQuoteManagement.GetHistoricalPricesAsync(quoteId, (DateTime)from, (DateTime)to);
+			await scopedQuoteManagement.GetHistoricalPricesAsync(quoteId, (DateTime)from, (DateTime)to, cancellationToken);
 		});
 
 		// Get all prices up to the requested 'to' date
 		List<QuotePrice> prices = await databaseContext.QuotePrices
+			.AsNoTracking()
 			.Where(qp => quoteIds.Contains(qp.QuoteId))
 			.Where(qp => qp.Date <= to)
-			.ToListAsync();
+			.ToListAsync(cancellationToken);
 
 		Dictionary<int, Dictionary<DateTime, QuotePrice>> priceLookup = prices
 			.GroupBy(qp => qp.QuoteId)
@@ -68,7 +70,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 		IEnumerable<IGrouping<(Guid UserId, int QuoteId), InvestmentModel>> investmentGroups =
 		investments.GroupBy(i => (i.UserId, i.QuoteId));
 
-		foreach (var group in investmentGroups)
+		foreach (IGrouping<(Guid UserId, int QuoteId), InvestmentModel> group in investmentGroups)
 		{
 			decimal totalFees = 0;           // lifetime fees for info
 			decimal realizedCash = 0;        // dividends + net sell proceeds
@@ -113,7 +115,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 						decimal totalCostBasis = 0;
 						while (toSell > 0 && lots.Count > 0)
 						{
-							var lot = lots.Peek();
+							(decimal Amount, decimal PricePerUnit) lot = lots.Peek();
 							decimal used = Math.Min(lot.Amount, toSell);
 
 							// Track the cost basis of shares being sold
@@ -150,7 +152,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 
 				// Get price for this day
 				QuotePrice? price = null;
-				if (priceLookup.TryGetValue(group.Key.QuoteId, out var priceDict))
+				if (priceLookup.TryGetValue(group.Key.QuoteId, out Dictionary<DateTime, QuotePrice>? priceDict))
 					priceDict.TryGetValue(day, out price);
 
 				if (price == null && lastKnownPrice == null)

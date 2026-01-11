@@ -36,7 +36,7 @@ public class OidcInitializationService : IHostedService, IDisposable
 
         // Start cleanup timer (run every hour)
         _cleanupTimer = new Timer(
-            async _ => await CleanupExpiredStatesAsync(),
+            async _ => await CleanupExpiredStatesAsync(cancellationToken),
             null,
             TimeSpan.FromMinutes(5),
             TimeSpan.FromHours(1));
@@ -55,16 +55,16 @@ public class OidcInitializationService : IHostedService, IDisposable
     {
         try
         {
-            using var scope = _serviceProvider.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
+            using IServiceScope scope = _serviceProvider.CreateScope();
+			DatabaseContext dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
 
-            // Get OIDC providers from configuration
-            var providersConfig = _configuration.GetSection("OidcProviders");
+			// Get OIDC providers from configuration
+			IConfigurationSection providersConfig = _configuration.GetSection("OidcProviders");
             
-            foreach (var providerSection in providersConfig.GetChildren())
+            foreach (IConfigurationSection providerSection in providersConfig.GetChildren())
             {
-                var providerId = providerSection.Key;
-                var enabled = providerSection.GetValue<bool>("Enabled", false);
+				string providerId = providerSection.Key;
+				bool enabled = providerSection.GetValue<bool>("Enabled", false);
 
                 if (!enabled)
                 {
@@ -72,17 +72,17 @@ public class OidcInitializationService : IHostedService, IDisposable
                     continue;
                 }
 
-                var displayName = providerSection.GetValue<string>("DisplayName") ?? providerId;
-                var authEndpoint = providerSection.GetValue<string>("AuthorizationEndpoint");
-                var tokenEndpoint = providerSection.GetValue<string>("TokenEndpoint");
-                var userInfoEndpoint = providerSection.GetValue<string>("UserInfoEndpoint");
-                var clientId = providerSection.GetValue<string>("ClientId");
-                var clientSecret = providerSection.GetValue<string>("ClientSecret");
-                var scopes = providerSection.GetValue<string>("Scopes") ?? "openid profile email";
-                var autoRedirect = providerSection.GetValue<bool>("AutoRedirect", false);
-                var displayOrder = providerSection.GetValue<int>("DisplayOrder", 0);
-                var claimMappings = providerSection.GetValue<string>("ClaimMappings") ?? "{\"email\":\"email\",\"name\":\"name\",\"sub\":\"sub\"}";
-                var issuerUrl = providerSection.GetValue<string>("IssuerUrl");
+				string displayName = providerSection.GetValue<string>("DisplayName") ?? providerId;
+				string? authEndpoint = providerSection.GetValue<string>("AuthorizationEndpoint");
+				string? tokenEndpoint = providerSection.GetValue<string>("TokenEndpoint");
+				string? userInfoEndpoint = providerSection.GetValue<string>("UserInfoEndpoint");
+				string? clientId = providerSection.GetValue<string>("ClientId");
+				string? clientSecret = providerSection.GetValue<string>("ClientSecret");
+				string scopes = providerSection.GetValue<string>("Scopes") ?? "openid profile email";
+				bool autoRedirect = providerSection.GetValue<bool>("AutoRedirect", false);
+				int displayOrder = providerSection.GetValue<int>("DisplayOrder", 0);
+				string claimMappings = providerSection.GetValue<string>("ClaimMappings") ?? "{\"email\":\"email\",\"name\":\"name\",\"sub\":\"sub\"}";
+				string? issuerUrl = providerSection.GetValue<string>("IssuerUrl");
 
                 // Validate required fields
                 if (string.IsNullOrEmpty(authEndpoint) || 
@@ -103,8 +103,8 @@ public class OidcInitializationService : IHostedService, IDisposable
                     faviconData = await FetchAndResizeFaviconAsync(issuerUrl, cancellationToken);
                 }
 
-                // Check if provider already exists
-                var existingProvider = await dbContext.OidcProviders
+				// Check if provider already exists
+				OidcProvider? existingProvider = await dbContext.OidcProviders
                     .FirstOrDefaultAsync(p => p.ProviderId == providerId, cancellationToken);
 
                 if (existingProvider != null)
@@ -151,7 +151,7 @@ public class OidcInitializationService : IHostedService, IDisposable
                         ClaimMappings = claimMappings
                     };
 
-                    dbContext.OidcProviders.Add(newProvider);
+                    await dbContext.OidcProviders.AddAsync(newProvider, cancellationToken);
                     _logger.LogInformation("Created OIDC provider: {ProviderId}", providerId);
                 }
             }
@@ -171,7 +171,7 @@ public class OidcInitializationService : IHostedService, IDisposable
         {
             // Parse the issuer URL to get the base domain
             var uri = new Uri(issuerUrl);
-            var baseUrl = $"{uri.Scheme}://{uri.Host}";
+			string baseUrl = $"{uri.Scheme}://{uri.Host}";
             
             using var httpClient = new HttpClient();
             httpClient.Timeout = TimeSpan.FromSeconds(10);
@@ -179,9 +179,9 @@ public class OidcInitializationService : IHostedService, IDisposable
             
             byte[]? imageBytes = null;
             string? successUrl = null;
-            
-            // Try multiple common favicon locations in order of preference
-            var faviconUrls = new[]
+
+			// Try multiple common favicon locations in order of preference
+			string[] faviconUrls = new[]
             {
                 $"{baseUrl}/favicon.ico",      // Classic favicon
                 $"{baseUrl}/favicon.png",      // PNG variant
@@ -190,14 +190,14 @@ public class OidcInitializationService : IHostedService, IDisposable
                 $"{baseUrl}/logo.png",         // Some sites use logo.png
             };
             
-            foreach (var faviconUrl in faviconUrls)
+            foreach (string? faviconUrl in faviconUrls)
             {
                 try
                 {
-                    var response = await httpClient.GetAsync(faviconUrl, cancellationToken);
+					HttpResponseMessage response = await httpClient.GetAsync(faviconUrl, cancellationToken);
                     if (response.IsSuccessStatusCode)
                     {
-                        var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+						byte[] bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
                         // Verify it's a valid image by trying to load it
                         if (bytes.Length > 0)
                         {
@@ -231,9 +231,9 @@ public class OidcInitializationService : IHostedService, IDisposable
             
             // Load and resize the image
             using var image = Image.Load(imageBytes);
-            
-            // Resize to max 100x100 while maintaining aspect ratio
-            var targetSize = 100;
+
+			// Resize to max 100x100 while maintaining aspect ratio
+			int targetSize = 100;
             if (image.Width > targetSize || image.Height > targetSize)
             {
                 image.Mutate(x => x.Resize(new ResizeOptions
@@ -246,7 +246,7 @@ public class OidcInitializationService : IHostedService, IDisposable
             // Convert to PNG and base64
             using var ms = new MemoryStream();
             await image.SaveAsPngAsync(ms, cancellationToken);
-            var base64 = Convert.ToBase64String(ms.ToArray());
+			string base64 = Convert.ToBase64String(ms.ToArray());
             
             _logger.LogInformation("Successfully fetched and resized favicon for {IssuerUrl} from {SuccessUrl}", issuerUrl, successUrl);
             return $"data:image/png;base64,{base64}";
@@ -258,14 +258,14 @@ public class OidcInitializationService : IHostedService, IDisposable
         }
     }
 
-    private async Task CleanupExpiredStatesAsync()
+    private async Task CleanupExpiredStatesAsync(CancellationToken cancellationToken)
     {
         try
         {
-            using var scope = _serviceProvider.CreateScope();
-            var oidcManagement = scope.ServiceProvider.GetRequiredService<OidcManagement>();
+            using IServiceScope scope = _serviceProvider.CreateScope();
+			OidcManagement oidcManagement = scope.ServiceProvider.GetRequiredService<OidcManagement>();
             
-            await oidcManagement.CleanupExpiredStatesAsync();
+            await oidcManagement.CleanupExpiredStatesAsync(cancellationToken);
             _logger.LogDebug("Cleaned up expired OIDC states");
         }
         catch (Exception ex)
@@ -277,5 +277,6 @@ public class OidcInitializationService : IHostedService, IDisposable
     public void Dispose()
     {
         _cleanupTimer?.Dispose();
+		GC.SuppressFinalize(this);
     }
 }

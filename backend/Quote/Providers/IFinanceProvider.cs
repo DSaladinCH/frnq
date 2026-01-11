@@ -17,14 +17,14 @@ public interface IFinanceProvider
 	/// </summary>
 	/// <param name="symbol">The stock symbol to fetch the quote for.</param>
 	/// <returns>A task that represents the asynchronous operation, containing the stock quote model.</returns>
-	Task<QuoteModel?> GetQuoteAsync(string symbol);
+	Task<QuoteModel?> GetQuoteAsync(string symbol, CancellationToken cancellationToken = default);
 
 	/// <summary>
 	/// Searches for a stock quote based on the provided query.
 	/// </summary>
 	/// <param name="query">The search query, which can be a stock symbol or company name.</param
 	/// <returns>A task that represents the asynchronous operation, containing a list of matching stock quotes.</returns>
-	Task<IEnumerable<QuoteModel>> SearchAsync(string query);
+	Task<IEnumerable<QuoteModel>> SearchAsync(string query, CancellationToken cancellationToken = default);
 
 	/// <summary>
 	/// Fetches historical prices for a given symbol.
@@ -33,5 +33,5 @@ public interface IFinanceProvider
 	/// <param name="from">The start date for the historical data.</param>
 	/// <param name="to">The end date for the historical data.</param>
 	/// <returns>A task that represents the asynchronous operation, containing a list of historical prices.</returns>
-	Task<IEnumerable<QuotePrice>> GetHistoricalPricesAsync(string symbol, DateTime from, DateTime to);
+	Task<IEnumerable<QuotePrice>> GetHistoricalPricesAsync(string symbol, DateTime from, DateTime to, CancellationToken cancellationToken = default);
 }
