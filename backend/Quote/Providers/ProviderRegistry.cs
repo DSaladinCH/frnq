@@ -11,6 +11,6 @@ public class ProviderRegistry
 
 	public IFinanceProvider? GetProvider(string internalId)
 	{
-		return providers.TryGetValue(internalId.ToLowerInvariant(), out var provider) ? provider : null;
+		return providers.TryGetValue(internalId.ToLowerInvariant(), out IFinanceProvider? provider) ? provider : null;
 	}
 }

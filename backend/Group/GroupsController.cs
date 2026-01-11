@@ -10,38 +10,38 @@ namespace DSaladin.Frnq.Api.Group;
 public class GroupsController(GroupManagement groupManagement) : ControllerBase
 {
 	[HttpGet]
-	public async Task<ApiResponse> GetGroups()
+	public async Task<ApiResponse> GetGroups(CancellationToken cancellationToken)
 	{
-		return await groupManagement.GetAllGroupsAsync();
+		return await groupManagement.GetAllGroupsAsync(cancellationToken);
 	}
 
 	[HttpPost]
-	public async Task<ApiResponse> CreateGroup([FromBody] QuoteGroupDto quoteGroup)
+	public async Task<ApiResponse> CreateGroup([FromBody] QuoteGroupDto quoteGroup, CancellationToken cancellationToken)
 	{
-		return await groupManagement.CreateGroupAsync(quoteGroup);
+		return await groupManagement.CreateGroupAsync(quoteGroup, cancellationToken);
 	}
 
 	[HttpPut("{id}")]
-	public async Task<ApiResponse> UpdateGroup(int id, [FromBody] QuoteGroupDto quoteGroup)
+	public async Task<ApiResponse> UpdateGroup(int id, [FromBody] QuoteGroupDto quoteGroup, CancellationToken cancellationToken)
 	{
-		return await groupManagement.UpdateGroupAsync(id, quoteGroup);
+		return await groupManagement.UpdateGroupAsync(id, quoteGroup, cancellationToken);
 	}
 
 	[HttpDelete("{id}")]
-	public async Task<ApiResponse> DeleteGroup(int id)
+	public async Task<ApiResponse> DeleteGroup(int id, CancellationToken cancellationToken)
 	{
-		return await groupManagement.DeleteGroupAsync(id);
+		return await groupManagement.DeleteGroupAsync(id, cancellationToken);
 	}
 
 	[HttpPost("{id}/{quoteId}")]
-	public async Task<ApiResponse> AddQuoteToGroup(int id, int quoteId)
+	public async Task<ApiResponse> AddQuoteToGroup(int id, int quoteId, CancellationToken cancellationToken)
 	{
-		return await groupManagement.AddQuoteToGroupAsync(id, quoteId);
+		return await groupManagement.AddQuoteToGroupAsync(id, quoteId, cancellationToken);
 	}
 
 	[HttpDelete("{id}/{quoteId}")]
-	public async Task<ApiResponse> RemoveQuoteFromGroup(int id, int quoteId)
+	public async Task<ApiResponse> RemoveQuoteFromGroup(int id, int quoteId, CancellationToken cancellationToken)
 	{
-		return await groupManagement.RemoveQuoteFromGroupAsync(id, quoteId);
+		return await groupManagement.RemoveQuoteFromGroupAsync(id, quoteId, cancellationToken);
 	}
 }

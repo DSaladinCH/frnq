@@ -14,8 +14,9 @@ public class PositionsController(PositionManagement positionManagement) : Contro
 	[HttpGet]
 	public async Task<ApiResponse> GetPositions(
 		[ModelBinder(BinderType = typeof(FlexibleDateTimeBinder))] DateTime? from,
-		[ModelBinder(BinderType = typeof(FlexibleDateTimeBinder))] DateTime? to)
+		[ModelBinder(BinderType = typeof(FlexibleDateTimeBinder))] DateTime? to,
+		CancellationToken cancellationToken)
 	{
-		return await positionManagement.GetPositionsAsync(from, to);
+		return await positionManagement.GetPositionsAsync(from, to, cancellationToken);
 	}
 }

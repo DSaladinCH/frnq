@@ -9,30 +9,30 @@ public class GroupManagement(DatabaseContext databaseContext, AuthManagement aut
 {
 	private readonly Guid userId = authManagement.GetCurrentUserId();
 
-	public async Task<ApiResponse<List<QuoteGroupViewDto>>> GetAllGroupsAsync()
+	public async Task<ApiResponse<List<QuoteGroupViewDto>>> GetAllGroupsAsync(CancellationToken cancellationToken)
 	{
-		return ApiResponse<List<QuoteGroupViewDto>>.Create(QuoteGroupViewDto.FromModelList(await databaseContext.QuoteGroups.Where(qg => qg.UserId == userId).ToListAsync()), System.Net.HttpStatusCode.OK);
+		return ApiResponse.Create(QuoteGroupViewDto.FromModelList(await databaseContext.QuoteGroups.Where(qg => qg.UserId == userId).ToListAsync(cancellationToken)), System.Net.HttpStatusCode.OK);
 	}
 
-	public async Task<ApiResponse> CreateGroupAsync(QuoteGroupDto quoteGroup)
+	public async Task<ApiResponse> CreateGroupAsync(QuoteGroupDto quoteGroup, CancellationToken cancellationToken)
 	{
 		if (string.IsNullOrWhiteSpace(quoteGroup.Name))
 			return ApiResponses.EmptyFields400;
 
-		if (await databaseContext.QuoteGroups.AnyAsync(g => g.UserId == userId && g.Name == quoteGroup.Name))
+		if (await databaseContext.QuoteGroups.AnyAsync(g => g.UserId == userId && g.Name == quoteGroup.Name, cancellationToken))
 			return ApiResponses.Conflict409;
 
 		QuoteGroup newGroup = new() { Name = quoteGroup.Name, UserId = userId };
 
-		await databaseContext.QuoteGroups.AddAsync(newGroup);
-		await databaseContext.SaveChangesAsync();
+		await databaseContext.QuoteGroups.AddAsync(newGroup, cancellationToken);
+		await databaseContext.SaveChangesAsync(cancellationToken);
 
 		return ApiResponses.Created201;
 	}
 
-	public async Task<ApiResponse> UpdateGroupAsync(int groupId, QuoteGroupDto quoteGroup)
+	public async Task<ApiResponse> UpdateGroupAsync(int groupId, QuoteGroupDto quoteGroup, CancellationToken cancellationToken)
 	{
-		QuoteGroup? group = await databaseContext.QuoteGroups.FirstOrDefaultAsync(g => g.UserId == userId && g.Id == groupId);
+		QuoteGroup? group = await databaseContext.QuoteGroups.FirstOrDefaultAsync(g => g.UserId == userId && g.Id == groupId, cancellationToken);
 
 		if (group is null)
 			return ApiResponses.NotFound404;
@@ -40,40 +40,40 @@ public class GroupManagement(DatabaseContext databaseContext, AuthManagement aut
 		if (string.IsNullOrWhiteSpace(quoteGroup.Name))
 			return ApiResponses.EmptyFields400;
 
-		if (await databaseContext.QuoteGroups.AnyAsync(g => g.UserId == userId && g.Name == quoteGroup.Name && g.Id != groupId))
+		if (await databaseContext.QuoteGroups.AnyAsync(g => g.UserId == userId && g.Name == quoteGroup.Name && g.Id != groupId, cancellationToken))
 			return ApiResponses.Conflict409;
 
 		group.Name = quoteGroup.Name;
 		databaseContext.QuoteGroups.Update(group);
-		await databaseContext.SaveChangesAsync();
+		await databaseContext.SaveChangesAsync(cancellationToken);
 
 		return ApiResponse.Create("", "", System.Net.HttpStatusCode.OK);
 	}
 
-	public async Task<ApiResponse> DeleteGroupAsync(int groupId)
+	public async Task<ApiResponse> DeleteGroupAsync(int groupId, CancellationToken cancellationToken)
 	{
-		QuoteGroup? group = await databaseContext.QuoteGroups.FirstOrDefaultAsync(g => g.UserId == userId && g.Id == groupId);
+		QuoteGroup? group = await databaseContext.QuoteGroups.FirstOrDefaultAsync(g => g.UserId == userId && g.Id == groupId, cancellationToken);
 
 		if (group is null)
 			return ApiResponses.NotFound404;
 
 		databaseContext.QuoteGroups.Remove(group);
-		await databaseContext.SaveChangesAsync();
+		await databaseContext.SaveChangesAsync(cancellationToken);
 
 		return ApiResponse.Create("DELETED", "", System.Net.HttpStatusCode.OK);
 	}
 
-	public async Task<ApiResponse> AddQuoteToGroupAsync(int groupId, int quoteId)
+	public async Task<ApiResponse> AddQuoteToGroupAsync(int groupId, int quoteId, CancellationToken cancellationToken)
 	{
-		QuoteGroup? group = await databaseContext.QuoteGroups.FirstOrDefaultAsync(g => g.UserId == userId && g.Id == groupId);
+		QuoteGroup? group = await databaseContext.QuoteGroups.FirstOrDefaultAsync(g => g.UserId == userId && g.Id == groupId, cancellationToken);
 
 		if (group is null)
 			return ApiResponses.NotFound404;
 
-		if (!await databaseContext.Quotes.AnyAsync(q => q.Id == quoteId))
+		if (!await databaseContext.Quotes.AnyAsync(q => q.Id == quoteId, cancellationToken))
 			return ApiResponses.NotFound404;
 
-		QuoteGroupMapping? quoteGroupMapping = await databaseContext.QuoteGroupMappings.FirstOrDefaultAsync(m => m.UserId == userId && m.QuoteId == quoteId);
+		QuoteGroupMapping? quoteGroupMapping = await databaseContext.QuoteGroupMappings.FirstOrDefaultAsync(m => m.UserId == userId && m.QuoteId == quoteId, cancellationToken);
 
 		if (quoteGroupMapping is not null)
 		{
@@ -85,21 +85,21 @@ public class GroupManagement(DatabaseContext databaseContext, AuthManagement aut
 
 		QuoteGroupMapping mapping = new() { UserId = userId, QuoteId = quoteId, GroupId = groupId };
 
-		await databaseContext.QuoteGroupMappings.AddAsync(mapping);
-		await databaseContext.SaveChangesAsync();
+		await databaseContext.QuoteGroupMappings.AddAsync(mapping, cancellationToken);
+		await databaseContext.SaveChangesAsync(cancellationToken);
 
 		return ApiResponses.Created201;
 	}
 
-	public async Task<ApiResponse> RemoveQuoteFromGroupAsync(int groupId, int quoteId)
+	public async Task<ApiResponse> RemoveQuoteFromGroupAsync(int groupId, int quoteId, CancellationToken cancellationToken)
 	{
-		QuoteGroupMapping? mapping = await databaseContext.QuoteGroupMappings.FirstOrDefaultAsync(m => m.UserId == userId && m.QuoteId == quoteId && m.GroupId == groupId);
+		QuoteGroupMapping? mapping = await databaseContext.QuoteGroupMappings.FirstOrDefaultAsync(m => m.UserId == userId && m.QuoteId == quoteId && m.GroupId == groupId, cancellationToken);
 
 		if (mapping is null)
 			return ApiResponses.NotFound404;
 
 		databaseContext.QuoteGroupMappings.Remove(mapping);
-		await databaseContext.SaveChangesAsync();
+		await databaseContext.SaveChangesAsync(cancellationToken);
 
 		return ApiResponse.Create("DELETED", "", System.Net.HttpStatusCode.OK);
 	}

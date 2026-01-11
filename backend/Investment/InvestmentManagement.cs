@@ -16,7 +16,8 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 		DateTime? toDate = null,
 		int? quoteId = null,
 		int? groupId = null,
-		InvestmentType? type = null)
+		InvestmentType? type = null,
+		CancellationToken cancellationToken = default)
 	{
 		IQueryable<InvestmentModel> query = databaseContext.Investments.Where(i => i.UserId == userId);
 
@@ -49,12 +50,12 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 		if (type.HasValue)
 			query = query.Where(i => i.Type == type.Value);
 
-		int totalCount = await query.CountAsync();
+		int totalCount = await query.CountAsync(cancellationToken);
 		List<InvestmentModel> investments = await query
 			.OrderByDescending(i => i.Date)
 			.Skip(skip)
 			.Take(take)
-			.ToListAsync();
+			.ToListAsync(cancellationToken);
 
 		return ApiResponse.Create(new PaginatedInvestmentsResponse
 		{
@@ -65,9 +66,9 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 		}, System.Net.HttpStatusCode.OK);
 	}
 
-	public async Task<ApiResponse<InvestmentViewDto>> GetInvestmentByIdAsync(int id)
+	public async Task<ApiResponse<InvestmentViewDto>> GetInvestmentByIdAsync(int id, CancellationToken cancellationToken)
 	{
-		InvestmentModel? investment = await databaseContext.Investments.Where(i => i.UserId == userId && i.Id == id).FirstOrDefaultAsync();
+		InvestmentModel? investment = await databaseContext.Investments.Where(i => i.UserId == userId && i.Id == id).FirstOrDefaultAsync(cancellationToken);
 
 		if (investment is null)
 			return ApiResponses.NotFound404;
@@ -75,14 +76,14 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 		return ApiResponse.Create(new InvestmentViewDto(investment), System.Net.HttpStatusCode.OK);
 	}
 
-	public async Task<ApiResponse> CreateInvestmentAsync(InvestmentDto investmentRequest)
+	public async Task<ApiResponse> CreateInvestmentAsync(InvestmentDto investmentRequest, CancellationToken cancellationToken)
 	{
-		QuoteModel? quote = await quoteManagement.GetQuoteAsync(investmentRequest);
+		QuoteModel? quote = await quoteManagement.GetQuoteAsync(investmentRequest, cancellationToken);
 
 		if (quote is null)
 		{
-			await quoteManagement.GetHistoricalPricesAsync(investmentRequest.ProviderId, investmentRequest.QuoteSymbol, DateTime.MinValue, DateTime.UtcNow);
-			quote = await quoteManagement.GetQuoteAsync(investmentRequest);
+			await quoteManagement.GetHistoricalPricesAsync(investmentRequest.ProviderId, investmentRequest.QuoteSymbol, DateTime.MinValue, DateTime.UtcNow, cancellationToken);
+			quote = await quoteManagement.GetQuoteAsync(investmentRequest, cancellationToken);
 		}
 
 		if (quote is null)
@@ -99,24 +100,24 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 			TotalFees = investmentRequest.TotalFees
 		};
 
-		databaseContext.Investments.Add(investment);
-		await databaseContext.SaveChangesAsync();
+		await databaseContext.Investments.AddAsync(investment, cancellationToken);
+		await databaseContext.SaveChangesAsync(cancellationToken);
 
 		return ApiResponses.Created201;
 	}
 
-	public async Task<ApiResponse<List<InvestmentViewDto>>> CreateInvestmentsAsync(List<InvestmentDto> investmentRequests)
+	public async Task<ApiResponse<List<InvestmentViewDto>>> CreateInvestmentsAsync(List<InvestmentDto> investmentRequests, CancellationToken cancellationToken)
 	{
 		var investments = new List<InvestmentModel>();
 
-		foreach (var investmentRequest in investmentRequests)
+		foreach (InvestmentDto investmentRequest in investmentRequests)
 		{
-			QuoteModel? quote = await quoteManagement.GetQuoteAsync(investmentRequest);
+			QuoteModel? quote = await quoteManagement.GetQuoteAsync(investmentRequest, cancellationToken);
 
 			if (quote is null)
 			{
-				await quoteManagement.GetHistoricalPricesAsync(investmentRequest.ProviderId, investmentRequest.QuoteSymbol, DateTime.MinValue, DateTime.UtcNow);
-				quote = await quoteManagement.GetQuoteAsync(investmentRequest);
+				await quoteManagement.GetHistoricalPricesAsync(investmentRequest.ProviderId, investmentRequest.QuoteSymbol, DateTime.MinValue, DateTime.UtcNow, cancellationToken);
+				quote = await quoteManagement.GetQuoteAsync(investmentRequest, cancellationToken);
 			}
 
 			if (quote is null)
@@ -136,15 +137,15 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 			investments.Add(investment);
 		}
 
-		databaseContext.Investments.AddRange(investments);
-		await databaseContext.SaveChangesAsync();
+		await databaseContext.Investments.AddRangeAsync(investments, cancellationToken);
+		await databaseContext.SaveChangesAsync(cancellationToken);
 
 		return ApiResponse.Create(investments.Select(i => new InvestmentViewDto(i)).ToList(), System.Net.HttpStatusCode.Created);
 	}
 
-	public async Task<ApiResponse<InvestmentViewDto>> UpdateInvestmentAsync(int id, InvestmentDto investmentRequest)
+	public async Task<ApiResponse<InvestmentViewDto>> UpdateInvestmentAsync(int id, InvestmentDto investmentRequest, CancellationToken cancellationToken)
 	{
-		InvestmentModel? investment = await databaseContext.Investments.FindAsync(id);
+		InvestmentModel? investment = await databaseContext.Investments.FindAsync([id], cancellationToken);
 
 		if (investment is null)
 			return ApiResponses.NotFound404;
@@ -152,12 +153,12 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 		if (investment.UserId != userId)
 			return ApiResponses.Unauthorized401;
 
-		QuoteModel? quote = await quoteManagement.GetQuoteAsync(investmentRequest);
+		QuoteModel? quote = await quoteManagement.GetQuoteAsync(investmentRequest, cancellationToken);
 
 		if (quote is null)
 		{
-			await quoteManagement.GetHistoricalPricesAsync(investmentRequest.ProviderId, investmentRequest.QuoteSymbol, DateTime.MinValue, DateTime.UtcNow);
-			quote = await quoteManagement.GetQuoteAsync(investmentRequest);
+			await quoteManagement.GetHistoricalPricesAsync(investmentRequest.ProviderId, investmentRequest.QuoteSymbol, DateTime.MinValue, DateTime.UtcNow, cancellationToken);
+			quote = await quoteManagement.GetQuoteAsync(investmentRequest, cancellationToken);
 		}
 
 		if (quote is null)
@@ -171,20 +172,20 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 		investment.TotalFees = investmentRequest.TotalFees;
 
 		databaseContext.Investments.Update(investment);
-		await databaseContext.SaveChangesAsync();
+		await databaseContext.SaveChangesAsync(cancellationToken);
 
 		return ApiResponse.Create(new InvestmentViewDto(investment), System.Net.HttpStatusCode.OK);
 	}
 
-	public async Task<ApiResponse> DeleteInvestmentAsync(int id)
+	public async Task<ApiResponse> DeleteInvestmentAsync(int id, CancellationToken cancellationToken)
 	{
-		InvestmentModel? investment = await databaseContext.Investments.Where(i => i.UserId == userId && i.Id == id).FirstOrDefaultAsync();
+		InvestmentModel? investment = await databaseContext.Investments.Where(i => i.UserId == userId && i.Id == id).FirstOrDefaultAsync(cancellationToken);
 
 		if (investment is null)
 			return ApiResponses.NotFound404;
 
 		databaseContext.Investments.Remove(investment);
-		await databaseContext.SaveChangesAsync();
+		await databaseContext.SaveChangesAsync(cancellationToken);
 
 		return ApiResponses.NoContent204;
 	}

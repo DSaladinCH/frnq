@@ -15,41 +15,41 @@ public class AuthController(AuthManagement authManagement, IConfiguration config
     }
 
     [HttpPost("signup")]
-    public async Task<ApiResponse> Signup([FromBody] SignupModel signup)
+    public async Task<ApiResponse> Signup([FromBody] SignupModel signup, CancellationToken cancellationToken)
     {
-        return await authManagement.SignupUserAsync(signup);
+        return await authManagement.SignupUserAsync(signup, cancellationToken);
     }
 
     [HttpPost("login")]
-    public async Task<ApiResponse> Login([FromBody] LoginModel login)
+    public async Task<ApiResponse> Login([FromBody] LoginModel login, CancellationToken cancellationToken)
     {
-        return await authManagement.LoginUserAsync(login);
+        return await authManagement.LoginUserAsync(login, cancellationToken);
     }
 
     [HttpPost("refresh")]
-    public async Task<ApiResponse> RefreshToken()
+    public async Task<ApiResponse> RefreshToken(CancellationToken cancellationToken)
     {
-        return await authManagement.RefreshAccessTokenAsync();
+        return await authManagement.RefreshAccessTokenAsync(cancellationToken);
     }
 
     [HttpPost("logout")]
     [Authorize]
-    public async Task<ApiResponse> Logout()
+    public async Task<ApiResponse> Logout(CancellationToken cancellationToken)
     {
-        return await authManagement.LogoutAsync();
+        return await authManagement.LogoutAsync(cancellationToken);
     }
 
     [HttpGet("me")]
     [Authorize]
-    public async Task<ApiResponse> GetCurrentUser()
+    public async Task<ApiResponse> GetCurrentUser(CancellationToken cancellationToken)
     {
-		return await authManagement.GetUserAsync();
+		return await authManagement.GetUserAsync(cancellationToken);
     }
 
     [HttpPatch("me")]
     [Authorize]
-    public async Task<ApiResponse> UpdateCurrentUser([FromBody] UserDto updateModel)
+    public async Task<ApiResponse> UpdateCurrentUser([FromBody] UserDto updateModel, CancellationToken cancellationToken)
     {
-        return await authManagement.UpdateUserAsync(updateModel);
+        return await authManagement.UpdateUserAsync(updateModel, cancellationToken);
     }
 }

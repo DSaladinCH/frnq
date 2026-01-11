@@ -16,7 +16,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 
 // Add services to the container.
@@ -59,20 +59,20 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 		if (firstError?.ErrorMessage != null && firstError.ErrorMessage.Contains('|'))
 		{
 			// Parse ResponseCode format: "CODE|Description"
-			var parts = firstError.ErrorMessage.Split('|', 2);
+			string[] parts = firstError.ErrorMessage.Split('|', 2);
 			var codeDescription = new CodeDescriptionModel(parts[0], parts[1]);
 			return ApiResponse.Create(codeDescription, System.Net.HttpStatusCode.BadRequest).Response;
 		}
 
 		// Fallback to generic validation error
-		var message = firstError?.ErrorMessage ?? "Validation failed";
+		string message = firstError?.ErrorMessage ?? "Validation failed";
 		return ApiResponse.Create("VALIDATION_FAILED", message, System.Net.HttpStatusCode.BadRequest).Response;
 	};
 });
 
 // Add JWT authentication
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var key = Encoding.ASCII.GetBytes(jwtSettings["SecretKey"]!);
+IConfigurationSection jwtSettings = builder.Configuration.GetSection("JwtSettings");
+byte[] key = Encoding.ASCII.GetBytes(jwtSettings["SecretKey"]!);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -95,7 +95,7 @@ builder.Services.AddAuthentication(options =>
 });
 
 // Add CORS policy with configurable origins
-var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://localhost:5173"];
+string[] allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://localhost:5173"];
 builder.Services.AddCors(options =>
 {
 	options.AddPolicy("AppCorsPolicy", policy =>
@@ -112,9 +112,9 @@ builder.Services.AddDbContext<DatabaseContext>(options =>
 	options.UseNpgsql(connectionString));
 
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
-using (var localScope = app.Services.CreateScope())
+using (IServiceScope localScope = app.Services.CreateScope())
 {
 	DatabaseContext databaseContext = localScope.ServiceProvider.GetRequiredService<DatabaseContext>();
 	databaseContext.Database.Migrate();

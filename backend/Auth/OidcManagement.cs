@@ -22,7 +22,7 @@ public class OidcManagement(
     /// <summary>
     /// Get all enabled OIDC providers for display on login page
     /// </summary>
-    public async Task<ApiResponse<List<OidcProviderDto>>> GetEnabledProvidersAsync()
+    public async Task<ApiResponse<List<OidcProviderDto>>> GetEnabledProvidersAsync(CancellationToken cancellationToken)
     {
 		List<OidcProviderDto> providers = await databaseContext.OidcProviders
             .Where(p => p.IsEnabled)
@@ -34,7 +34,7 @@ public class OidcManagement(
                 FaviconUrl = p.FaviconUrl,
                 AutoRedirect = p.AutoRedirect
             })
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         return ApiResponse.Create(providers, System.Net.HttpStatusCode.OK);
     }
@@ -45,17 +45,17 @@ public class OidcManagement(
     /// <param name="providerId">The provider to use</param>
     /// <param name="returnUrl">Optional return URL</param>
     /// <param name="userId">Optional user ID for linking flow</param>
-    public async Task<ApiResponse<string>> InitiateLoginAsync(string providerId, string? returnUrl = null, Guid? userId = null)
+    public async Task<ApiResponse<string>> InitiateLoginAsync(string providerId, string? returnUrl = null, Guid? userId = null, CancellationToken cancellationToken = default)
     {
-        var provider = await databaseContext.OidcProviders
-            .FirstOrDefaultAsync(p => p.ProviderId == providerId && p.IsEnabled);
+		OidcProvider? provider = await databaseContext.OidcProviders
+            .FirstOrDefaultAsync(p => p.ProviderId == providerId && p.IsEnabled, cancellationToken);
 
         if (provider == null)
             return ApiResponse.Create("PROVIDER_NOT_FOUND", "Provider not found or disabled", System.Net.HttpStatusCode.NotFound);
 
-        // Generate secure random state and nonce
-        var state = GenerateSecureToken(32);
-        var nonce = GenerateSecureToken(32);
+		// Generate secure random state and nonce
+		string state = GenerateSecureToken(32);
+		string nonce = GenerateSecureToken(32);
 
         // Store state in database with expiration
         var oidcState = new OidcState
@@ -68,15 +68,15 @@ public class OidcManagement(
             ExpiresAt = DateTime.UtcNow.AddMinutes(15)
         };
 
-        databaseContext.OidcStates.Add(oidcState);
-        await databaseContext.SaveChangesAsync();
+        await databaseContext.OidcStates.AddAsync(oidcState, cancellationToken);
+        await databaseContext.SaveChangesAsync(cancellationToken);
 
-        // Build redirect URL
-        var baseUrl = configuration.GetValue<string>("ApiBaseUrl") ?? 
+		// Build redirect URL
+		string baseUrl = configuration.GetValue<string>("ApiBaseUrl") ?? 
                      $"{httpContextAccessor.HttpContext!.Request.Scheme}://{httpContextAccessor.HttpContext.Request.Host}";
-        var redirectUri = $"{baseUrl}/api/authoidc/callback/{provider.ProviderId}";
+		string redirectUri = $"{baseUrl}/api/authoidc/callback/{provider.ProviderId}";
 
-        var authUrl = BuildAuthorizationUrl(provider, redirectUri, state, nonce);
+		string authUrl = BuildAuthorizationUrl(provider, redirectUri, state, nonce);
 
         return ApiResponse<string>.Create(authUrl, System.Net.HttpStatusCode.OK);
     }
@@ -84,12 +84,12 @@ public class OidcManagement(
     /// <summary>
     /// Handles the OAuth2/OIDC callback after user authorizes
     /// </summary>
-    public async Task<ApiResponse<LoginResponseModel>> HandleCallbackAsync(string providerId, string code, string state)
+    public async Task<ApiResponse<LoginResponseModel>> HandleCallbackAsync(string providerId, string code, string state, CancellationToken cancellationToken)
     {
-        // Validate state to prevent CSRF
-        var oidcState = await databaseContext.OidcStates
+		// Validate state to prevent CSRF
+		OidcState? oidcState = await databaseContext.OidcStates
             .Include(s => s.Provider)
-            .FirstOrDefaultAsync(s => s.State == state && !s.IsUsed && s.ExpiresAt > DateTime.UtcNow);
+            .FirstOrDefaultAsync(s => s.State == state && !s.IsUsed && s.ExpiresAt > DateTime.UtcNow, cancellationToken);
 
         if (oidcState == null)
         {
@@ -105,22 +105,22 @@ public class OidcManagement(
 
         // Mark state as used
         oidcState.IsUsed = true;
-        await databaseContext.SaveChangesAsync();
+        await databaseContext.SaveChangesAsync(cancellationToken);
 
-        var provider = oidcState.Provider;
+		OidcProvider provider = oidcState.Provider;
 
         try
         {
-            // Exchange code for tokens
-            var tokenResponse = await ExchangeCodeForTokensAsync(provider, code);
+			// Exchange code for tokens
+			TokenResponse? tokenResponse = await ExchangeCodeForTokensAsync(provider, code, cancellationToken);
             if (tokenResponse == null)
             {
                 logger.LogError("Failed to exchange code for tokens with provider {Provider}", providerId);
                 return ApiResponse.Create("TOKEN_EXCHANGE_FAILED", "Failed to obtain tokens", System.Net.HttpStatusCode.BadGateway);
             }
 
-            // Get user info from ID token or UserInfo endpoint
-            var userInfo = await GetUserInfoAsync(provider, tokenResponse);
+			// Get user info from ID token or UserInfo endpoint
+			OidcUserInfo? userInfo = await GetUserInfoAsync(provider, tokenResponse, cancellationToken);
             if (userInfo == null)
             {
                 logger.LogError("Failed to get user info from provider {Provider}", providerId);
@@ -130,8 +130,8 @@ public class OidcManagement(
             // Check if this is a linking flow
             if (oidcState.LinkingUserId.HasValue)
             {
-                // This is a linking request - link and return success
-                var linkResult = await LinkExternalAccountAsync(oidcState.LinkingUserId.Value, providerId, userInfo);
+				// This is a linking request - link and return success
+				ApiResponse linkResult = await LinkExternalAccountAsync(oidcState.LinkingUserId.Value, providerId, userInfo, cancellationToken);
                 
                 if (linkResult.Success)
                 {
@@ -144,8 +144,8 @@ public class OidcManagement(
                 }
             }
 
-            // Normal login flow - find user by external link
-            var user = await FindUserByExternalLinkAsync(provider, userInfo);
+			// Normal login flow - find user by external link
+			UserModel? user = await FindUserByExternalLinkAsync(provider, userInfo, cancellationToken);
 
             if (user == null)
             {
@@ -155,7 +155,7 @@ public class OidcManagement(
             }
 
             // Generate our own JWT tokens
-            var loginResponse = await authManagement.LoginUserByUserModelAsync(user);
+            var loginResponse = await authManagement.LoginUserByUserModelAsync(user, cancellationToken);
 
             return loginResponse;
         }
@@ -169,17 +169,17 @@ public class OidcManagement(
     /// <summary>
     /// Cleanup expired OIDC states (should be run periodically)
     /// </summary>
-    public async Task CleanupExpiredStatesAsync()
+    public async Task CleanupExpiredStatesAsync(CancellationToken cancellationToken)
     {
-        var expiredStates = await databaseContext.OidcStates
+		List<OidcState> expiredStates = await databaseContext.OidcStates
             .Where(s => s.ExpiresAt < DateTime.UtcNow)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         databaseContext.OidcStates.RemoveRange(expiredStates);
-        await databaseContext.SaveChangesAsync();
+        await databaseContext.SaveChangesAsync(cancellationToken);
     }
 
-    private string BuildAuthorizationUrl(OidcProvider provider, string redirectUri, string state, string nonce)
+    private static string BuildAuthorizationUrl(OidcProvider provider, string redirectUri, string state, string nonce)
     {
         var queryParams = new Dictionary<string, string>
         {
@@ -191,17 +191,17 @@ public class OidcManagement(
             ["nonce"] = nonce
         };
 
-        var queryString = string.Join("&", queryParams.Select(kvp => 
+		string queryString = string.Join("&", queryParams.Select(kvp => 
             $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(kvp.Value)}"));
 
         return $"{provider.AuthorizationEndpoint}?{queryString}";
     }
 
-    private async Task<TokenResponse?> ExchangeCodeForTokensAsync(OidcProvider provider, string code)
+    private async Task<TokenResponse?> ExchangeCodeForTokensAsync(OidcProvider provider, string code, CancellationToken cancellationToken)
     {
-        var baseUrl = configuration.GetValue<string>("ApiBaseUrl") ?? 
+		string baseUrl = configuration.GetValue<string>("ApiBaseUrl") ?? 
                      $"{httpContextAccessor.HttpContext!.Request.Scheme}://{httpContextAccessor.HttpContext.Request.Host}";
-        var redirectUri = $"{baseUrl}/api/authoidc/callback/{provider.ProviderId}";
+		string redirectUri = $"{baseUrl}/api/authoidc/callback/{provider.ProviderId}";
 
         var tokenRequest = new Dictionary<string, string>
         {
@@ -214,18 +214,18 @@ public class OidcManagement(
 
         try
         {
-            var response = await _httpClient.PostAsync(
+			HttpResponseMessage response = await _httpClient.PostAsync(
                 provider.TokenEndpoint,
-                new FormUrlEncodedContent(tokenRequest));
+                new FormUrlEncodedContent(tokenRequest), cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
+				string errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
                 logger.LogError("Token endpoint returned {StatusCode}: {Error}", response.StatusCode, errorContent);
                 return null;
             }
 
-            var content = await response.Content.ReadAsStringAsync();
+			string content = await response.Content.ReadAsStringAsync(cancellationToken);
             return JsonSerializer.Deserialize<TokenResponse>(content);
         }
         catch (Exception ex)
@@ -235,12 +235,12 @@ public class OidcManagement(
         }
     }
 
-    private async Task<OidcUserInfo?> GetUserInfoAsync(OidcProvider provider, TokenResponse tokenResponse)
+    private async Task<OidcUserInfo?> GetUserInfoAsync(OidcProvider provider, TokenResponse tokenResponse, CancellationToken cancellationToken)
     {
         // First try to extract from ID token if present
         if (!string.IsNullOrEmpty(tokenResponse.IdToken))
         {
-            var userInfo = ExtractUserInfoFromIdToken(tokenResponse.IdToken, provider);
+			OidcUserInfo? userInfo = ExtractUserInfoFromIdToken(tokenResponse.IdToken, provider);
             if (userInfo != null)
                 return userInfo;
         }
@@ -253,15 +253,15 @@ public class OidcManagement(
                 var request = new HttpRequestMessage(HttpMethod.Get, provider.UserInfoEndpoint);
                 request.Headers.Add("Authorization", $"Bearer {tokenResponse.AccessToken}");
 
-                var response = await _httpClient.SendAsync(request);
+				HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
                 if (!response.IsSuccessStatusCode)
                 {
                     logger.LogWarning("UserInfo endpoint returned {StatusCode}", response.StatusCode);
                     return null;
                 }
 
-                var content = await response.Content.ReadAsStringAsync();
-                var claims = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(content);
+				string content = await response.Content.ReadAsStringAsync(cancellationToken);
+				Dictionary<string, JsonElement>? claims = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(content);
                 
                 return MapClaimsToUserInfo(claims, provider);
             }
@@ -279,12 +279,12 @@ public class OidcManagement(
     {
         try
         {
-            // Simple JWT parsing - in production, you should validate signature
-            var parts = idToken.Split('.');
+			// Simple JWT parsing - in production, you should validate signature
+			string[] parts = idToken.Split('.');
             if (parts.Length != 3)
                 return null;
 
-            var payload = parts[1];
+			string payload = parts[1];
             // Add padding if needed
             switch (payload.Length % 4)
             {
@@ -292,9 +292,9 @@ public class OidcManagement(
                 case 3: payload += "="; break;
             }
 
-            var jsonBytes = Convert.FromBase64String(payload);
-            var json = Encoding.UTF8.GetString(jsonBytes);
-            var claims = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+			byte[] jsonBytes = Convert.FromBase64String(payload);
+			string json = Encoding.UTF8.GetString(jsonBytes);
+			Dictionary<string, JsonElement>? claims = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
 
             return MapClaimsToUserInfo(claims, provider);
         }
@@ -312,29 +312,29 @@ public class OidcManagement(
 
         try
         {
-            var mappings = JsonSerializer.Deserialize<Dictionary<string, string>>(provider.ClaimMappings) 
+			Dictionary<string, string> mappings = JsonSerializer.Deserialize<Dictionary<string, string>>(provider.ClaimMappings) 
                           ?? new Dictionary<string, string>();
 
             var userInfo = new OidcUserInfo();
 
             // Extract sub (required)
-            if (mappings.TryGetValue("sub", out var subClaim) && claims.TryGetValue(subClaim, out var subValue))
+            if (mappings.TryGetValue("sub", out string? subClaim) && claims.TryGetValue(subClaim, out JsonElement subValue))
                 userInfo.Sub = subValue.GetString() ?? string.Empty;
-            else if (claims.TryGetValue("sub", out var defaultSub))
+            else if (claims.TryGetValue("sub", out JsonElement defaultSub))
                 userInfo.Sub = defaultSub.GetString() ?? string.Empty;
 
             // Extract email
-            if (mappings.TryGetValue("email", out var emailClaim) && claims.TryGetValue(emailClaim, out var emailValue))
+            if (mappings.TryGetValue("email", out string? emailClaim) && claims.TryGetValue(emailClaim, out JsonElement emailValue))
                 userInfo.Email = emailValue.GetString();
-            else if (claims.TryGetValue("email", out var defaultEmail))
+            else if (claims.TryGetValue("email", out JsonElement defaultEmail))
                 userInfo.Email = defaultEmail.GetString();
 
             // Extract name
-            if (mappings.TryGetValue("name", out var nameClaim) && claims.TryGetValue(nameClaim, out var nameValue))
+            if (mappings.TryGetValue("name", out string? nameClaim) && claims.TryGetValue(nameClaim, out JsonElement nameValue))
                 userInfo.Name = nameValue.GetString();
-            else if (claims.TryGetValue("name", out var defaultName))
+            else if (claims.TryGetValue("name", out JsonElement defaultName))
                 userInfo.Name = defaultName.GetString();
-            else if (claims.TryGetValue("given_name", out var givenName))
+            else if (claims.TryGetValue("given_name", out JsonElement givenName))
                 userInfo.Name = givenName.GetString();
 
             if (string.IsNullOrEmpty(userInfo.Sub))
@@ -352,12 +352,12 @@ public class OidcManagement(
         }
     }
 
-    private async Task<UserModel?> FindUserByExternalLinkAsync(OidcProvider provider, OidcUserInfo userInfo)
+    private async Task<UserModel?> FindUserByExternalLinkAsync(OidcProvider provider, OidcUserInfo userInfo, CancellationToken cancellationToken)
     {
-        // Check if this external user already exists and is linked
-        var existingLink = await databaseContext.ExternalUserLinks
+		// Check if this external user already exists and is linked
+		ExternalUserLink? existingLink = await databaseContext.ExternalUserLinks
             .Include(l => l.User)
-            .FirstOrDefaultAsync(l => l.ProviderId == provider.Id && l.ProviderUserId == userInfo.Sub);
+            .FirstOrDefaultAsync(l => l.ProviderId == provider.Id && l.ProviderUserId == userInfo.Sub, cancellationToken);
 
         if (existingLink != null)
         {
@@ -366,7 +366,7 @@ public class OidcManagement(
             if (!string.IsNullOrEmpty(userInfo.Email))
                 existingLink.ProviderEmail = userInfo.Email;
             
-            await databaseContext.SaveChangesAsync();
+            await databaseContext.SaveChangesAsync(cancellationToken);
             return existingLink.User!;
         }
 
@@ -377,21 +377,21 @@ public class OidcManagement(
     /// <summary>
     /// Link an external OIDC identity to the currently authenticated user
     /// </summary>
-    public async Task<ApiResponse> LinkExternalAccountAsync(Guid userId, string providerId, OidcUserInfo userInfo)
+    public async Task<ApiResponse> LinkExternalAccountAsync(Guid userId, string providerId, OidcUserInfo userInfo, CancellationToken cancellationToken)
     {
-        var provider = await databaseContext.OidcProviders
-            .FirstOrDefaultAsync(p => p.ProviderId == providerId && p.IsEnabled);
+		OidcProvider? provider = await databaseContext.OidcProviders
+            .FirstOrDefaultAsync(p => p.ProviderId == providerId && p.IsEnabled, cancellationToken);
 
         if (provider == null)
             return ApiResponse.Create("PROVIDER_NOT_FOUND", "Provider not found", System.Net.HttpStatusCode.NotFound);
 
-        var user = await databaseContext.Users.FindAsync(userId);
+		UserModel? user = await databaseContext.Users.FindAsync([userId], cancellationToken);
         if (user == null)
             return ApiResponse.Create("USER_NOT_FOUND", "User not found", System.Net.HttpStatusCode.NotFound);
 
-        // Check if this external identity is already linked to another account
-        var existingLink = await databaseContext.ExternalUserLinks
-            .FirstOrDefaultAsync(l => l.ProviderId == provider.Id && l.ProviderUserId == userInfo.Sub);
+		// Check if this external identity is already linked to another account
+		ExternalUserLink? existingLink = await databaseContext.ExternalUserLinks
+            .FirstOrDefaultAsync(l => l.ProviderId == provider.Id && l.ProviderUserId == userInfo.Sub, cancellationToken);
 
         if (existingLink != null)
         {
@@ -412,8 +412,8 @@ public class OidcManagement(
             LastLoginAt = DateTime.UtcNow
         };
 
-        databaseContext.ExternalUserLinks.Add(newLink);
-        await databaseContext.SaveChangesAsync();
+        await databaseContext.ExternalUserLinks.AddAsync(newLink, cancellationToken);
+        await databaseContext.SaveChangesAsync(cancellationToken);
 
         return ApiResponse.Create("SUCCESS", "Account linked successfully", System.Net.HttpStatusCode.OK);
     }
@@ -421,22 +421,21 @@ public class OidcManagement(
     /// <summary>
     /// Unlink an external OIDC identity from the user
     /// </summary>
-    public async Task<ApiResponse> UnlinkExternalAccountAsync(Guid userId, Guid linkId)
+    public async Task<ApiResponse> UnlinkExternalAccountAsync(Guid userId, Guid linkId, CancellationToken cancellationToken)
     {
-        var link = await databaseContext.ExternalUserLinks
+		ExternalUserLink? link = await databaseContext.ExternalUserLinks
             .Include(l => l.Provider)
-            .FirstOrDefaultAsync(l => l.Id == linkId && l.UserId == userId);
-
+            .FirstOrDefaultAsync(l => l.Id == linkId && l.UserId == userId, cancellationToken);
         if (link == null)
             return ApiResponse.Create("LINK_NOT_FOUND", "Link not found", System.Net.HttpStatusCode.NotFound);
 
-        // Check if user has a password (at least one auth method must remain)
-        var user = await databaseContext.Users.FindAsync(userId);
+		// Check if user has a password (at least one auth method must remain)
+		UserModel? user = await databaseContext.Users.FindAsync([userId], cancellationToken);
         if (user == null)
             return ApiResponse.Create("USER_NOT_FOUND", "User not found", System.Net.HttpStatusCode.NotFound);
 
         databaseContext.ExternalUserLinks.Remove(link);
-        await databaseContext.SaveChangesAsync();
+        await databaseContext.SaveChangesAsync(cancellationToken);
 
         return ApiResponse.Create("SUCCESS", "Account unlinked successfully", System.Net.HttpStatusCode.OK);
     }
@@ -444,7 +443,7 @@ public class OidcManagement(
     /// <summary>
     /// Get all external links for a user
     /// </summary>
-    public async Task<ApiResponse<List<ExternalLinkViewDto>>> GetUserLinksAsync(Guid userId)
+    public async Task<ApiResponse<List<ExternalLinkViewDto>>> GetUserLinksAsync(Guid userId, CancellationToken cancellationToken)
     {
         return ApiResponse.Create(await databaseContext.ExternalUserLinks
             .Where(l => l.UserId == userId)
@@ -458,12 +457,12 @@ public class OidcManagement(
                 LinkedAt = l.CreatedAt,
                 LastLoginAt = l.LastLoginAt
             })
-            .ToListAsync(), System.Net.HttpStatusCode.OK);
+            .ToListAsync(cancellationToken), System.Net.HttpStatusCode.OK);
     }
 
     private static string GenerateSecureToken(int length)
     {
-        var bytes = new byte[length];
+		byte[] bytes = new byte[length];
         using var rng = RandomNumberGenerator.Create();
         rng.GetBytes(bytes);
         return Convert.ToBase64String(bytes)

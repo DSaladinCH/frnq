@@ -14,9 +14,9 @@ public class AuthOidcController(OidcManagement oidcManagement, IConfiguration co
     /// Get list of enabled OIDC providers
     /// </summary>
     [HttpGet("providers")]
-    public async Task<ApiResponse> GetProviders()
+    public async Task<ApiResponse> GetProviders(CancellationToken cancellationToken)
     {
-        return await oidcManagement.GetEnabledProvidersAsync();
+        return await oidcManagement.GetEnabledProvidersAsync(cancellationToken);
     }
 
     /// <summary>
@@ -26,9 +26,9 @@ public class AuthOidcController(OidcManagement oidcManagement, IConfiguration co
     /// <param name="providerId">The provider identifier (e.g., "google", "azure")</param>
     /// <param name="returnUrl">Optional return URL after successful authentication</param>
     [HttpGet("login/{providerId}")]
-    public async Task<IActionResult> InitiateLogin(string providerId, [FromQuery] string? returnUrl = null)
+    public async Task<IActionResult> InitiateLogin(string providerId, [FromQuery] string? returnUrl = null, CancellationToken cancellationToken = default)
     {
-		ApiResponse<string> result = await oidcManagement.InitiateLoginAsync(providerId, returnUrl);
+		ApiResponse<string> result = await oidcManagement.InitiateLoginAsync(providerId, returnUrl, null, cancellationToken);
         
         if (result.Failed || result.Value == null)
             return result;
@@ -49,7 +49,8 @@ public class AuthOidcController(OidcManagement oidcManagement, IConfiguration co
         [FromQuery] string? code,
         [FromQuery] string? state,
         [FromQuery] string? error,
-        [FromQuery] string? error_description)
+        [FromQuery] string? error_description,
+		CancellationToken cancellationToken = default)
     {
 		string frontendUrl = configuration.GetValue<string>("FrontendUrl") ?? "http://localhost:5173";
 
@@ -67,7 +68,7 @@ public class AuthOidcController(OidcManagement oidcManagement, IConfiguration co
         }
 
 		// Process the callback
-		ApiResponse<LoginResponseModel> result = await oidcManagement.HandleCallbackAsync(providerId, code, state);
+		ApiResponse<LoginResponseModel> result = await oidcManagement.HandleCallbackAsync(providerId, code, state, cancellationToken);
         
         if (result.Code == "LINK_SUCCESS")
         {
@@ -82,14 +83,14 @@ public class AuthOidcController(OidcManagement oidcManagement, IConfiguration co
         }
         else if (result.Code == "NOT_LINKED")
         {
-            // Not linked - redirect to login with message
-            var errorMsg = Uri.EscapeDataString("This external account is not linked. Please log in and link it in your account settings.");
+			// Not linked - redirect to login with message
+			string errorMsg = Uri.EscapeDataString("This external account is not linked. Please log in and link it in your account settings.");
             return Redirect($"{frontendUrl}/login?error={errorMsg}");
         }
         else
         {
-            // Failed authentication - redirect to login with error
-            var errorMsg = Uri.EscapeDataString(result.Description ?? "Authentication failed");
+			// Failed authentication - redirect to login with error
+			string errorMsg = Uri.EscapeDataString(result.Description ?? "Authentication failed");
             return Redirect($"{frontendUrl}/login?error={errorMsg}");
         }
     }

@@ -18,13 +18,13 @@ public class AuthExternalLinksController(
     /// Get all external account links for the current user
     /// </summary>
     [HttpGet]
-    public async Task<ApiResponse> GetLinks()
+    public async Task<ApiResponse> GetLinks(CancellationToken cancellationToken)
     {
-        var userId = authManagement.GetCurrentUserId();
+		Guid userId = authManagement.GetCurrentUserId();
         if (userId == Guid.Empty)
             return ApiResponses.Unauthorized401;
 
-        return await oidcManagement.GetUserLinksAsync(userId);
+        return await oidcManagement.GetUserLinksAsync(userId, cancellationToken);
     }
 
     /// <summary>
@@ -32,15 +32,15 @@ public class AuthExternalLinksController(
     /// Returns the authorization URL for the frontend to redirect to
     /// </summary>
     [HttpPost("link/{providerId}")]
-    public async Task<ApiResponse> InitiateLink(string providerId)
+    public async Task<ApiResponse> InitiateLink(string providerId, CancellationToken cancellationToken)
     {
-        var userId = authManagement.GetCurrentUserId();
+		Guid userId = authManagement.GetCurrentUserId();
         if (userId == Guid.Empty)
             return ApiResponses.Unauthorized401;
 
-        // Pass userId to the OIDC flow for linking
-        var returnUrl = $"/settings/external-accounts";
-        var result = await oidcManagement.InitiateLoginAsync(providerId, returnUrl, userId);
+		// Pass userId to the OIDC flow for linking
+		string returnUrl = $"/settings/external-accounts";
+		ApiResponse<string> result = await oidcManagement.InitiateLoginAsync(providerId, returnUrl, userId, cancellationToken);
         
         if (!result.Success || result.Value == null)
             return result;
@@ -53,12 +53,12 @@ public class AuthExternalLinksController(
     /// Unlink an external account
     /// </summary>
     [HttpDelete("{linkId}")]
-    public async Task<ApiResponse> UnlinkAccount(Guid linkId)
+    public async Task<ApiResponse> UnlinkAccount(Guid linkId, CancellationToken cancellationToken)
     {
-        var userId = authManagement.GetCurrentUserId();
+		Guid userId = authManagement.GetCurrentUserId();
         if (userId == Guid.Empty)
             return ApiResponses.Unauthorized401;
 
-        return await oidcManagement.UnlinkExternalAccountAsync(userId, linkId);
+        return await oidcManagement.UnlinkExternalAccountAsync(userId, linkId, cancellationToken);
     }
 }

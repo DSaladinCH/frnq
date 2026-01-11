@@ -57,7 +57,7 @@ public class OidcState
     /// <summary>
     /// Whether this state has been used (to prevent replay attacks)
     /// </summary>
-    public bool IsUsed { get; set; } = false;
+    public bool IsUsed { get; set; }
 
     /// <summary>
     /// Navigation property to the provider

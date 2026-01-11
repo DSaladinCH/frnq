@@ -6,7 +6,7 @@ public class FlexibleDateTimeBinder : IModelBinder
 {
 	public Task BindModelAsync(ModelBindingContext context)
 	{
-		var value = context.ValueProvider.GetValue(context.ModelName).FirstValue;
+		string? value = context.ValueProvider.GetValue(context.ModelName).FirstValue;
 
 		if (string.IsNullOrEmpty(value))
 		{
@@ -24,7 +24,7 @@ public class FlexibleDateTimeBinder : IModelBinder
 		}
 
 		// Try Unix timestamp (seconds since epoch)
-		if (long.TryParse(value, out var unix))
+		if (long.TryParse(value, out long unix))
 		{
 			try
 			{

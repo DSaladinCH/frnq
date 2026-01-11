@@ -16,23 +16,23 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 		return userIdClaim != null ? Guid.Parse(userIdClaim) : Guid.Empty;
 	}
 
-	private async Task<UserModel?> GetUserByEmailAsync(string email)
+	private async Task<UserModel?> GetUserByEmailAsync(string email, CancellationToken cancellationToken)
 	{
 		// Disable warning, as other solutions cause issues in postgres and memory db
 #pragma warning disable CA1862 // Use the 'StringComparison' method overloads to perform case-insensitive string comparisons
-		return await databaseContext.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
+		return await databaseContext.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower(), cancellationToken);
 #pragma warning restore CA1862 // Use the 'StringComparison' method overloads to perform case-insensitive string comparisons
 	}
 
-	public async Task<UserModel?> GetUserByIdAsync(Guid userId)
+	public async Task<UserModel?> GetUserByIdAsync(Guid userId, CancellationToken cancellationToken)
 	{
-		return await databaseContext.Users.FindAsync(userId);
+		return await databaseContext.Users.FindAsync([userId], cancellationToken);
 	}
 
-	public async Task<ApiResponse<UserViewDto>> GetUserAsync()
+	public async Task<ApiResponse<UserViewDto>> GetUserAsync(CancellationToken cancellationToken)
 	{
 		Guid userId = GetCurrentUserId();
-		UserModel? user = await GetUserByIdAsync(userId);
+		UserModel? user = await GetUserByIdAsync(userId, cancellationToken);
 
 		if (user is null)
 			return ApiResponses.Unauthorized401;
@@ -46,21 +46,21 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 		}, System.Net.HttpStatusCode.OK);
 	}
 
-	public async Task<ApiResponse> UpdateUserAsync(UserDto userDto)
+	public async Task<ApiResponse> UpdateUserAsync(UserDto userDto, CancellationToken cancellationToken)
 	{
 		Guid userId = GetCurrentUserId();
-		UserModel? user = await GetUserByIdAsync(userId);
+		UserModel? user = await GetUserByIdAsync(userId, cancellationToken);
 
 		if (user is null)
 			return ApiResponse.Create("USER_NOT_FOUND", "User not found", System.Net.HttpStatusCode.NotFound);
 
 		user.DateFormat = userDto.DateFormat;
 
-		await databaseContext.SaveChangesAsync();
+		await databaseContext.SaveChangesAsync(cancellationToken);
 		return ApiResponse.Create("SUCCESS", "User updated successfully", System.Net.HttpStatusCode.OK);
 	}
 
-	public async Task<ApiResponse> SignupUserAsync(SignupModel signup)
+	public async Task<ApiResponse> SignupUserAsync(SignupModel signup, CancellationToken cancellationToken)
 	{
 		// Check if signup is enabled
 		bool signupEnabled = configuration.GetValue("Features:SignupEnabled", true);
@@ -79,7 +79,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 			return ApiResponse.Create(ResponseCodes.Signup.FirstnameRequired, System.Net.HttpStatusCode.BadRequest);
 
 		// Check if user already exists
-		if (await GetUserByEmailAsync(signup.Email) != null)
+		if (await GetUserByEmailAsync(signup.Email, cancellationToken) != null)
 			return ApiResponses.Conflict409;
 
 		// Validate password strength
@@ -93,34 +93,34 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 			Firstname = signup.Firstname.Trim()
 		};
 
-		databaseContext.Users.Add(user);
-		await databaseContext.SaveChangesAsync();
+		await databaseContext.Users.AddAsync(user, cancellationToken);
+		await databaseContext.SaveChangesAsync(cancellationToken);
 
 		return ApiResponses.Created201;
 	}
 
-	public async Task<ApiResponse<LoginResponseModel>> LoginUserAsync(LoginModel login)
+	public async Task<ApiResponse<LoginResponseModel>> LoginUserAsync(LoginModel login, CancellationToken cancellationToken)
 	{
 		// Validate required fields
 		if (string.IsNullOrWhiteSpace(login.Email) || string.IsNullOrWhiteSpace(login.Password))
 			return ApiResponse.Create(ResponseCodes.Login.UserInvalid, System.Net.HttpStatusCode.Unauthorized);
 
-		UserModel? user = await GetUserByEmailAsync(login.Email);
+		UserModel? user = await GetUserByEmailAsync(login.Email, cancellationToken);
 
 		if (user is null || !BCrypt.Net.BCrypt.Verify(login.Password, user.PasswordHash))
 			return ApiResponse.Create(ResponseCodes.Login.UserInvalid, System.Net.HttpStatusCode.Unauthorized);
 
-		return await LoginUserByUserModelAsync(user);
+		return await LoginUserByUserModelAsync(user, cancellationToken);
 	}
 
 	/// <summary>
 	/// Internal method to log in a user that has already been authenticated (used by both password and OIDC login)
 	/// </summary>
-	public async Task<ApiResponse<LoginResponseModel>> LoginUserByUserModelAsync(UserModel user)
+	public async Task<ApiResponse<LoginResponseModel>> LoginUserByUserModelAsync(UserModel user, CancellationToken cancellationToken)
 	{
-		var accessToken = GenerateAccessToken(user);
-		var refreshToken = GenerateRefreshToken();
-		var expiresAt = DateTime.UtcNow.AddMinutes(double.Parse(configuration.GetSection("JwtSettings")["AccessTokenExpiryInMinutes"]!));
+		string accessToken = GenerateAccessToken(user);
+		string refreshToken = GenerateRefreshToken();
+		DateTime expiresAt = DateTime.UtcNow.AddMinutes(double.Parse(configuration.GetSection("JwtSettings")["AccessTokenExpiryInMinutes"]!));
 
 		// Create refresh token session
 		var refreshTokenSession = new RefreshTokenSession
@@ -132,8 +132,8 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 			IpAddress = httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString()
 		};
 
-		databaseContext.RefreshTokenSessions.Add(refreshTokenSession);
-		await databaseContext.SaveChangesAsync();
+		await databaseContext.RefreshTokenSessions.AddAsync(refreshTokenSession, cancellationToken);
+		await databaseContext.SaveChangesAsync(cancellationToken);
 
 		// Set refresh token as HTTP-only cookie
 		var cookieOptions = new CookieOptions
@@ -155,7 +155,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 			ExpiresAt = expiresAt
 		};
 
-		return ApiResponse<LoginResponseModel>.Create(loginResponse, System.Net.HttpStatusCode.OK);
+		return ApiResponse.Create(loginResponse, System.Net.HttpStatusCode.OK);
 	}
 
 	/// <summary>
@@ -190,10 +190,10 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 
 	private string GenerateAccessToken(UserModel user)
 	{
-		var jwtSettings = configuration.GetSection("JwtSettings");
-		var key = Encoding.ASCII.GetBytes(jwtSettings["SecretKey"]!);
+		IConfigurationSection jwtSettings = configuration.GetSection("JwtSettings");
+		byte[] key = Encoding.ASCII.GetBytes(jwtSettings["SecretKey"]!);
 
-		var claims = new[]
+		Claim[] claims = new[]
 		{
 			new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
 			new Claim(ClaimTypes.Email, user.Email),
@@ -211,35 +211,35 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 		};
 
 		var tokenHandler = new JwtSecurityTokenHandler();
-		var token = tokenHandler.CreateToken(tokenDescriptor);
+		SecurityToken token = tokenHandler.CreateToken(tokenDescriptor);
 		return tokenHandler.WriteToken(token);
 	}
 
 	private static string GenerateRefreshToken()
 	{
-		var randomNumber = new byte[64];
+		byte[] randomNumber = new byte[64];
 		using var rng = RandomNumberGenerator.Create();
 		rng.GetBytes(randomNumber);
 		return Convert.ToBase64String(randomNumber);
 	}
 
-	public async Task<ApiResponse<LoginResponseModel>> RefreshAccessTokenAsync()
+	public async Task<ApiResponse<LoginResponseModel>> RefreshAccessTokenAsync(CancellationToken cancellationToken)
 	{
-		var refreshToken = httpContextAccessor.HttpContext?.Request.Cookies["refreshToken"];
+		string? refreshToken = httpContextAccessor.HttpContext?.Request.Cookies["refreshToken"];
 
 		if (string.IsNullOrEmpty(refreshToken))
 			return ApiResponse.Create(ResponseCodes.Login.UserInvalid, System.Net.HttpStatusCode.Unauthorized);
 
-		var tokenSession = await databaseContext.RefreshTokenSessions
+		RefreshTokenSession? tokenSession = await databaseContext.RefreshTokenSessions
 			.Include(rts => rts.User)
-			.FirstOrDefaultAsync(rts => rts.Token == refreshToken && rts.IsActive && rts.ExpiryTime > DateTime.UtcNow);
+			.FirstOrDefaultAsync(rts => rts.Token == refreshToken && rts.IsActive && rts.ExpiryTime > DateTime.UtcNow, cancellationToken);
 
 		if (tokenSession == null)
 			return ApiResponse.Create(ResponseCodes.Login.UserInvalid, System.Net.HttpStatusCode.Unauthorized);
 
 		// Generate new access token
-		var accessToken = GenerateAccessToken(tokenSession.User);
-		var expiresAt = DateTime.UtcNow.AddMinutes(double.Parse(configuration.GetSection("JwtSettings")["AccessTokenExpiryInMinutes"]!));
+		string accessToken = GenerateAccessToken(tokenSession.User);
+		DateTime expiresAt = DateTime.UtcNow.AddMinutes(double.Parse(configuration.GetSection("JwtSettings")["AccessTokenExpiryInMinutes"]!));
 
 		var loginResponse = new LoginResponseModel
 		{
@@ -247,22 +247,22 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 			ExpiresAt = expiresAt
 		};
 
-		return ApiResponse<LoginResponseModel>.Create(loginResponse, System.Net.HttpStatusCode.OK);
+		return ApiResponse.Create(loginResponse, System.Net.HttpStatusCode.OK);
 	}
 
-	public async Task<ApiResponse> LogoutAsync()
+	public async Task<ApiResponse> LogoutAsync(CancellationToken cancellationToken)
 	{
-		var refreshToken = httpContextAccessor.HttpContext?.Request.Cookies["refreshToken"];
+		string? refreshToken = httpContextAccessor.HttpContext?.Request.Cookies["refreshToken"];
 
 		if (!string.IsNullOrEmpty(refreshToken))
 		{
-			var tokenSession = await databaseContext.RefreshTokenSessions
-				.FirstOrDefaultAsync(rts => rts.Token == refreshToken && rts.IsActive);
+			RefreshTokenSession? tokenSession = await databaseContext.RefreshTokenSessions
+				.FirstOrDefaultAsync(rts => rts.Token == refreshToken && rts.IsActive, cancellationToken);
 
 			if (tokenSession != null)
 			{
 				tokenSession.IsActive = false;
-				await databaseContext.SaveChangesAsync();
+				await databaseContext.SaveChangesAsync(cancellationToken);
 			}
 		}
 

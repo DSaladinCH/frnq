@@ -8,7 +8,7 @@ public class YahooFinanceProvider : IFinanceProvider
 	public string InternalId => "yahoo-finance";
 	public string Name => "Yahoo Finance";
 
-	public async Task<QuoteModel?> GetQuoteAsync(string symbol)
+	public async Task<QuoteModel?> GetQuoteAsync(string symbol, CancellationToken cancellationToken = default)
 	{
 		// https://query2.finance.yahoo.com/v1/finance/quoteType/?symbol=0P0001IFRI.SW&lang=en-US&region=US&enablePrivateCompany=true
 		UriBuilder uriBuilder = new($"https://query2.finance.yahoo.com/v1/finance/quoteType/");
@@ -24,9 +24,9 @@ public class YahooFinanceProvider : IFinanceProvider
 		HttpClient httpClient = new();
 		httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3");
 		httpClient.DefaultRequestHeaders.Add("Accept", "*/*");
-		HttpResponseMessage response = await httpClient.GetAsync(url);
-		using Stream responseStream = await response.Content.ReadAsStreamAsync();
-		JsonNode? json = await JsonNode.ParseAsync(responseStream);
+		HttpResponseMessage response = await httpClient.GetAsync(url, cancellationToken);
+		using Stream responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+		JsonNode? json = await JsonNode.ParseAsync(responseStream, cancellationToken: cancellationToken);
 		JsonNode? quoteNode = json?["quoteType"]?["result"]?[0];
 
 		if (quoteNode is null)
@@ -43,7 +43,7 @@ public class YahooFinanceProvider : IFinanceProvider
 		};
 	}
 
-	public async Task<IEnumerable<QuoteModel>> SearchAsync(string query)
+	public async Task<IEnumerable<QuoteModel>> SearchAsync(string query, CancellationToken cancellationToken = default)
 	{
 		UriBuilder uriBuilder = new("https://query2.finance.yahoo.com/v1/finance/search");
 		QueryBuilder queryBuilder = new()
@@ -61,10 +61,10 @@ public class YahooFinanceProvider : IFinanceProvider
 		HttpClient httpClient = new();
 		httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3");
 		httpClient.DefaultRequestHeaders.Add("Accept", "*/*");
-		HttpResponseMessage response = await httpClient.GetAsync(url);
+		HttpResponseMessage response = await httpClient.GetAsync(url, cancellationToken);
 
-		using Stream responseStream = await response.Content.ReadAsStreamAsync();
-		JsonNode? json = await JsonNode.ParseAsync(responseStream);
+		using Stream responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+		JsonNode? json = await JsonNode.ParseAsync(responseStream, cancellationToken: cancellationToken);
 		JsonArray? quotesArray = json?["quotes"]?.AsArray();
 
 		if (quotesArray is null)
@@ -90,7 +90,7 @@ public class YahooFinanceProvider : IFinanceProvider
 		return quotes;
 	}
 
-	public async Task<IEnumerable<QuotePrice>> GetHistoricalPricesAsync(string symbol, DateTime from, DateTime to)
+	public async Task<IEnumerable<QuotePrice>> GetHistoricalPricesAsync(string symbol, DateTime from, DateTime to, CancellationToken cancellationToken = default)
 	{
 		from = DateTime.SpecifyKind(from, DateTimeKind.Utc);
 		to = DateTime.SpecifyKind(to, DateTimeKind.Utc);
@@ -116,9 +116,9 @@ public class YahooFinanceProvider : IFinanceProvider
 		HttpClient httpClient = new();
 		httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3");
 		httpClient.DefaultRequestHeaders.Add("Accept", "*/*");
-		HttpResponseMessage response = await httpClient.GetAsync(url);
-		using Stream responseStream = await response.Content.ReadAsStreamAsync();
-		JsonNode? json = await JsonNode.ParseAsync(responseStream);
+		HttpResponseMessage response = await httpClient.GetAsync(url, cancellationToken);
+		using Stream responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+		JsonNode? json = await JsonNode.ParseAsync(responseStream, cancellationToken: cancellationToken);
 
 		if (json is null)
 			return [];
