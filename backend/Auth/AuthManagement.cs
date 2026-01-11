@@ -46,7 +46,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 		}, System.Net.HttpStatusCode.OK);
 	}
 
-	public async Task<ApiResponse> UpdateUserAsync(UpdateUserModel updateModel)
+	public async Task<ApiResponse> UpdateUserAsync(UserDto userDto)
 	{
 		Guid userId = GetCurrentUserId();
 		UserModel? user = await GetUserByIdAsync(userId);
@@ -54,14 +54,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 		if (user is null)
 			return ApiResponse.Create("USER_NOT_FOUND", "User not found", System.Net.HttpStatusCode.NotFound);
 
-		// Update date format if provided
-		if (!string.IsNullOrWhiteSpace(updateModel.DateFormat))
-		{
-			if (!Enum.TryParse<DateFormat>(updateModel.DateFormat, true, out var dateFormat))
-				return ApiResponse.Create("INVALID_DATE_FORMAT", "Invalid date format. Use 'english' or 'german'", System.Net.HttpStatusCode.BadRequest);
-
-			user.DateFormat = dateFormat;
-		}
+		user.DateFormat = userDto.DateFormat;
 
 		await databaseContext.SaveChangesAsync();
 		return ApiResponse.Create("SUCCESS", "User updated successfully", System.Net.HttpStatusCode.OK);

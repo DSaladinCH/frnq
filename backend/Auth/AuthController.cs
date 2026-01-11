@@ -48,7 +48,7 @@ public class AuthController(AuthManagement authManagement, IConfiguration config
 
     [HttpPatch("me")]
     [Authorize]
-    public async Task<ApiResponse> UpdateCurrentUser([FromBody] UpdateUserModel updateModel)
+    public async Task<ApiResponse> UpdateCurrentUser([FromBody] UserDto updateModel)
     {
         return await authManagement.UpdateUserAsync(updateModel);
     }

@@ -1,4 +1,7 @@
-export type DateFormatType = 'english' | 'german';
+export enum DateFormatType {
+	English = 'English',
+	German = 'German'
+}
 
 export interface DateFormatOptions {
 	includeTime?: boolean;
@@ -14,7 +17,7 @@ export interface DateFormatOptions {
  */
 export function formatDate(
 	date: string | Date,
-	format: DateFormatType = 'english',
+	format: DateFormatType = DateFormatType.English,
 	options: DateFormatOptions = {}
 ): string {
 	const dateObj = typeof date === 'string' ? new Date(date) : date;
@@ -27,7 +30,7 @@ export function formatDate(
 
 	let formattedDate = '';
 	
-	if (format === 'german') {
+	if (format === DateFormatType.German) {
 		// German format: DD.MM.YYYY
 		const day = dateObj.getDate().toString().padStart(2, '0');
 		const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
@@ -42,7 +45,7 @@ export function formatDate(
 	}
 
 	if (includeTime) {
-		if (format === 'german') {
+		if (format === DateFormatType.German) {
 			// German: 24-hour format
 			const hours = dateObj.getHours().toString().padStart(2, '0');
 			const minutes = dateObj.getMinutes().toString().padStart(2, '0');
@@ -84,7 +87,7 @@ export function formatDate(
  */
 export function formatDateTime(
 	date: string | Date,
-	format: DateFormatType = 'english'
+	format: DateFormatType = DateFormatType.English
 ): string {
 	return formatDate(date, format, { includeTime: true });
 }
@@ -92,12 +95,12 @@ export function formatDateTime(
 /**
  * Format just the time portion
  * @param date - Date string or Date object to format
- * @param format - User's preferred date format ('english' for 12-hour, 'german' for 24-hour)
+ * @param format - User's preferred date format (DateFormatType.English for 12-hour, DateFormatType.German for 24-hour)
  * @param includeSeconds - Whether to include seconds
  */
 export function formatTime(
 	date: string | Date,
-	format: DateFormatType = 'english',
+	format: DateFormatType = DateFormatType.English,
 	includeSeconds: boolean = false
 ): string {
 	const dateObj = typeof date === 'string' ? new Date(date) : date;
@@ -106,7 +109,7 @@ export function formatTime(
 		return 'Invalid time';
 	}
 
-	if (format === 'german') {
+	if (format === DateFormatType.German) {
 		// German: 24-hour format
 		const hours = dateObj.getHours().toString().padStart(2, '0');
 		const minutes = dateObj.getMinutes().toString().padStart(2, '0');

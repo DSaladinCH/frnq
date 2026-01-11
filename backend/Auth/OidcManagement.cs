@@ -444,12 +444,12 @@ public class OidcManagement(
     /// <summary>
     /// Get all external links for a user
     /// </summary>
-    public async Task<ApiResponse<List<ExternalLinkDto>>> GetUserLinksAsync(Guid userId)
+    public async Task<ApiResponse<List<ExternalLinkViewDto>>> GetUserLinksAsync(Guid userId)
     {
         return ApiResponse.Create(await databaseContext.ExternalUserLinks
             .Where(l => l.UserId == userId)
             .Include(l => l.Provider)
-            .Select(l => new ExternalLinkDto
+            .Select(l => new ExternalLinkViewDto
             {
                 Id = l.Id,
                 ProviderId = l.Provider!.ProviderId,
@@ -471,59 +471,4 @@ public class OidcManagement(
             .Replace("/", "_")
             .TrimEnd('=');
     }
-}
-
-/// <summary>
-/// DTO for public provider information
-/// </summary>
-public class OidcProviderDto
-{
-    public string ProviderId { get; set; } = string.Empty;
-    public string DisplayName { get; set; } = string.Empty;
-    public string? FaviconUrl { get; set; }
-    public bool AutoRedirect { get; set; }
-}
-
-/// <summary>
-/// OAuth2/OIDC token response
-/// </summary>
-public class TokenResponse
-{
-    [System.Text.Json.Serialization.JsonPropertyName("access_token")]
-    public string AccessToken { get; set; } = string.Empty;
-
-    [System.Text.Json.Serialization.JsonPropertyName("token_type")]
-    public string TokenType { get; set; } = string.Empty;
-
-    [System.Text.Json.Serialization.JsonPropertyName("expires_in")]
-    public int ExpiresIn { get; set; }
-
-    [System.Text.Json.Serialization.JsonPropertyName("refresh_token")]
-    public string? RefreshToken { get; set; }
-
-    [System.Text.Json.Serialization.JsonPropertyName("id_token")]
-    public string? IdToken { get; set; }
-}
-
-/// <summary>
-/// User information extracted from OIDC provider
-/// </summary>
-public class OidcUserInfo
-{
-    public string Sub { get; set; } = string.Empty; // Required - unique user ID
-    public string? Email { get; set; }
-    public string? Name { get; set; }
-}
-
-/// <summary>
-/// DTO for external account link information
-/// </summary>
-public class ExternalLinkDto
-{
-    public Guid Id { get; set; }
-    public string ProviderId { get; set; } = string.Empty;
-    public string ProviderDisplayName { get; set; } = string.Empty;
-    public string? ProviderEmail { get; set; }
-    public DateTime LinkedAt { get; set; }
-    public DateTime LastLoginAt { get; set; }
 }

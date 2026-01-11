@@ -202,7 +202,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 		return ApiResponse.Create(new PositionsResponse
 		{
 			Snapshots = filteredSnapshots,
-			Quotes = [.. uniqueQuotes.Select(QuoteDto.FromModel)]
+			Quotes = [.. uniqueQuotes.Select(QuoteViewDto.FromModel)]
 		}, System.Net.HttpStatusCode.OK);
 	}
 }

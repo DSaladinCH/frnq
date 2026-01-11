@@ -5,10 +5,15 @@ using DSaladin.Frnq.Api.Investment;
 using DSaladin.Frnq.Api.Position;
 using DSaladin.Frnq.Api.Quote;
 using DSaladin.Frnq.Api.Quote.Providers;
+using DSaladin.Frnq.Api.Result;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,7 +22,13 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+	.AddJsonOptions(options =>
+	{
+		options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+		options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+	});
+	
 builder.Services.AddScoped<InvestmentManagement>();
 builder.Services.AddScoped<PositionManagement>();
 builder.Services.AddScoped<QuoteManagement>();
@@ -35,6 +46,29 @@ builder.Services.AddScoped<DatabaseProvider>();
 builder.Services.AddScoped<YahooFinanceProvider>();
 builder.Services.AddScoped<IFinanceProvider, YahooFinanceProvider>();
 builder.Services.AddScoped<ProviderRegistry>();
+
+// Configure automatic model validation
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+	options.InvalidModelStateResponseFactory = context =>
+	{
+		ModelError? firstError = context.ModelState
+			.FirstOrDefault(e => e.Value?.Errors.Count > 0)
+			.Value?.Errors.FirstOrDefault();
+
+		if (firstError?.ErrorMessage != null && firstError.ErrorMessage.Contains('|'))
+		{
+			// Parse ResponseCode format: "CODE|Description"
+			var parts = firstError.ErrorMessage.Split('|', 2);
+			var codeDescription = new CodeDescriptionModel(parts[0], parts[1]);
+			return ApiResponse.Create(codeDescription, System.Net.HttpStatusCode.BadRequest).Response;
+		}
+
+		// Fallback to generic validation error
+		var message = firstError?.ErrorMessage ?? "Validation failed";
+		return ApiResponse.Create("VALIDATION_FAILED", message, System.Net.HttpStatusCode.BadRequest).Response;
+	};
+});
 
 // Add JWT authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
