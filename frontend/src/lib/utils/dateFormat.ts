@@ -95,7 +95,7 @@ export function formatDateTime(
 /**
  * Format just the time portion
  * @param date - Date string or Date object to format
- * @param format - User's preferred date format ('english' for 12-hour, 'german' for 24-hour)
+ * @param format - User's preferred date format (DateFormatType.English for 12-hour, DateFormatType.German for 24-hour)
  * @param includeSeconds - Whether to include seconds
  */
 export function formatTime(

@@ -83,17 +83,15 @@
 	});
 
 	// Map locale strings or user preference to air-datepicker locale objects
-	function getDatepickerLocale(localeStr: string) {
-		const localeLower = localeStr.toLowerCase();
-		
+	function getDatepickerLocale(localeStr: string) {		
 		// Handle user preference format
-		if (localeLower === DateFormatType.German) return localeDe;
-		if (localeLower === DateFormatType.English) return localeEn;
+		if (localeStr === DateFormatType.German) return localeDe;
+		if (localeStr === DateFormatType.English) return localeEn;
 		
 		// Handle standard locale codes (backward compatibility)
-		if (localeLower.startsWith('de')) return localeDe;
-		if (localeLower.startsWith('fr')) return localeFr;
-		if (localeLower.startsWith('it')) return localeIt;
+		if (localeStr.toLowerCase().startsWith('de')) return localeDe;
+		if (localeStr.toLowerCase().startsWith('fr')) return localeFr;
+		if (localeStr.toLowerCase().startsWith('it')) return localeIt;
 		
 		return localeEn; // Default to English
 	}

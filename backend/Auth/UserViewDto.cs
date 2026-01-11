@@ -1,6 +1,6 @@
 namespace DSaladin.Frnq.Api.Auth;
 
-public class UserViewDto()
+public class UserViewDto
 {
 	public required Guid UserId { get; set; }
 	public required string Email { get; set; }

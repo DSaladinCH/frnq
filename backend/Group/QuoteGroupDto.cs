@@ -7,7 +7,7 @@ namespace DSaladin.Frnq.Api.Group;
 public class QuoteGroupDto
 {
 	[StringLengthRange(1, 100)]
-    public required string Name { get; set; }
+	public required string Name { get; set; }
 
 	[JsonConstructor]
 	private QuoteGroupDto() { }

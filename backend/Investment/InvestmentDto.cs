@@ -9,19 +9,19 @@ namespace DSaladin.Frnq.Api.Investment;
 [InvestmentValidation]
 public class InvestmentDto
 {
-    public int QuoteId { get; set; }
-    public string ProviderId { get; set; } = string.Empty;
-    public string QuoteSymbol { get; set; } = string.Empty;
-    public required DateTime Date { get; set; }
+	public int QuoteId { get; set; }
+	public string ProviderId { get; set; } = string.Empty;
+	public string QuoteSymbol { get; set; } = string.Empty;
+	public required DateTime Date { get; set; }
 
-    public required InvestmentType Type { get; set; } = InvestmentType.Buy;
-
-	[MinValue(0, false)]
-    public required decimal Amount { get; set; }
+	public required InvestmentType Type { get; set; }
 
 	[MinValue(0, false)]
-    public required decimal PricePerUnit { get; set; }
+	public required decimal Amount { get; set; }
+
+	[MinValue(0, false)]
+	public required decimal PricePerUnit { get; set; }
 
 	[MinValue(0)]
-    public required decimal TotalFees { get; set; }
+	public required decimal TotalFees { get; set; }
 }

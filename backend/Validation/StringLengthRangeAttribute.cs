@@ -8,32 +8,32 @@ namespace DSaladin.Frnq.Api.Validation;
 /// </summary>
 public class StringLengthRangeAttribute : ResponseCodeValidationAttribute
 {
-    public int MinLength { get; set; }
-    public int MaxLength { get; set; }
+	public int MinLength { get; set; }
+	public int MaxLength { get; set; }
 	public bool Optional { get; set; }
 
-    public StringLengthRangeAttribute(int minLength, int maxLength, bool optional = false): base()
-    {
-        MinLength = minLength;
-        MaxLength = maxLength;
+	public StringLengthRangeAttribute(int minLength, int maxLength, bool optional = false) : base()
+	{
+		MinLength = minLength;
+		MaxLength = maxLength;
 		Optional = optional;
-        ResponseCode = CodeDescriptionModel.InvalidFields;
-    }
+		ResponseCode = CodeDescriptionModel.InvalidFields;
+	}
 
-    protected override ValidationResult? IsValidCore(object? value, ValidationContext validationContext)
-    {
+	protected override ValidationResult? IsValidCore(object? value, ValidationContext validationContext)
+	{
 		if (Optional && (value == null || (value is string str && string.IsNullOrWhiteSpace(str))))
 			return ValidationResult.Success;
 
-        if (value == null || value is not string stringValue)
-            return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));
+		if (value == null || value is not string stringValue)
+			return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));
 
-        // Trim whitespace to match DTO behavior
-        string trimmedValue = stringValue.Trim();
+		// Trim whitespace to match DTO behavior
+		string trimmedValue = stringValue.Trim();
 
-        if (trimmedValue.Length < MinLength || trimmedValue.Length > MaxLength)
-            return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));
+		if (trimmedValue.Length < MinLength || trimmedValue.Length > MaxLength)
+			return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));
 
-        return ValidationResult.Success;
-    }
+		return ValidationResult.Success;
+	}
 }

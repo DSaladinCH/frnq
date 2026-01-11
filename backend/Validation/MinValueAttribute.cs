@@ -1,8 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DSaladin.Frnq.Api.Result;
-using DSaladin.Frnq.Api.Validation;
 
-namespace DSaladin.Frnq.Api.Investment;
+namespace DSaladin.Frnq.Api.Validation;
 
 /// <summary>
 /// Validates that a numeric value is greater than or equal to a specified minimum.
@@ -21,8 +20,14 @@ public class MinValueAttribute : ResponseCodeValidationAttribute
 
 	protected override ValidationResult? IsValidCore(object? value, ValidationContext validationContext)
 	{
-		if (!double.TryParse(value?.ToString(), out double numericValue) || (Inclusive && numericValue < Minimum) || (!Inclusive && numericValue <= Minimum))
-			return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));
+		if (!double.TryParse(value?.ToString(), out double numericValue))  
+            return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));  
+
+        if (Inclusive && numericValue < Minimum)  
+            return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));  
+
+        if (!Inclusive && numericValue <= Minimum)  
+            return new ValidationResult(FormatErrorMessage(validationContext.DisplayName)); 
 
 		return ValidationResult.Success;
 	}
