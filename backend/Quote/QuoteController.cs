@@ -10,7 +10,7 @@ namespace DSaladin.Frnq.Api.Quote;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class QuoteController(QuoteManagement quoteManagement, ProviderRegistry registry) : ControllerBase
+public class QuoteController(QuoteManagement quoteManagement) : ControllerBase
 {
 	// GET: api/quote/search?query=apple&providerId=yahoo-finance
 	[HttpGet("search")]

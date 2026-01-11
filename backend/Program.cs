@@ -113,17 +113,24 @@ builder.Services.AddCors(options =>
 	});
 });
 
-string connectionString = builder.Configuration.GetConnectionString("DatabaseConnection") ?? throw new InvalidOperationException("Connection string 'DatabaseConnection' not found.");
-builder.Services.AddDbContext<DatabaseContext>(options =>
-	options.UseNpgsql(connectionString));
+Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
+if (!builder.Environment.IsEnvironment("Testing") && builder.Configuration["IsTesting"] != "true")
+{
+	string connectionString = builder.Configuration.GetConnectionString("DatabaseConnection") ?? throw new InvalidOperationException("Connection string 'DatabaseConnection' not found.");
+	builder.Services.AddDbContext<DatabaseContext>(options =>
+		options.UseNpgsql(connectionString));
+}
 
 
 WebApplication app = builder.Build();
 
-using (IServiceScope localScope = app.Services.CreateScope())
+if (!app.Environment.IsEnvironment("Testing") && app.Configuration["IsTesting"] != "true")
 {
-	DatabaseContext databaseContext = localScope.ServiceProvider.GetRequiredService<DatabaseContext>();
-	databaseContext.Database.Migrate();
+	using (IServiceScope localScope = app.Services.CreateScope())
+	{
+		DatabaseContext databaseContext = localScope.ServiceProvider.GetRequiredService<DatabaseContext>();
+		databaseContext.Database.Migrate();
+	}
 }
 
 
@@ -146,7 +153,5 @@ app.MapControllers();
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-	public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+public partial class Program { }
+

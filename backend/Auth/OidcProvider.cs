@@ -76,7 +76,7 @@ public class OidcProvider
     /// <summary>
     /// Display order for the provider buttons
     /// </summary>
-    public int DisplayOrder { get; set; } = 0;
+    public int DisplayOrder { get; set; }
 
     /// <summary>
     /// Base64-encoded favicon image (max 100x100px)
@@ -87,7 +87,7 @@ public class OidcProvider
     /// <summary>
     /// Whether to auto-redirect to this provider when only one is enabled
     /// </summary>
-    public bool AutoRedirect { get; set; } = false;
+    public bool AutoRedirect { get; set; }
 
     /// <summary>
     /// JSON field mapping configuration for extracting user info from ID token or UserInfo endpoint

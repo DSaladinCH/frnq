@@ -84,7 +84,7 @@ public class OidcManagement(
     /// <summary>
     /// Handles the OAuth2/OIDC callback after user authorizes
     /// </summary>
-    public async Task<ApiResponse<LoginResponseModel>> HandleCallbackAsync(string providerId, string code, string state, CancellationToken cancellationToken)
+    public async Task<ApiResponse<AuthResponseDto>> HandleCallbackAsync(string providerId, string code, string state, CancellationToken cancellationToken)
     {
 		// Validate state to prevent CSRF
 		OidcState? oidcState = await databaseContext.OidcStates

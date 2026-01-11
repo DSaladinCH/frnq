@@ -20,21 +20,21 @@ public class AuthController(AuthManagement authManagement, IConfiguration config
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(CodeDescriptionModel), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(CodeDescriptionModel), StatusCodes.Status409Conflict)]
-    public async Task<ApiResponse> Signup([FromBody] SignupModel signup, CancellationToken cancellationToken)
+    public async Task<ApiResponse> Signup([FromBody] SignupDto signup, CancellationToken cancellationToken)
     {
         return await authManagement.SignupUserAsync(signup, cancellationToken);
     }
 
     [HttpPost("login")]
-    [ProducesResponseType(typeof(LoginResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(CodeDescriptionModel), StatusCodes.Status401Unauthorized)]
-    public async Task<ApiResponse> Login([FromBody] LoginModel login, CancellationToken cancellationToken)
+    public async Task<ApiResponse> Login([FromBody] LoginDto login, CancellationToken cancellationToken)
     {
         return await authManagement.LoginUserAsync(login, cancellationToken);
     }
 
     [HttpPost("refresh")]
-    [ProducesResponseType(typeof(LoginResponseModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(CodeDescriptionModel), StatusCodes.Status401Unauthorized)]
     public async Task<ApiResponse> RefreshToken(CancellationToken cancellationToken)
     {

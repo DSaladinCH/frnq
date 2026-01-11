@@ -1,5 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace DSaladin.Frnq.Api.Result;
 
+[ExcludeFromCodeCoverage]
 public static class ResponseCodes
 {
 	public static class Login
@@ -19,5 +22,6 @@ public static class ResponseCodes
 	public static class Quote
 	{
 		public static readonly CodeDescriptionModel ProviderNotFound = new("PROVIDER_NOT_FOUND", "The requested provider was not found.");
+		public static readonly CodeDescriptionModel InvalidDateRange = new("INVALID_DATE_RANGE", "The 'from' date cannot be later than the 'to' date.");
 	}
 }

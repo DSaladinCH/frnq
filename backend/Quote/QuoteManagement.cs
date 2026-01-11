@@ -71,16 +71,6 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 		return null;
 	}
 
-	public async Task<bool> QuoteExistsAsync(int quoteId, CancellationToken cancellationToken)
-	{
-		return await databaseContext.Quotes.AnyAsync(q => q.Id == quoteId, cancellationToken);
-	}
-
-	public async Task<bool> QuoteExistsAsync(string providerId, string symbol, CancellationToken cancellationToken)
-	{
-		return await databaseContext.Quotes.AnyAsync(q => q.ProviderId == providerId && q.Symbol == symbol, cancellationToken);
-	}
-
 	public async Task<QuoteModel> GetOrAddQuoteAsync(string providerId, string symbol, CancellationToken cancellationToken)
 	{
 		QuoteModel? quote = await databaseProvider.GetQuoteAsync(providerId, symbol, cancellationToken);
@@ -88,7 +78,7 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 			return quote;
 
 		IFinanceProvider? financeProvider = registry.GetProvider(providerId) ?? throw new ArgumentException($"Finance provider '{providerId}' not found.", nameof(providerId));
-		quote = await financeProvider.GetQuoteAsync(symbol) ?? throw new ArgumentException($"Quote with symbol '{symbol}' not found.", nameof(symbol));
+		quote = await financeProvider.GetQuoteAsync(symbol, cancellationToken) ?? throw new ArgumentException($"Quote with symbol '{symbol}' not found.", nameof(symbol));
 
 		await databaseProvider.AddOrUpdateQuoteAsync(quote, cancellationToken);
 		return quote;
@@ -97,7 +87,7 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 	public async Task<ApiResponse<List<QuotePrice>>> GetHistoricalPricesAsync(string providerId, string symbol, DateTime from, DateTime to, CancellationToken cancellationToken)
 	{
 		if (from > to)
-			throw new ArgumentException("The 'from' date cannot be later than the 'to' date.", nameof(from));
+			return ApiResponse.Create(ResponseCodes.Quote.InvalidDateRange, System.Net.HttpStatusCode.BadRequest);
 
 		QuoteModel quote = await GetOrAddQuoteAsync(providerId, symbol, cancellationToken);
 		return await GetHistoricalPricesAsync(quote.Id, from, to, cancellationToken);
