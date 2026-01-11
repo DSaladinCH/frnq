@@ -10,7 +10,7 @@
 	import { ColorStyle } from '$lib/types/ColorStyle';
 	import { notify } from '$lib/services/notificationService';
 	import { tick } from 'svelte';
-	import type { DateFormatType } from '$lib/utils/dateFormat';
+	import { DateFormatType } from '$lib/utils/dateFormat';
 
 	// Reactive values that track the store
 	let secondaryLoading = $state(dataStore.secondaryLoading);
@@ -131,8 +131,8 @@
 	}
 
 	const dateFormatOptions = [
-		{ value: 'english', label: 'English (MM/DD/YYYY)' },
-		{ value: 'german', label: 'German (DD.MM.YYYY)' }
+		{ value: DateFormatType.English, label: 'English (MM/DD/YYYY)' },
+		{ value: DateFormatType.German, label: 'German (DD.MM.YYYY)' }
 	];
 </script>
 

@@ -8,7 +8,7 @@
 	import localeFr from 'air-datepicker/locale/fr';
 	import localeIt from 'air-datepicker/locale/it';
 	import { onMount } from 'svelte';
-	import { userPreferences } from '$lib/stores/userPreferences';
+	import { userPreferences, DateFormatType } from '$lib/stores/userPreferences';
 
 	let {
 		type = 'text',
@@ -87,8 +87,8 @@
 		const localeLower = localeStr.toLowerCase();
 		
 		// Handle user preference format
-		if (localeLower === 'german') return localeDe;
-		if (localeLower === 'english') return localeEn;
+		if (localeLower === DateFormatType.German) return localeDe;
+		if (localeLower === DateFormatType.English) return localeEn;
 		
 		// Handle standard locale codes (backward compatibility)
 		if (localeLower.startsWith('de')) return localeDe;

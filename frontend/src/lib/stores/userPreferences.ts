@@ -1,6 +1,8 @@
 import { writable } from 'svelte/store';
 import { fetchWithAuth } from '$lib/services/authService';
-import type { DateFormatType } from '$lib/utils/dateFormat';
+import { DateFormatType } from '$lib/utils/dateFormat';
+
+export { DateFormatType };
 
 export interface UserPreferences {
 	dateFormat: DateFormatType;
@@ -8,7 +10,7 @@ export interface UserPreferences {
 
 // Default preferences
 const defaultPreferences: UserPreferences = {
-	dateFormat: 'english'
+	dateFormat: DateFormatType.English
 };
 
 // Create the store
@@ -27,7 +29,7 @@ function createUserPreferencesStore() {
 				if (res.ok) {
 					const userData = await res.json();
 					set({
-						dateFormat: userData.dateFormat || 'english'
+						dateFormat: userData.dateFormat || DateFormatType.English
 					});
 				}
 			} catch (error) {
@@ -40,7 +42,7 @@ function createUserPreferencesStore() {
 		 */
 		async setDateFormat(format: DateFormatType): Promise<boolean> {
 			try {
-				const res = await fetchWithAuth(`${baseUrl}/api/auth/me`, {
+				const res = await fetchWithAuth('/api/auth/me', {
 					method: 'PATCH',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({ dateFormat: format })
