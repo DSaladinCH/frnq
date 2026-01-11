@@ -11,7 +11,9 @@ public class GroupManagement(DatabaseContext databaseContext, AuthManagement aut
 
 	public async Task<ApiResponse<List<QuoteGroupViewDto>>> GetAllGroupsAsync(CancellationToken cancellationToken)
 	{
-		return ApiResponse.Create(QuoteGroupViewDto.FromModelList(await databaseContext.QuoteGroups.Where(qg => qg.UserId == userId).ToListAsync(cancellationToken)), System.Net.HttpStatusCode.OK);
+		return ApiResponse.Create(QuoteGroupViewDto.FromModelList(await databaseContext.QuoteGroups
+			.AsNoTracking()
+			.Where(qg => qg.UserId == userId).ToListAsync(cancellationToken)), System.Net.HttpStatusCode.OK);
 	}
 
 	public async Task<ApiResponse> CreateGroupAsync(QuoteGroupDto quoteGroup, CancellationToken cancellationToken)

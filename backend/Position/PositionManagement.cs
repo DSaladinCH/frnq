@@ -20,6 +20,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 
 		// Get all investments up to the requested 'to' date
 		List<InvestmentModel> investments = await databaseContext.Investments
+			.AsNoTracking()
 			.Where(i => userId == i.UserId && i.Date <= to)
 			.OrderBy(i => i.Date)
 			.Include(i => i.Quote)
@@ -47,6 +48,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 
 		// Get all prices up to the requested 'to' date
 		List<QuotePrice> prices = await databaseContext.QuotePrices
+			.AsNoTracking()
 			.Where(qp => quoteIds.Contains(qp.QuoteId))
 			.Where(qp => qp.Date <= to)
 			.ToListAsync(cancellationToken);

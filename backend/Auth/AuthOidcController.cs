@@ -1,4 +1,5 @@
 using DSaladin.Frnq.Api.Result;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DSaladin.Frnq.Api.Auth;
@@ -14,6 +15,7 @@ public class AuthOidcController(OidcManagement oidcManagement, IConfiguration co
     /// Get list of enabled OIDC providers
     /// </summary>
     [HttpGet("providers")]
+    [ProducesResponseType(typeof(List<OidcProviderDto>), StatusCodes.Status200OK)]
     public async Task<ApiResponse> GetProviders(CancellationToken cancellationToken)
     {
         return await oidcManagement.GetEnabledProvidersAsync(cancellationToken);

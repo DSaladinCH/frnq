@@ -26,6 +26,7 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 		// and the results should be above the ones from the external provider
 
 		List<QuoteModel> dbQuotes = await databaseContext.Quotes
+			.AsNoTracking()
 			.Include(q => q.Names.Where(n => n.UserId == userId))
 			.Where(q => q.ProviderId == providerId && (q.Symbol.ToLower().Contains(query.ToLower()) || q.Name.ToLower().Contains(query.ToLower()) ||
 				q.Names.Any(n => n.UserId == userId && n.CustomName.ToLower().Contains(query.ToLower()))))

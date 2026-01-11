@@ -22,6 +22,7 @@ public class DatabaseProvider(DatabaseContext databaseContext)
 	public async Task<IEnumerable<QuoteModel>> SearchAsync(string query, CancellationToken cancellationToken)
 	{
 		return await databaseContext.Quotes
+			.AsNoTracking()
 			.Where(q => q.Name.Contains(query, StringComparison.OrdinalIgnoreCase) || q.Symbol.Contains(query, StringComparison.OrdinalIgnoreCase))
 			.ToListAsync(cancellationToken);
 	}
@@ -29,6 +30,7 @@ public class DatabaseProvider(DatabaseContext databaseContext)
 	public async Task<IEnumerable<QuotePrice>> GetHistoricalPricesAsync(int quoteId, DateTime from, DateTime to, CancellationToken cancellationToken)
 	{
 		return await databaseContext.QuotePrices
+			.AsNoTracking()
 			.Where(qp => qp.QuoteId == quoteId && qp.Date >= from && qp.Date <= to)
 			.OrderBy(qp => qp.Date)
 			.ToListAsync(cancellationToken);

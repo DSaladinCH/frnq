@@ -55,6 +55,9 @@ public class DatabaseContext : DbContext
             .WithMany(u => u.Investments)
             .HasForeignKey(i => i.UserId);
 
+        modelBuilder.Entity<InvestmentModel>()
+            .HasIndex(i => new { i.UserId, i.Date });
+
         modelBuilder.Entity<QuoteGroup>()
             .HasOne(qg => qg.User)
             .WithMany()

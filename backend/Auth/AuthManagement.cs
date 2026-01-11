@@ -20,7 +20,9 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 	{
 		// Disable warning, as other solutions cause issues in postgres and memory db
 #pragma warning disable CA1862 // Use the 'StringComparison' method overloads to perform case-insensitive string comparisons
-		return await databaseContext.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower(), cancellationToken);
+		return await databaseContext.Users
+			.AsNoTracking()
+			.FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower(), cancellationToken);
 #pragma warning restore CA1862 // Use the 'StringComparison' method overloads to perform case-insensitive string comparisons
 	}
 
@@ -32,7 +34,9 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 	public async Task<ApiResponse<UserViewDto>> GetUserAsync(CancellationToken cancellationToken)
 	{
 		Guid userId = GetCurrentUserId();
-		UserModel? user = await GetUserByIdAsync(userId, cancellationToken);
+		UserModel? user = await databaseContext.Users
+			.AsNoTracking()
+			.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
 
 		if (user is null)
 			return ApiResponses.Unauthorized401;
@@ -232,6 +236,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 
 		RefreshTokenSession? tokenSession = await databaseContext.RefreshTokenSessions
 			.Include(rts => rts.User)
+			.AsNoTracking()
 			.FirstOrDefaultAsync(rts => rts.Token == refreshToken && rts.IsActive && rts.ExpiryTime > DateTime.UtcNow, cancellationToken);
 
 		if (tokenSession == null)

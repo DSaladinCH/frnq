@@ -22,6 +22,12 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+});
+
 builder.Services.AddControllers()
 	.AddJsonOptions(options =>
 	{
@@ -123,6 +129,7 @@ using (IServiceScope localScope = app.Services.CreateScope())
 
 // Configure the HTTP request pipeline.
 app.UseCors("AppCorsPolicy");
+app.UseResponseCompression();
 
 if (app.Environment.IsDevelopment())
 {

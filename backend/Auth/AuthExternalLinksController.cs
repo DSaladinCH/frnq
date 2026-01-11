@@ -1,5 +1,6 @@
 using DSaladin.Frnq.Api.Result;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DSaladin.Frnq.Api.Auth;
@@ -18,6 +19,8 @@ public class AuthExternalLinksController(
     /// Get all external account links for the current user
     /// </summary>
     [HttpGet]
+    [ProducesResponseType(typeof(List<ExternalLinkViewDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(CodeDescriptionModel), StatusCodes.Status401Unauthorized)]
     public async Task<ApiResponse> GetLinks(CancellationToken cancellationToken)
     {
 		Guid userId = authManagement.GetCurrentUserId();
@@ -32,6 +35,8 @@ public class AuthExternalLinksController(
     /// Returns the authorization URL for the frontend to redirect to
     /// </summary>
     [HttpPost("link/{providerId}")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(CodeDescriptionModel), StatusCodes.Status401Unauthorized)]
     public async Task<ApiResponse> InitiateLink(string providerId, CancellationToken cancellationToken)
     {
 		Guid userId = authManagement.GetCurrentUserId();
@@ -53,6 +58,8 @@ public class AuthExternalLinksController(
     /// Unlink an external account
     /// </summary>
     [HttpDelete("{linkId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(CodeDescriptionModel), StatusCodes.Status401Unauthorized)]
     public async Task<ApiResponse> UnlinkAccount(Guid linkId, CancellationToken cancellationToken)
     {
 		Guid userId = authManagement.GetCurrentUserId();

@@ -19,7 +19,9 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 		InvestmentType? type = null,
 		CancellationToken cancellationToken = default)
 	{
-		IQueryable<InvestmentModel> query = databaseContext.Investments.Where(i => i.UserId == userId);
+		IQueryable<InvestmentModel> query = databaseContext.Investments
+			.AsNoTracking()
+			.Where(i => i.UserId == userId);
 
 		// Apply filters
 		if (fromDate.HasValue)
@@ -68,7 +70,9 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 
 	public async Task<ApiResponse<InvestmentViewDto>> GetInvestmentByIdAsync(int id, CancellationToken cancellationToken)
 	{
-		InvestmentModel? investment = await databaseContext.Investments.Where(i => i.UserId == userId && i.Id == id).FirstOrDefaultAsync(cancellationToken);
+		InvestmentModel? investment = await databaseContext.Investments
+			.AsNoTracking()
+			.Where(i => i.UserId == userId && i.Id == id).FirstOrDefaultAsync(cancellationToken);
 
 		if (investment is null)
 			return ApiResponses.NotFound404;

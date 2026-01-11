@@ -446,6 +446,7 @@ public class OidcManagement(
     public async Task<ApiResponse<List<ExternalLinkViewDto>>> GetUserLinksAsync(Guid userId, CancellationToken cancellationToken)
     {
         return ApiResponse.Create(await databaseContext.ExternalUserLinks
+			.AsNoTracking()
             .Where(l => l.UserId == userId)
             .Include(l => l.Provider)
             .Select(l => new ExternalLinkViewDto
