@@ -2,7 +2,7 @@ using DSaladin.Frnq.Api.Group;
 
 namespace DSaladin.Frnq.Api.Quote;
 
-public class QuoteDto
+public class QuoteViewDto
 {
 	public int Id { get; set; } // New autoincrement PK
 	public string ProviderId { get; set; } = string.Empty;
@@ -15,9 +15,9 @@ public class QuoteDto
 	public DateTime LastUpdatedPrices { get; set; }
 	public QuoteGroup? Group { get; set; }
 
-	public static QuoteDto FromModel(QuoteModel model)
+	public static QuoteViewDto FromModel(QuoteModel model)
 	{
-		return new QuoteDto
+		return new QuoteViewDto
 		{
 			Id = model.Id,
 			ProviderId = model.ProviderId,
