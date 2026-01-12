@@ -27,10 +27,11 @@ public class YahooFinanceProvider : IFinanceProvider
 		HttpResponseMessage response = await httpClient.GetAsync(url, cancellationToken);
 		using Stream responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
 		JsonNode? json = await JsonNode.ParseAsync(responseStream, cancellationToken: cancellationToken);
-		JsonNode? quoteNode = json?["quoteType"]?["result"]?[0];
-
-		if (quoteNode is null)
+		JsonNode? resultNode = json?["quoteType"]?["result"];
+		if (resultNode is null || resultNode.AsArray().Count == 0)
 			return null;
+
+		JsonNode? quoteNode = resultNode[0];
 
 		return new QuoteModel
 		{

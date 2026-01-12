@@ -11,6 +11,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DSaladin.Frnq.Api.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     partial class DatabaseContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)

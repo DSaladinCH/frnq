@@ -70,7 +70,7 @@ public class AuthOidcController(OidcManagement oidcManagement, IConfiguration co
         }
 
 		// Process the callback
-		ApiResponse<LoginResponseModel> result = await oidcManagement.HandleCallbackAsync(providerId, code, state, cancellationToken);
+		ApiResponse<AuthResponseDto> result = await oidcManagement.HandleCallbackAsync(providerId, code, state, cancellationToken);
         
         if (result.Code == "LINK_SUCCESS")
         {

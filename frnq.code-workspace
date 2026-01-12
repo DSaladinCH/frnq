@@ -7,6 +7,9 @@
 			"path": "frontend"
 		},
 		{
+			"path": "backend-testing"
+		},
+		{
 			"path": "docker"
 		}
 	],

@@ -57,8 +57,8 @@ public class OidcManagement(
 		string state = GenerateSecureToken(32);
 		string nonce = GenerateSecureToken(32);
 
-        // Store state in database with expiration
-        var oidcState = new OidcState
+		// Store state in database with expiration
+		OidcState oidcState = new OidcState
         {
             State = state,
             ProviderId = provider.Id,
@@ -84,7 +84,7 @@ public class OidcManagement(
     /// <summary>
     /// Handles the OAuth2/OIDC callback after user authorizes
     /// </summary>
-    public async Task<ApiResponse<LoginResponseModel>> HandleCallbackAsync(string providerId, string code, string state, CancellationToken cancellationToken)
+    public async Task<ApiResponse<AuthResponseDto>> HandleCallbackAsync(string providerId, string code, string state, CancellationToken cancellationToken)
     {
 		// Validate state to prevent CSRF
 		OidcState? oidcState = await databaseContext.OidcStates
@@ -154,8 +154,8 @@ public class OidcManagement(
                 return ApiResponse.Create("NOT_LINKED", "No linked account found. Please log in with your credentials and link this account.", System.Net.HttpStatusCode.Unauthorized);
             }
 
-            // Generate our own JWT tokens
-            var loginResponse = await authManagement.LoginUserByUserModelAsync(user, cancellationToken);
+			// Generate our own JWT tokens
+			ApiResponse<AuthResponseDto> loginResponse = await authManagement.LoginUserByUserModelAsync(user, cancellationToken);
 
             return loginResponse;
         }
@@ -181,7 +181,7 @@ public class OidcManagement(
 
     private static string BuildAuthorizationUrl(OidcProvider provider, string redirectUri, string state, string nonce)
     {
-        var queryParams = new Dictionary<string, string>
+		Dictionary<string, string> queryParams = new Dictionary<string, string>
         {
             ["client_id"] = provider.ClientId,
             ["redirect_uri"] = redirectUri,
@@ -203,7 +203,7 @@ public class OidcManagement(
                      $"{httpContextAccessor.HttpContext!.Request.Scheme}://{httpContextAccessor.HttpContext.Request.Host}";
 		string redirectUri = $"{baseUrl}/api/authoidc/callback/{provider.ProviderId}";
 
-        var tokenRequest = new Dictionary<string, string>
+		Dictionary<string, string> tokenRequest = new Dictionary<string, string>
         {
             ["grant_type"] = "authorization_code",
             ["code"] = code,
@@ -250,10 +250,10 @@ public class OidcManagement(
         {
             try
             {
-                var request = new HttpRequestMessage(HttpMethod.Get, provider.UserInfoEndpoint);
+				using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, provider.UserInfoEndpoint);
                 request.Headers.Add("Authorization", $"Bearer {tokenResponse.AccessToken}");
 
-				HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
+				using HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
                 if (!response.IsSuccessStatusCode)
                 {
                     logger.LogWarning("UserInfo endpoint returned {StatusCode}", response.StatusCode);
@@ -315,7 +315,7 @@ public class OidcManagement(
 			Dictionary<string, string> mappings = JsonSerializer.Deserialize<Dictionary<string, string>>(provider.ClaimMappings) 
                           ?? new Dictionary<string, string>();
 
-            var userInfo = new OidcUserInfo();
+			OidcUserInfo userInfo = new OidcUserInfo();
 
             // Extract sub (required)
             if (mappings.TryGetValue("sub", out string? subClaim) && claims.TryGetValue(subClaim, out JsonElement subValue))
@@ -401,8 +401,8 @@ public class OidcManagement(
                 return ApiResponse.Create("LINK_EXISTS", "This external account is already linked to another user", System.Net.HttpStatusCode.Conflict);
         }
 
-        // Create the link
-        var newLink = new ExternalUserLink
+		// Create the link
+		ExternalUserLink newLink = new ExternalUserLink
         {
             UserId = userId,
             ProviderId = provider.Id,
@@ -464,7 +464,7 @@ public class OidcManagement(
     private static string GenerateSecureToken(int length)
     {
 		byte[] bytes = new byte[length];
-        using var rng = RandomNumberGenerator.Create();
+        using RandomNumberGenerator rng = RandomNumberGenerator.Create();
         rng.GetBytes(bytes);
         return Convert.ToBase64String(bytes)
             .Replace("+", "-")

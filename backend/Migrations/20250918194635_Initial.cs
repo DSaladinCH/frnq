@@ -7,6 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DSaladin.Frnq.Api.Migrations
 {
     /// <inheritdoc />
+	[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     public partial class Initial : Migration
     {
         /// <inheritdoc />

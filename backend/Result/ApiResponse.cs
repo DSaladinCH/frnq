@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DSaladin.Frnq.Api.Result;
 
+[ExcludeFromCodeCoverage]
 public static class ApiResponses
 {
     public static ApiResponseBuilder Created201 => new(ApiResponse.Create(CodeDescriptionModel.Created, HttpStatusCode.Created));
@@ -21,6 +22,7 @@ public static class ApiResponses
     public static ApiResponseBuilder NoContent204 => new(ApiResponse.Create(CodeDescriptionModel.NoContent, HttpStatusCode.NoContent));
 }
 
+[ExcludeFromCodeCoverage]
 [DebuggerDisplay("{Code}: {Description} (Statuscode: {StatusCode}) | Success: {Success}")]
 public class ApiResponse : ActionResult
 {
@@ -142,6 +144,7 @@ public class ApiResponse : ActionResult
     }
 }
 
+[ExcludeFromCodeCoverage]
 [DebuggerDisplay("{Code}: {Description} (Statuscode: {StatusCode}) | Success: {Success}")]
 public class ApiResponse<T> : ApiResponse
 {

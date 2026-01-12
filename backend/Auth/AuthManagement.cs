@@ -64,7 +64,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 		return ApiResponse.Create("SUCCESS", "User updated successfully", System.Net.HttpStatusCode.OK);
 	}
 
-	public async Task<ApiResponse> SignupUserAsync(SignupModel signup, CancellationToken cancellationToken)
+	public async Task<ApiResponse> SignupUserAsync(SignupDto signup, CancellationToken cancellationToken)
 	{
 		// Check if signup is enabled
 		bool signupEnabled = configuration.GetValue("Features:SignupEnabled", true);
@@ -103,7 +103,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 		return ApiResponses.Created201;
 	}
 
-	public async Task<ApiResponse<LoginResponseModel>> LoginUserAsync(LoginModel login, CancellationToken cancellationToken)
+	public async Task<ApiResponse<AuthResponseDto>> LoginUserAsync(LoginDto login, CancellationToken cancellationToken)
 	{
 		// Validate required fields
 		if (string.IsNullOrWhiteSpace(login.Email) || string.IsNullOrWhiteSpace(login.Password))
@@ -120,14 +120,14 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 	/// <summary>
 	/// Internal method to log in a user that has already been authenticated (used by both password and OIDC login)
 	/// </summary>
-	public async Task<ApiResponse<LoginResponseModel>> LoginUserByUserModelAsync(UserModel user, CancellationToken cancellationToken)
+	public async Task<ApiResponse<AuthResponseDto>> LoginUserByUserModelAsync(UserModel user, CancellationToken cancellationToken)
 	{
 		string accessToken = GenerateAccessToken(user);
 		string refreshToken = GenerateRefreshToken();
 		DateTime expiresAt = DateTime.UtcNow.AddMinutes(double.Parse(configuration.GetSection("JwtSettings")["AccessTokenExpiryInMinutes"]!));
 
 		// Create refresh token session
-		var refreshTokenSession = new RefreshTokenSession
+		RefreshTokenSession refreshTokenSession = new RefreshTokenSession
 		{
 			UserId = user.Id,
 			Token = refreshToken,
@@ -140,7 +140,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 		await databaseContext.SaveChangesAsync(cancellationToken);
 
 		// Set refresh token as HTTP-only cookie
-		var cookieOptions = new CookieOptions
+		CookieOptions cookieOptions = new CookieOptions
 		{
 			HttpOnly = true,
 			Expires = refreshTokenSession.ExpiryTime,
@@ -153,7 +153,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 
 		httpContextAccessor.HttpContext?.Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
 
-		var loginResponse = new LoginResponseModel
+		AuthResponseDto loginResponse = new AuthResponseDto
 		{
 			AccessToken = accessToken,
 			ExpiresAt = expiresAt
@@ -205,7 +205,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 			new Claim("jti", Guid.NewGuid().ToString())
 		};
 
-		var tokenDescriptor = new SecurityTokenDescriptor
+		SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
 		{
 			Subject = new ClaimsIdentity(claims),
 			Expires = DateTime.UtcNow.AddMinutes(double.Parse(jwtSettings["AccessTokenExpiryInMinutes"]!)),
@@ -214,7 +214,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 			SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
 		};
 
-		var tokenHandler = new JwtSecurityTokenHandler();
+		JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
 		SecurityToken token = tokenHandler.CreateToken(tokenDescriptor);
 		return tokenHandler.WriteToken(token);
 	}
@@ -222,12 +222,12 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 	private static string GenerateRefreshToken()
 	{
 		byte[] randomNumber = new byte[64];
-		using var rng = RandomNumberGenerator.Create();
+		using RandomNumberGenerator rng = RandomNumberGenerator.Create();
 		rng.GetBytes(randomNumber);
 		return Convert.ToBase64String(randomNumber);
 	}
 
-	public async Task<ApiResponse<LoginResponseModel>> RefreshAccessTokenAsync(CancellationToken cancellationToken)
+	public async Task<ApiResponse<AuthResponseDto>> RefreshAccessTokenAsync(CancellationToken cancellationToken)
 	{
 		string? refreshToken = httpContextAccessor.HttpContext?.Request.Cookies["refreshToken"];
 
@@ -246,7 +246,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 		string accessToken = GenerateAccessToken(tokenSession.User);
 		DateTime expiresAt = DateTime.UtcNow.AddMinutes(double.Parse(configuration.GetSection("JwtSettings")["AccessTokenExpiryInMinutes"]!));
 
-		var loginResponse = new LoginResponseModel
+		AuthResponseDto loginResponse = new AuthResponseDto
 		{
 			AccessToken = accessToken,
 			ExpiresAt = expiresAt
