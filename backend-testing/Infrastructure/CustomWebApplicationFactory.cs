@@ -7,7 +7,7 @@ using DSaladin.Frnq.Api;
 using DSaladin.Frnq.Api.Quote.Providers;
 using Moq;
 using Microsoft.Extensions.Configuration;
-using Microsoft.AspNetCore.Authentication;
+
 
 namespace DSaladin.Frnq.Api.Testing.Infrastructure;
 
@@ -40,11 +40,11 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
 
         builder.ConfigureServices(services =>
         {
-            // Remove the real DatabaseContext and its options
-            var dbContextDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DatabaseContext));
+			// Remove the real DatabaseContext and its options
+			ServiceDescriptor? dbContextDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DatabaseContext));
             if (dbContextDescriptor != null) services.Remove(dbContextDescriptor);
 
-            var dbOptionsDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<DatabaseContext>));
+			ServiceDescriptor? dbOptionsDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<DatabaseContext>));
             if (dbOptionsDescriptor != null) services.Remove(dbOptionsDescriptor);
 
             // Add In-Memory Database
@@ -54,32 +54,22 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
                 options.UseInternalServiceProvider(null);
             });
 
-            // Mock FinanceProvider
-            var providerDescriptors = services.Where(d => d.ServiceType == typeof(IFinanceProvider)).ToList();
-            foreach (var d in providerDescriptors) services.Remove(d);
+			// Mock FinanceProvider
+			List<ServiceDescriptor> providerDescriptors = services.Where(d => d.ServiceType == typeof(IFinanceProvider)).ToList();
+            foreach (ServiceDescriptor? d in providerDescriptors) services.Remove(d);
 
             FinanceProviderMock.Setup(p => p.InternalId).Returns("yahoo-finance");
             services.AddScoped(_ => FinanceProviderMock.Object);
 
-            // Authentication override
-            // We need to register authentication before adding our scheme, OR remove existing schemes
-            services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = "TestScheme";
-                options.DefaultChallengeScheme = "TestScheme";
-                options.DefaultScheme = "TestScheme";
-            })
-            .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("TestScheme", options => { });
-        });
 
-        builder.UseEnvironment("Testing");
+        });
     }
 
     public void SeedData()
     {
-        using var scope = Services.CreateScope();
-        var scopedServices = scope.ServiceProvider;
-        var db = scopedServices.GetRequiredService<DatabaseContext>();
+        using IServiceScope scope = Services.CreateScope();
+		IServiceProvider scopedServices = scope.ServiceProvider;
+		DatabaseContext db = scopedServices.GetRequiredService<DatabaseContext>();
         db.Database.EnsureDeleted();
         db.Database.EnsureCreated();
         DataSeeder.Seed(db);

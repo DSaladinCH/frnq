@@ -1,4 +1,5 @@
 using Allure.Xunit.Attributes;
+using DSaladin.Frnq.Api.Quote;
 
 namespace DSaladin.Frnq.Api.Testing.Tests;
 
@@ -10,9 +11,9 @@ public class YahooFinanceProvider
     [Fact]
     public async Task GetQuoteAsync_WithValidSymbol_ReturnsQuote()
     {
-        // This test might fail if there is no internet connection, 
-        // but it verifies the implementation against the real external API as requested.
-        var quote = await _provider.GetQuoteAsync("AAPL");
+		// This test might fail if there is no internet connection, 
+		// but it verifies the implementation against the real external API as requested.
+		QuoteModel? quote = await _provider.GetQuoteAsync("AAPL", CancellationToken.None);
 
         Assert.NotNull(quote);
         Assert.Equal("AAPL", quote.Symbol);
@@ -22,7 +23,7 @@ public class YahooFinanceProvider
     [Fact]
     public async Task SearchAsync_WithQuery_ReturnsResults()
     {
-        var results = await _provider.SearchAsync("Apple");
+		IEnumerable<QuoteModel> results = await _provider.SearchAsync("Apple", CancellationToken.None);
 
         Assert.NotNull(results);
         Assert.NotEmpty(results);
@@ -32,7 +33,7 @@ public class YahooFinanceProvider
     [Fact]
     public async Task GetQuoteAsync_WithInvalidSymbol_ReturnsNull()
     {
-        var quote = await _provider.GetQuoteAsync("NONEXISTENT_SYMBOL_12345");
+		QuoteModel? quote = await _provider.GetQuoteAsync("NONEXISTENT_SYMBOL_12345", CancellationToken.None);
         Assert.Null(quote);
     }
 }

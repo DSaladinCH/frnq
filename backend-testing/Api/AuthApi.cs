@@ -27,9 +27,9 @@ public class AuthApi(HttpClient httpClient) : BaseApi(httpClient)
 
     public async Task<TestResponse> UpdateCurrentUser(UserDto updateModel)
     {
-        var response = await HttpClient.PatchAsJsonAsync("api/auth/me", updateModel);
-        var testResponse = new TestResponse { StatusCode = response.StatusCode };
-        var content = await response.Content.ReadAsStringAsync();
+		HttpResponseMessage response = await HttpClient.PatchAsJsonAsync("api/auth/me", updateModel);
+		TestResponse testResponse = new TestResponse { StatusCode = response.StatusCode };
+		string content = await response.Content.ReadAsStringAsync();
         if (!string.IsNullOrWhiteSpace(content))
             testResponse.Error = JsonSerializer.Deserialize<CodeDescriptionModel>(content, JsonOptions);
         return testResponse;

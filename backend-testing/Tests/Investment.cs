@@ -5,6 +5,7 @@ using Allure.Xunit.Attributes;
 using System.Net;
 using Moq;
 using DSaladin.Frnq.Api.Quote;
+using DSaladin.Frnq.Api.Testing.Api;
 
 namespace DSaladin.Frnq.Api.Testing.Tests;
 
@@ -15,7 +16,7 @@ public class Investment(CustomWebApplicationFactory<Program> factory) : BaseTest
     public async Task GetInvestments_WhenAuthenticated_ReturnsListOfInvestments()
     {
         await AuthenticateAsync();
-        var response = await Api.Investments.GetInvestments();
+		TestResponse<PaginatedInvestmentsResponse> response = await Api.Investments.GetInvestments();
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -26,7 +27,7 @@ public class Investment(CustomWebApplicationFactory<Program> factory) : BaseTest
     public async Task CreateInvestment_WithValidQuoteId_CreatesInDatabaseAndReturnsCreated()
     {
         await AuthenticateAsync();
-        var investment = new InvestmentDto
+		InvestmentDto investment = new InvestmentDto
         {
             QuoteId = 1,
             Date = DateTime.UtcNow.Date,
@@ -36,14 +37,14 @@ public class Investment(CustomWebApplicationFactory<Program> factory) : BaseTest
             Type = InvestmentType.Buy
         };
 
-        var response = await Api.Investments.CreateInvestment(investment);
+		TestResponse response = await Api.Investments.CreateInvestment(investment);
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-        // Verify created in database
-        using var context = GetDatabaseContext();
-        var createdInvestment = context.Investments.FirstOrDefault(i => i.Amount == 5 && i.PricePerUnit == 160.0m);
+		// Verify created in database
+		InvestmentModel? createdInvestment = ExecuteWithDatabaseContext(context => 
+            context.Investments.FirstOrDefault(i => i.Amount == 5 && i.PricePerUnit == 160.0m));
         Assert.NotNull(createdInvestment);
         Assert.Equal(1, createdInvestment.QuoteId);
         Assert.Equal(InvestmentType.Buy, createdInvestment.Type);
@@ -54,7 +55,7 @@ public class Investment(CustomWebApplicationFactory<Program> factory) : BaseTest
     {
         await AuthenticateAsync();
 
-        var investment = new InvestmentDto
+		InvestmentDto investment = new InvestmentDto
         {
             QuoteSymbol = "AAPL",
 			ProviderId = "yahoo-finance",
@@ -65,14 +66,14 @@ public class Investment(CustomWebApplicationFactory<Program> factory) : BaseTest
             Type = InvestmentType.Buy
         };
 
-        var response = await Api.Investments.CreateInvestment(investment);
+		TestResponse response = await Api.Investments.CreateInvestment(investment);
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-        // Verify created in database
-        using var context = GetDatabaseContext();
-        var createdInvestment = context.Investments.FirstOrDefault(i => i.Amount == 5 && i.Type == InvestmentType.Buy);
+		// Verify created in database
+		InvestmentModel? createdInvestment = ExecuteWithDatabaseContext(context => 
+            context.Investments.FirstOrDefault(i => i.Amount == 5 && i.Type == InvestmentType.Buy));
         Assert.NotNull(createdInvestment);
         Assert.Equal(1, createdInvestment.QuoteId); // AAPL has Id=1 from DataSeeder
     }
@@ -81,19 +82,19 @@ public class Investment(CustomWebApplicationFactory<Program> factory) : BaseTest
     public async Task CreateInvestmentsBulk_WithValidData_CreatesAllInDatabaseAndReturnsCreated()
     {
         await AuthenticateAsync();
-        var investments = new List<InvestmentDto>
+		List<InvestmentDto> investments = new List<InvestmentDto>
         {
             new() { QuoteId = 1, Date = DateTime.UtcNow.Date, Amount = 1, PricePerUnit = 150m, TotalFees = 1m, Type = InvestmentType.Buy }
         };
 
-        var response = await Api.Investments.CreateInvestmentsBulk(investments);
+		TestResponse response = await Api.Investments.CreateInvestmentsBulk(investments);
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-        // Verify all created in database
-        using var context = GetDatabaseContext();
-        var createdInvestments = context.Investments.Where(i => i.Amount == 1 && i.PricePerUnit == 150m).ToList();
+		// Verify all created in database
+		List<InvestmentModel> createdInvestments = ExecuteWithDatabaseContext(context => 
+            context.Investments.Where(i => i.Amount == 1 && i.PricePerUnit == 150m).ToList());
         Assert.NotEmpty(createdInvestments);
         Assert.Single(createdInvestments);
     }
@@ -107,7 +108,7 @@ public class Investment(CustomWebApplicationFactory<Program> factory) : BaseTest
         const int amount = 5;
         const decimal pricePerUnit = 150.0m;
         const decimal fees = 2.5m;
-        using (var setupContext = GetDatabaseContext())
+        using (DatabaseContext setupContext = GetDatabaseContext())
         {
             setupContext.Investments.Add(new InvestmentModel
             {
@@ -123,7 +124,7 @@ public class Investment(CustomWebApplicationFactory<Program> factory) : BaseTest
             setupContext.SaveChanges();
         }
 
-        var investment = new InvestmentDto
+		InvestmentDto investment = new InvestmentDto
         {
             QuoteId = 1,
             Date = DateTime.UtcNow.Date,
@@ -133,14 +134,14 @@ public class Investment(CustomWebApplicationFactory<Program> factory) : BaseTest
             Type = InvestmentType.Buy
         };
 
-        var response = await Api.Investments.UpdateInvestment(999, investment);
+		TestResponse response = await Api.Investments.UpdateInvestment(999, investment);
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        // Verify updated in database
-        using var context = GetDatabaseContext();
-        var updatedInvestment = context.Investments.FirstOrDefault(i => i.Id == 999);
+		// Verify updated in database
+		InvestmentModel? updatedInvestment = ExecuteWithDatabaseContext(context => 
+            context.Investments.FirstOrDefault(i => i.Id == 999));
         Assert.NotNull(updatedInvestment);
         Assert.Equal(investment.Amount, updatedInvestment.Amount);
         Assert.Equal(investment.PricePerUnit, updatedInvestment.PricePerUnit);
@@ -152,7 +153,7 @@ public class Investment(CustomWebApplicationFactory<Program> factory) : BaseTest
         await AuthenticateAsync();
         
         // Setup: Create initial investment directly in database
-        using (var setupContext = GetDatabaseContext())
+        using (DatabaseContext setupContext = GetDatabaseContext())
         {
             setupContext.Investments.Add(new InvestmentModel
             {
@@ -168,18 +169,17 @@ public class Investment(CustomWebApplicationFactory<Program> factory) : BaseTest
             setupContext.SaveChanges();
         }
 
-        var response = await Api.Investments.DeleteInvestment(999);
+		TestResponse response = await Api.Investments.DeleteInvestment(999);
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
-        // Verify deleted from database
-        using var context = GetDatabaseContext();
-        var deletedInvestment = context.Investments.FirstOrDefault(i => i.Id == 999);
+		// Verify deleted from database
+		InvestmentModel? deletedInvestment = ExecuteWithDatabaseContext(context => 
+            context.Investments.FirstOrDefault(i => i.Id == 999));
         Assert.Null(deletedInvestment);
     }
 
-    /* TODO: Fix API to return 404 instead of throwing ArgumentException when symbol is not found
     [Fact]
     public async Task CreateInvestment_WithInvalidQuote_ReturnsNotFound()
     {
@@ -190,7 +190,7 @@ public class Investment(CustomWebApplicationFactory<Program> factory) : BaseTest
             .Setup(p => p.GetQuoteAsync(It.Is<string>(s => s == "NON"), It.IsAny<CancellationToken>()))
             .ReturnsAsync((QuoteModel?)null);
 
-        var investment = new InvestmentDto
+		InvestmentDto investment = new InvestmentDto
         {
             QuoteId = 0,
             ProviderId = "yahoo-finance",
@@ -202,10 +202,9 @@ public class Investment(CustomWebApplicationFactory<Program> factory) : BaseTest
             Type = InvestmentType.Buy
         };
 
-        var response = await Api.Investments.CreateInvestment(investment);
+		TestResponse response = await Api.Investments.CreateInvestment(investment);
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
-    */
 }

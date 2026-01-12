@@ -25,21 +25,69 @@ public abstract class BaseTest : IClassFixture<CustomWebApplicationFactory<Progr
 
     protected DatabaseContext GetDatabaseContext()
     {
-        var scope = Factory.Services.CreateScope();
+		IServiceScope scope = Factory.Services.CreateScope();
         return scope.ServiceProvider.GetRequiredService<DatabaseContext>();
+    }
+
+    /// <summary>
+    /// Executes a function within a database context scope, automatically disposing the scope.
+    /// Use this method for database operations to ensure proper resource cleanup.
+    /// </summary>
+    protected T ExecuteWithDatabaseContext<T>(Func<DatabaseContext, T> action)
+    {
+        using IServiceScope scope = Factory.Services.CreateScope();
+		DatabaseContext context = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
+        return action(context);
+    }
+
+    /// <summary>
+    /// Executes an async function within a database context scope, automatically disposing the scope.
+    /// Use this method for database operations to ensure proper resource cleanup.
+    /// </summary>
+    protected async Task<T> ExecuteWithDatabaseContextAsync<T>(Func<DatabaseContext, Task<T>> action)
+    {
+        using IServiceScope scope = Factory.Services.CreateScope();
+		DatabaseContext context = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
+        return await action(context);
+    }
+
+    /// <summary>
+    /// Executes an action within a database context scope, automatically disposing the scope.
+    /// Use this method for database operations to ensure proper resource cleanup.
+    /// </summary>
+    protected void ExecuteWithDatabaseContext(Action<DatabaseContext> action)
+    {
+        using IServiceScope scope = Factory.Services.CreateScope();
+		DatabaseContext context = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
+        action(context);
+    }
+
+    /// <summary>
+    /// Executes an async action within a database context scope, automatically disposing the scope.
+    /// Use this method for database operations to ensure proper resource cleanup.
+    /// </summary>
+    protected async Task ExecuteWithDatabaseContextAsync(Func<DatabaseContext, Task> action)
+    {
+        using IServiceScope scope = Factory.Services.CreateScope();
+		DatabaseContext context = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
+        await action(context);
     }
 
     protected async Task AuthenticateAsync()
     {
-        var loginResponse = await Api.Auth.Login(new LoginDto
+		TestResponse<AuthResponseDto> loginResponse = await Api.Auth.Login(new LoginDto
         {
             Email = "test@example.com",
             Password = "Password123!"
         });
 
-        if (loginResponse?.Content?.AccessToken != null)
+        if (!loginResponse.Success || loginResponse.Content?.AccessToken == null)
         {
-            Api.SetToken(loginResponse.Content.AccessToken);
+            throw new InvalidOperationException(
+                $"Authentication failed. Login returned {loginResponse.StatusCode}. " +
+                $"Error: {loginResponse.Error?.Description ?? "No error message"}");
         }
+
+        Api.SetToken(loginResponse.Content.AccessToken);
     }
 }

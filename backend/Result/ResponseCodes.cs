@@ -23,5 +23,6 @@ public static class ResponseCodes
 	{
 		public static readonly CodeDescriptionModel ProviderNotFound = new("PROVIDER_NOT_FOUND", "The requested provider was not found.");
 		public static readonly CodeDescriptionModel InvalidDateRange = new("INVALID_DATE_RANGE", "The 'from' date cannot be later than the 'to' date.");
+		public static readonly CodeDescriptionModel SymbolNotFound = new("SYMBOL_NOT_FOUND", "The requested symbol was not found.");
 	}
 }

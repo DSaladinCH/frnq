@@ -127,7 +127,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 		DateTime expiresAt = DateTime.UtcNow.AddMinutes(double.Parse(configuration.GetSection("JwtSettings")["AccessTokenExpiryInMinutes"]!));
 
 		// Create refresh token session
-		var refreshTokenSession = new RefreshTokenSession
+		RefreshTokenSession refreshTokenSession = new RefreshTokenSession
 		{
 			UserId = user.Id,
 			Token = refreshToken,
@@ -140,7 +140,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 		await databaseContext.SaveChangesAsync(cancellationToken);
 
 		// Set refresh token as HTTP-only cookie
-		var cookieOptions = new CookieOptions
+		CookieOptions cookieOptions = new CookieOptions
 		{
 			HttpOnly = true,
 			Expires = refreshTokenSession.ExpiryTime,
@@ -153,7 +153,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 
 		httpContextAccessor.HttpContext?.Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
 
-		var loginResponse = new AuthResponseDto
+		AuthResponseDto loginResponse = new AuthResponseDto
 		{
 			AccessToken = accessToken,
 			ExpiresAt = expiresAt
@@ -205,7 +205,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 			new Claim("jti", Guid.NewGuid().ToString())
 		};
 
-		var tokenDescriptor = new SecurityTokenDescriptor
+		SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
 		{
 			Subject = new ClaimsIdentity(claims),
 			Expires = DateTime.UtcNow.AddMinutes(double.Parse(jwtSettings["AccessTokenExpiryInMinutes"]!)),
@@ -214,7 +214,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 			SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
 		};
 
-		var tokenHandler = new JwtSecurityTokenHandler();
+		JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
 		SecurityToken token = tokenHandler.CreateToken(tokenDescriptor);
 		return tokenHandler.WriteToken(token);
 	}
@@ -222,7 +222,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 	private static string GenerateRefreshToken()
 	{
 		byte[] randomNumber = new byte[64];
-		using var rng = RandomNumberGenerator.Create();
+		using RandomNumberGenerator rng = RandomNumberGenerator.Create();
 		rng.GetBytes(randomNumber);
 		return Convert.ToBase64String(randomNumber);
 	}
@@ -246,7 +246,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 		string accessToken = GenerateAccessToken(tokenSession.User);
 		DateTime expiresAt = DateTime.UtcNow.AddMinutes(double.Parse(configuration.GetSection("JwtSettings")["AccessTokenExpiryInMinutes"]!));
 
-		var loginResponse = new AuthResponseDto
+		AuthResponseDto loginResponse = new AuthResponseDto
 		{
 			AccessToken = accessToken,
 			ExpiresAt = expiresAt

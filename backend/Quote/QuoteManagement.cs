@@ -46,7 +46,7 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 		HashSet<string> existingSymbols = [.. dbQuotes.Select(q => q.Symbol)];
 		IEnumerable<QuoteModel> externalResults = results.Where(r => !existingSymbols.Contains(r.Symbol));
 		results = dbQuotes.Concat(externalResults);
-		
+
 		return ApiResponse.Create(results.ToList(), System.Net.HttpStatusCode.OK);
 	}
 
@@ -71,17 +71,24 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 		return null;
 	}
 
-	public async Task<QuoteModel> GetOrAddQuoteAsync(string providerId, string symbol, CancellationToken cancellationToken)
+	public async Task<ApiResponse<QuoteModel>> GetOrAddQuoteAsync(string providerId, string symbol, CancellationToken cancellationToken)
 	{
 		QuoteModel? quote = await databaseProvider.GetQuoteAsync(providerId, symbol, cancellationToken);
 		if (quote is not null)
-			return quote;
+			return ApiResponse.Create(quote, System.Net.HttpStatusCode.OK);
 
-		IFinanceProvider? financeProvider = registry.GetProvider(providerId) ?? throw new ArgumentException($"Finance provider '{providerId}' not found.", nameof(providerId));
-		quote = await financeProvider.GetQuoteAsync(symbol, cancellationToken) ?? throw new ArgumentException($"Quote with symbol '{symbol}' not found.", nameof(symbol));
+		IFinanceProvider? financeProvider = registry.GetProvider(providerId);
+
+		if (financeProvider is null)
+			return ApiResponse.Create(ResponseCodes.Quote.ProviderNotFound, System.Net.HttpStatusCode.BadRequest);
+
+		quote = await financeProvider.GetQuoteAsync(symbol, cancellationToken);
+
+		if (quote is null)
+			return ApiResponse.Create(ResponseCodes.Quote.SymbolNotFound, System.Net.HttpStatusCode.NotFound);
 
 		await databaseProvider.AddOrUpdateQuoteAsync(quote, cancellationToken);
-		return quote;
+		return ApiResponse.Create(quote, System.Net.HttpStatusCode.OK);
 	}
 
 	public async Task<ApiResponse<List<QuotePrice>>> GetHistoricalPricesAsync(string providerId, string symbol, DateTime from, DateTime to, CancellationToken cancellationToken)
@@ -89,13 +96,20 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 		if (from > to)
 			return ApiResponse.Create(ResponseCodes.Quote.InvalidDateRange, System.Net.HttpStatusCode.BadRequest);
 
-		QuoteModel quote = await GetOrAddQuoteAsync(providerId, symbol, cancellationToken);
-		return await GetHistoricalPricesAsync(quote.Id, from, to, cancellationToken);
+		ApiResponse<QuoteModel> quoteResponse = await GetOrAddQuoteAsync(providerId, symbol, cancellationToken);
+
+		if (quoteResponse.Failed)
+			return new ApiResponseBuilder(quoteResponse);
+
+		return await GetHistoricalPricesAsync(quoteResponse.Value.Id, from, to, cancellationToken);
 	}
 
 	public async Task<ApiResponse<List<QuotePrice>>> GetHistoricalPricesAsync(int quoteId, DateTime from, DateTime to, CancellationToken cancellationToken)
 	{
-		QuoteModel? quote = await databaseProvider.GetQuoteAsync(quoteId, cancellationToken) ?? throw new ArgumentException($"Quote with id '{quoteId}' not found.", nameof(quoteId));
+		QuoteModel? quote = await databaseProvider.GetQuoteAsync(quoteId, cancellationToken);
+
+		if (quote is null)
+			return ApiResponse.Create(ResponseCodes.Quote.SymbolNotFound, System.Net.HttpStatusCode.NotFound);
 
 		List<QuotePrice> dbPrices = await databaseContext.QuotePrices
 			.Where(p => p.QuoteId == quoteId && p.Date >= from && p.Date <= to)
@@ -123,7 +137,10 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 			else
 				fetchEnd = null;
 
-			dbPrices.AddRange(await GetExternalHistoricalPricesAsync(quote, fetchStart, fetchEnd, cancellationToken));
+			ApiResponse<IEnumerable<QuotePrice>> externalPricesResponse = await GetExternalHistoricalPricesAsync(quote, fetchStart, fetchEnd, cancellationToken);
+
+			if (externalPricesResponse.Success)
+				dbPrices.AddRange(externalPricesResponse.Value);
 		}
 
 		List<QuotePrice> allCombined = [.. dbPrices
@@ -135,7 +152,7 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 		return ApiResponse.Create(allCombined, System.Net.HttpStatusCode.OK);
 	}
 
-	private async Task<IEnumerable<QuotePrice>> GetExternalHistoricalPricesAsync(QuoteModel quote, DateTime? fetchStart, DateTime? fetchEnd, CancellationToken cancellationToken)
+	private async Task<ApiResponse<IEnumerable<QuotePrice>>> GetExternalHistoricalPricesAsync(QuoteModel quote, DateTime? fetchStart, DateTime? fetchEnd, CancellationToken cancellationToken)
 	{
 		// If we need to fetch any range, combine into one request
 		if ((fetchStart.HasValue && fetchEnd.HasValue) || (fetchStart.HasValue && !fetchEnd.HasValue) || (!fetchStart.HasValue && fetchEnd.HasValue))
@@ -144,22 +161,26 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 			DateTime end = fetchEnd ?? DateTime.UtcNow;
 
 			if (start > end)
-				return [];
+				return ApiResponse.Create<IEnumerable<QuotePrice>>([], System.Net.HttpStatusCode.OK);
 
-			IFinanceProvider? financeProvider = registry.GetProvider(quote.ProviderId) ?? throw new ArgumentException($"Finance provider '{quote.ProviderId}' not found.", nameof(quote.ProviderId));
+			IFinanceProvider? financeProvider = registry.GetProvider(quote.ProviderId);
+
+			if (financeProvider is null)
+				return ApiResponse.Create<IEnumerable<QuotePrice>>(ResponseCodes.Quote.ProviderNotFound, System.Net.HttpStatusCode.BadRequest);
+
 			IEnumerable<QuotePrice> fetched = await financeProvider.GetHistoricalPricesAsync(quote.Symbol, start, end, cancellationToken);
 
 			if (!fetched.Any())
-				return [];
+				return ApiResponse.Create<IEnumerable<QuotePrice>>([], System.Net.HttpStatusCode.OK);
 
 			foreach (QuotePrice p in fetched)
 				p.QuoteId = quote.Id;
 
 			await databaseProvider.AddOrUpdateQuotePricesAsync(fetched.ToList(), cancellationToken);
-			return fetched;
+			return ApiResponse.Create(fetched, System.Net.HttpStatusCode.OK);
 		}
 
-		return [];
+		return ApiResponse.Create<IEnumerable<QuotePrice>>([], System.Net.HttpStatusCode.OK);
 	}
 
 	public async Task<ApiResponse> UpdateCustomNameAsync(int quoteId, string customName, CancellationToken cancellationToken)

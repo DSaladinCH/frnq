@@ -15,7 +15,7 @@ public static class DataSeeder
     {
         if (context.Users.Any()) return;
 
-        var user = new UserModel
+		UserModel user = new UserModel
         {
             Id = TestUserId,
             Firstname = "Test",
@@ -25,7 +25,7 @@ public static class DataSeeder
 
         context.Users.Add(user);
 
-        var group = new QuoteGroup
+		QuoteGroup group = new QuoteGroup
         {
             Id = 1,
             UserId = user.Id,
@@ -33,7 +33,7 @@ public static class DataSeeder
         };
         context.QuoteGroups.Add(group);
 
-        var quote = new QuoteModel
+		QuoteModel quote = new QuoteModel
         {
             Id = 1,
             ProviderId = "yahoo-finance",
@@ -53,7 +53,7 @@ public static class DataSeeder
 		};
 		context.QuoteNames.Add(quoteName);
 
-        var price = new QuotePrice
+		QuotePrice price = new QuotePrice
         {
             Id = 1,
             QuoteId = 1,
@@ -62,7 +62,7 @@ public static class DataSeeder
         };
         context.QuotePrices.Add(price);
 
-        var investment = new InvestmentModel
+		InvestmentModel investment = new InvestmentModel
         {
             Id = 1,
             UserId = user.Id,
@@ -75,7 +75,7 @@ public static class DataSeeder
         };
         context.Investments.Add(investment);
 
-        var oidcProvider = new OidcProvider
+		OidcProvider oidcProvider = new OidcProvider
         {
             Id = Guid.Parse("00000000-0000-0000-0000-000000000002"),
             ProviderId = "test-provider",
@@ -88,7 +88,7 @@ public static class DataSeeder
         };
         context.OidcProviders.Add(oidcProvider);
 
-        var externalLink = new ExternalUserLink
+		ExternalUserLink externalLink = new ExternalUserLink
         {
             Id = Guid.Parse("00000000-0000-0000-0000-000000000003"),
             UserId = user.Id,

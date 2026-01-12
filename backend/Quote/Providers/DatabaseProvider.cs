@@ -67,7 +67,7 @@ public class DatabaseProvider(DatabaseContext databaseContext)
 			return;
 
 		// Get existing prices for the same dates (date only, ignoring time)
-		var priceDates = prices.Select(x => x.Date.Date).Distinct().ToList();
+		List<DateTime> priceDates = prices.Select(x => x.Date.Date).Distinct().ToList();
 		List<QuotePrice> existingPrices = await databaseContext.QuotePrices
 			.Where(p => p.QuoteId == quote.Id && priceDates.Contains(p.Date.Date))
 			.ToListAsync(cancellationToken);

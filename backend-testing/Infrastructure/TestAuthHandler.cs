@@ -21,16 +21,16 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
             return Task.FromResult(AuthenticateResult.NoResult());
         }
 
-        var claims = new[] {
+		Claim[] claims = new[] {
             new Claim(ClaimTypes.NameIdentifier, DataSeeder.TestUserId.ToString()),
             new Claim(ClaimTypes.Name, "Test User"),
             new Claim(ClaimTypes.Email, "test@example.com")
         };
-        var identity = new ClaimsIdentity(claims, "Test");
-        var principal = new ClaimsPrincipal(identity);
-        var ticket = new AuthenticationTicket(principal, "TestScheme");
+		ClaimsIdentity identity = new ClaimsIdentity(claims, "Test");
+		ClaimsPrincipal principal = new ClaimsPrincipal(identity);
+		AuthenticationTicket ticket = new AuthenticationTicket(principal, "TestScheme");
 
-        var result = AuthenticateResult.Success(ticket);
+		AuthenticateResult result = AuthenticateResult.Success(ticket);
 
         return Task.FromResult(result);
     }

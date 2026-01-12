@@ -112,7 +112,7 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 
 	public async Task<ApiResponse<List<InvestmentViewDto>>> CreateInvestmentsAsync(List<InvestmentDto> investmentRequests, CancellationToken cancellationToken)
 	{
-		var investments = new List<InvestmentModel>();
+		List<InvestmentModel> investments = new List<InvestmentModel>();
 
 		foreach (InvestmentDto investmentRequest in investmentRequests)
 		{

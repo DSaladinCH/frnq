@@ -133,8 +133,8 @@ public class OidcInitializationService : IHostedService, IDisposable
                 }
                 else
                 {
-                    // Create new provider
-                    var newProvider = new OidcProvider
+					// Create new provider
+					OidcProvider newProvider = new OidcProvider
                     {
                         ProviderId = providerId,
                         DisplayName = displayName,
@@ -169,11 +169,11 @@ public class OidcInitializationService : IHostedService, IDisposable
     {
         try
         {
-            // Parse the issuer URL to get the base domain
-            var uri = new Uri(issuerUrl);
+			// Parse the issuer URL to get the base domain
+			Uri uri = new Uri(issuerUrl);
 			string baseUrl = $"{uri.Scheme}://{uri.Host}";
             
-            using var httpClient = new HttpClient();
+            using HttpClient httpClient = new HttpClient();
             httpClient.Timeout = TimeSpan.FromSeconds(10);
             httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
             
@@ -203,7 +203,7 @@ public class OidcInitializationService : IHostedService, IDisposable
                         {
                             try
                             {
-                                using var testImage = Image.Load(bytes);
+                                using Image testImage = Image.Load(bytes);
                                 imageBytes = bytes;
                                 successUrl = faviconUrl;
                                 _logger.LogDebug("Successfully fetched favicon from {FaviconUrl}", faviconUrl);
@@ -230,7 +230,7 @@ public class OidcInitializationService : IHostedService, IDisposable
             }
             
             // Load and resize the image
-            using var image = Image.Load(imageBytes);
+            using Image image = Image.Load(imageBytes);
 
 			// Resize to max 100x100 while maintaining aspect ratio
 			int targetSize = 100;
@@ -244,7 +244,7 @@ public class OidcInitializationService : IHostedService, IDisposable
             }
             
             // Convert to PNG and base64
-            using var ms = new MemoryStream();
+            using MemoryStream ms = new MemoryStream();
             await image.SaveAsPngAsync(ms, cancellationToken);
 			string base64 = Convert.ToBase64String(ms.ToArray());
             

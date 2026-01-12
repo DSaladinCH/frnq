@@ -3,6 +3,7 @@ using DSaladin.Frnq.Api.Testing.Infrastructure;
 using Xunit;
 using Allure.Xunit.Attributes;
 using System.Net;
+using DSaladin.Frnq.Api.Testing.Api;
 
 namespace DSaladin.Frnq.Api.Testing.Tests;
 
@@ -12,7 +13,7 @@ public class AuthOidc(CustomWebApplicationFactory<Program> factory) : BaseTest(f
     [Fact]
     public async Task GetProviders_ReturnsListWithEnabledProviders()
     {
-        var response = await Api.Oidc.GetProviders();
+		TestResponse<List<OidcProviderDto>> response = await Api.Oidc.GetProviders();
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -24,12 +25,12 @@ public class AuthOidc(CustomWebApplicationFactory<Program> factory) : BaseTest(f
     [Fact]
     public async Task InitiateLogin_ReturnsRedirect()
     {
-        var client = Factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+		HttpClient client = Factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
         {
             AllowAutoRedirect = false
         });
 
-        var response = await client.GetAsync("api/AuthOidc/login/test-provider");
+		HttpResponseMessage response = await client.GetAsync("api/AuthOidc/login/test-provider");
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.NotNull(response.Headers.Location);
@@ -39,13 +40,13 @@ public class AuthOidc(CustomWebApplicationFactory<Program> factory) : BaseTest(f
     [Fact]
     public async Task Callback_WithInvalidState_RedirectsToLoginWithError()
     {
-        var client = Factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+		HttpClient client = Factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
         {
             AllowAutoRedirect = false
         });
 
-        // Current OidcManagement redirects on failure
-        var response = await client.GetAsync("api/AuthOidc/callback/test-provider?code=123&state=invalid");
+		// Current OidcManagement redirects on failure
+		HttpResponseMessage response = await client.GetAsync("api/AuthOidc/callback/test-provider?code=123&state=invalid");
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Contains("error=", response.Headers.Location!.ToString());
@@ -59,7 +60,7 @@ public class AuthExternalLinks(CustomWebApplicationFactory<Program> factory) : B
     public async Task GetLinks_WhenAuthenticated_ReturnsListWithSeededLink()
     {
         await AuthenticateAsync();
-        var response = await Api.ExternalLinks.GetLinks();
+		TestResponse<List<ExternalLinkViewDto>> response = await Api.ExternalLinks.GetLinks();
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -72,7 +73,7 @@ public class AuthExternalLinks(CustomWebApplicationFactory<Program> factory) : B
     public async Task InitiateLink_WhenAuthenticated_ReturnsAuthUrl()
     {
         await AuthenticateAsync();
-        var response = await Api.ExternalLinks.InitiateLink("test-provider");
+		TestResponse<object> response = await Api.ExternalLinks.InitiateLink("test-provider");
 
         Assert.NotNull(response);
         // It should return 200 OK with the authorization URL
@@ -83,9 +84,9 @@ public class AuthExternalLinks(CustomWebApplicationFactory<Program> factory) : B
     public async Task UnlinkAccount_WithValidId_ReturnsOk()
     {
         await AuthenticateAsync();
-        // The seeded link ID is 00000000-0000-0000-0000-000000000003
-        var linkId = Guid.Parse("00000000-0000-0000-0000-000000000003");
-        var response = await Api.ExternalLinks.UnlinkAccount(linkId);
+		// The seeded link ID is 00000000-0000-0000-0000-000000000003
+		Guid linkId = Guid.Parse("00000000-0000-0000-0000-000000000003");
+		TestResponse response = await Api.ExternalLinks.UnlinkAccount(linkId);
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -95,7 +96,7 @@ public class AuthExternalLinks(CustomWebApplicationFactory<Program> factory) : B
     public async Task UnlinkAccount_WithNonExistentId_ReturnsNotFound()
     {
         await AuthenticateAsync();
-        var response = await Api.ExternalLinks.UnlinkAccount(Guid.NewGuid());
+		TestResponse response = await Api.ExternalLinks.UnlinkAccount(Guid.NewGuid());
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);

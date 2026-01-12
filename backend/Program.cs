@@ -66,7 +66,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 		{
 			// Parse ResponseCode format: "CODE|Description"
 			string[] parts = firstError.ErrorMessage.Split('|', 2);
-			var codeDescription = new CodeDescriptionModel(parts[0], parts[1]);
+			CodeDescriptionModel codeDescription = new CodeDescriptionModel(parts[0], parts[1]);
 			return ApiResponse.Create(codeDescription, System.Net.HttpStatusCode.BadRequest).Response;
 		}
 
@@ -113,7 +113,6 @@ builder.Services.AddCors(options =>
 	});
 });
 
-Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
 if (!builder.Environment.IsEnvironment("Testing") && builder.Configuration["IsTesting"] != "true")
 {
 	string connectionString = builder.Configuration.GetConnectionString("DatabaseConnection") ?? throw new InvalidOperationException("Connection string 'DatabaseConnection' not found.");
@@ -126,11 +125,9 @@ WebApplication app = builder.Build();
 
 if (!app.Environment.IsEnvironment("Testing") && app.Configuration["IsTesting"] != "true")
 {
-	using (IServiceScope localScope = app.Services.CreateScope())
-	{
-		DatabaseContext databaseContext = localScope.ServiceProvider.GetRequiredService<DatabaseContext>();
-		databaseContext.Database.Migrate();
-	}
+	using IServiceScope localScope = app.Services.CreateScope();
+	DatabaseContext databaseContext = localScope.ServiceProvider.GetRequiredService<DatabaseContext>();
+	databaseContext.Database.Migrate();
 }
 
 

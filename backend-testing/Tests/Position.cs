@@ -2,6 +2,8 @@ using DSaladin.Frnq.Api.Testing.Infrastructure;
 using Xunit;
 using Allure.Xunit.Attributes;
 using System.Net;
+using DSaladin.Frnq.Api.Testing.Api;
+using DSaladin.Frnq.Api.Position;
 
 namespace DSaladin.Frnq.Api.Testing.Tests;
 
@@ -12,7 +14,7 @@ public class Position(CustomWebApplicationFactory<Program> factory) : BaseTest(f
     public async Task GetPositions_WhenAuthenticated_ReturnsPositions()
     {
         await AuthenticateAsync();
-        var response = await Api.Positions.GetPositions();
+		TestResponse<PositionsResponse> response = await Api.Positions.GetPositions();
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
