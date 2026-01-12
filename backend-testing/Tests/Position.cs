@@ -5,6 +5,7 @@ using System.Net;
 using DSaladin.Frnq.Api.Testing.Api;
 using DSaladin.Frnq.Api.Position;
 using DSaladin.Frnq.Api.Auth;
+using DSaladin.Frnq.Api.Result;
 
 namespace DSaladin.Frnq.Api.Testing.Tests;
 
@@ -15,12 +16,12 @@ public class Position : TestBase
     public async Task GetPositions_WhenAuthenticated_ReturnsPositions()
     {
         using AuthenticationScope<UserModel> authScope = await Authenticate();
-		TestResponse<PositionsResponse> response = await ApiInterface.Positions.GetPositions();
+		ApiResponse<PositionsResponse> response = await ApiInterface.Positions.GetPositions();
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.NotNull(response.Content);
+        Assert.NotNull(response.Value);
         // Ensure seeder data is present
-        Assert.NotEmpty(response.Content.Snapshots);
+        Assert.NotEmpty(response.Value.Snapshots);
     }
 }

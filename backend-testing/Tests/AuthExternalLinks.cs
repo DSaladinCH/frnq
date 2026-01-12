@@ -4,6 +4,7 @@ using Xunit;
 using Allure.Xunit.Attributes;
 using System.Net;
 using DSaladin.Frnq.Api.Testing.Api;
+using DSaladin.Frnq.Api.Result;
 
 namespace DSaladin.Frnq.Api.Testing.Tests;
 
@@ -13,13 +14,13 @@ public class AuthOidc : TestBase
     [Fact]
     public async Task GetProviders_ReturnsListWithEnabledProviders()
     {
-		TestResponse<List<OidcProviderDto>> response = await ApiInterface.Oidc.GetProviders();
+		ApiResponse<List<OidcProviderDto>> response = await ApiInterface.Oidc.GetProviders();
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.NotNull(response.Content);
+        Assert.NotNull(response.Value);
         // We seeded 'test-provider' as enabled
-        Assert.Contains(response.Content, p => p.ProviderId == "test-provider");
+        Assert.Contains(response.Value, p => p.ProviderId == "test-provider");
     }
 
     [Fact]
@@ -60,20 +61,20 @@ public class AuthExternalLinks : TestBase
     public async Task GetLinks_WhenAuthenticated_ReturnsListWithSeededLink()
     {
         using AuthenticationScope<UserModel> authScope = await Authenticate();
-		TestResponse<List<ExternalLinkViewDto>> response = await ApiInterface.ExternalLinks.GetLinks();
+		ApiResponse<List<ExternalLinkViewDto>> response = await ApiInterface.ExternalLinks.GetLinks();
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.NotNull(response.Content);
-        Assert.NotEmpty(response.Content);
-        Assert.Contains(response.Content, l => l.ProviderId == "test-provider");
+        Assert.NotNull(response.Value);
+        Assert.NotEmpty(response.Value);
+        Assert.Contains(response.Value, l => l.ProviderId == "test-provider");
     }
 
     [Fact]
     public async Task InitiateLink_WhenAuthenticated_ReturnsAuthUrl()
     {
         using AuthenticationScope<UserModel> authScope = await Authenticate();
-		TestResponse<object> response = await ApiInterface.ExternalLinks.InitiateLink("test-provider");
+		ApiResponse<object> response = await ApiInterface.ExternalLinks.InitiateLink("test-provider");
 
         Assert.NotNull(response);
         // It should return 200 OK with the authorization URL
@@ -86,7 +87,7 @@ public class AuthExternalLinks : TestBase
         using AuthenticationScope<UserModel> authScope = await Authenticate();
 		// The seeded link ID is 00000000-0000-0000-0000-000000000003
 		Guid linkId = Guid.Parse("00000000-0000-0000-0000-000000000003");
-		TestResponse response = await ApiInterface.ExternalLinks.UnlinkAccount(linkId);
+		ApiResponse response = await ApiInterface.ExternalLinks.UnlinkAccount(linkId);
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -96,7 +97,7 @@ public class AuthExternalLinks : TestBase
     public async Task UnlinkAccount_WithNonExistentId_ReturnsNotFound()
     {
         using AuthenticationScope<UserModel> authScope = await Authenticate();
-		TestResponse response = await ApiInterface.ExternalLinks.UnlinkAccount(Guid.NewGuid());
+		ApiResponse response = await ApiInterface.ExternalLinks.UnlinkAccount(Guid.NewGuid());
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);

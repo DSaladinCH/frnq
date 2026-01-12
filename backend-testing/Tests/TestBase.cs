@@ -14,6 +14,8 @@ using Microsoft.Extensions.Options;
 using Moq;
 using DSaladin.Frnq.Api.Quote.Providers;
 
+[assembly: ExcludeFromCodeCoverage]
+
 namespace DSaladin.Frnq.Api.Testing;
 
 /// <summary>
@@ -92,7 +94,7 @@ public abstract class TestBase : IDisposable
     [AllureStep("Seed Initial Data")]
     protected static async Task SeedDatabase([Skip] DatabaseContext dbContext)
     {
-		DataSeeder.Seed(dbContext);
+		await DataSeeder.Seed(dbContext);
     }
 
     [AllureStep("Authenticate Test User")]

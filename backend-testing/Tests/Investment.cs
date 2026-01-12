@@ -7,6 +7,7 @@ using Moq;
 using DSaladin.Frnq.Api.Quote;
 using DSaladin.Frnq.Api.Testing.Api;
 using DSaladin.Frnq.Api.Auth;
+using DSaladin.Frnq.Api.Result;
 
 namespace DSaladin.Frnq.Api.Testing.Tests;
 
@@ -17,11 +18,11 @@ public class Investment : TestBase
 	public async Task GetInvestments_WhenAuthenticated_ReturnsListOfInvestments()
 	{
 		using AuthenticationScope<UserModel> authScope = await Authenticate();
-		TestResponse<PaginatedInvestmentsResponse> response = await ApiInterface.Investments.GetInvestments();
+		ApiResponse<PaginatedInvestmentsResponse> response = await ApiInterface.Investments.GetInvestments();
 
 		Assert.NotNull(response);
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-		Assert.NotEmpty(response.Content?.Items ?? []);
+		Assert.NotEmpty(response.Value?.Items ?? []);
 	}
 
 	[Fact]
@@ -38,7 +39,7 @@ public class Investment : TestBase
 			Type = InvestmentType.Buy
 		};
 
-		TestResponse response = await ApiInterface.Investments.CreateInvestment(investment);
+		ApiResponse response = await ApiInterface.Investments.CreateInvestment(investment);
 
 		Assert.NotNull(response);
 		Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -66,7 +67,7 @@ public class Investment : TestBase
 			Type = InvestmentType.Buy
 		};
 
-		TestResponse response = await ApiInterface.Investments.CreateInvestment(investment);
+		ApiResponse response = await ApiInterface.Investments.CreateInvestment(investment);
 
 		Assert.NotNull(response);
 		Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -86,7 +87,7 @@ public class Investment : TestBase
 			new() { QuoteId = 1, Date = DateTime.UtcNow.Date, Amount = 1, PricePerUnit = 150m, TotalFees = 1m, Type = InvestmentType.Buy }
 		};
 
-		TestResponse response = await ApiInterface.Investments.CreateInvestmentsBulk(investments);
+		ApiResponse response = await ApiInterface.Investments.CreateInvestmentsBulk(investments);
 
 		Assert.NotNull(response);
 		Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -129,7 +130,7 @@ public class Investment : TestBase
 			Type = InvestmentType.Buy
 		};
 
-		TestResponse response = await ApiInterface.Investments.UpdateInvestment(999, investment);
+		ApiResponse response = await ApiInterface.Investments.UpdateInvestment(999, investment);
 
 		Assert.NotNull(response);
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -160,7 +161,7 @@ public class Investment : TestBase
 		});
 		await DbContext.SaveChangesAsync();
 
-		TestResponse response = await ApiInterface.Investments.DeleteInvestment(999);
+		ApiResponse response = await ApiInterface.Investments.DeleteInvestment(999);
 
 		Assert.NotNull(response);
 		Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
@@ -192,7 +193,7 @@ public class Investment : TestBase
 			Type = InvestmentType.Buy
 		};
 
-		TestResponse response = await ApiInterface.Investments.CreateInvestment(investment);
+		ApiResponse response = await ApiInterface.Investments.CreateInvestment(investment);
 
 		Assert.NotNull(response);
 		Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);

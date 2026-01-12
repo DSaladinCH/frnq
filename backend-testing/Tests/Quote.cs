@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using DSaladin.Frnq.Api.Testing.Api;
 using DSaladin.Frnq.Api.Quote.Providers;
 using DSaladin.Frnq.Api.Auth;
+using DSaladin.Frnq.Api.Result;
 
 namespace DSaladin.Frnq.Api.Testing.Tests;
 
@@ -28,12 +29,12 @@ public class Quote : TestBase
             .Setup(p => p.SearchAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockedQuotes);
 
-		TestResponse<List<QuoteModel>> response = await ApiInterface.Quotes.Search("microsoft");
+		ApiResponse<List<QuoteModel>> response = await ApiInterface.Quotes.Search("microsoft");
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Single(response.Content!);
-        Assert.Equal("MSFT", response.Content![0].Symbol);
+        Assert.Single(response.Value!);
+        Assert.Equal("MSFT", response.Value![0].Symbol);
     }
 
     [Fact]
@@ -42,7 +43,7 @@ public class Quote : TestBase
         using AuthenticationScope<UserModel> authScope = await Authenticate();
 
 		CustomNameDto customName = new CustomNameDto("New Custom Name");
-		TestResponse response = await ApiInterface.Quotes.UpdateCustomName(1, customName);
+		ApiResponse response = await ApiInterface.Quotes.UpdateCustomName(1, customName);
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
@@ -58,7 +59,7 @@ public class Quote : TestBase
     {
         using AuthenticationScope<UserModel> authScope = await Authenticate();
 
-		TestResponse response = await ApiInterface.Quotes.DeleteCustomName(1);
+		ApiResponse response = await ApiInterface.Quotes.DeleteCustomName(1);
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
@@ -82,11 +83,11 @@ public class Quote : TestBase
             .Setup(p => p.GetHistoricalPricesAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockedPrices);
 
-		TestResponse<List<QuotePrice>> response = await ApiInterface.Quotes.GetHistoricalPrices("AAPL", DateTime.UtcNow.AddDays(-7), DateTime.UtcNow);
+		ApiResponse<List<QuotePrice>> response = await ApiInterface.Quotes.GetHistoricalPrices("AAPL", DateTime.UtcNow.AddDays(-7), DateTime.UtcNow);
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.NotEmpty(response.Content!);
+        Assert.NotEmpty(response.Value!);
     }
 
     [Fact]
@@ -106,13 +107,13 @@ public class Quote : TestBase
 
 		// Search for "A" should find AAPL from DB and MSFT from mock (if query matched MSFT)
 		// Actually let's search for "Apple" to be specific
-		TestResponse<List<QuoteModel>> response = await ApiInterface.Quotes.Search("Apple");
+		ApiResponse<List<QuoteModel>> response = await ApiInterface.Quotes.Search("Apple");
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         
         // Should contain AAPL from DB
-        Assert.Contains(response.Content!, q => q.Symbol == "AAPL");
+        Assert.Contains(response.Value!, q => q.Symbol == "AAPL");
     }
 
     [Fact]
@@ -120,7 +121,7 @@ public class Quote : TestBase
     {
         using AuthenticationScope<UserModel> authScope = await Authenticate();
 
-		TestResponse<List<QuoteModel>> response = await ApiInterface.Quotes.Search("Apple", "non-existing-provider");
+		ApiResponse<List<QuoteModel>> response = await ApiInterface.Quotes.Search("Apple", "non-existing-provider");
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -130,7 +131,7 @@ public class Quote : TestBase
     public async Task GetHistoricalPrices_WithFromDateAfterToDate_ReturnsBadRequest()
     {
         using AuthenticationScope<UserModel> authScope = await Authenticate();
-		TestResponse<List<QuotePrice>> response = await ApiInterface.Quotes.GetHistoricalPrices("AAPL", DateTime.UtcNow, DateTime.UtcNow.AddDays(-1));
+		ApiResponse<List<QuotePrice>> response = await ApiInterface.Quotes.GetHistoricalPrices("AAPL", DateTime.UtcNow, DateTime.UtcNow.AddDays(-1));
         
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
