@@ -18,6 +18,9 @@ public class RequiredFieldAttribute : ResponseCodeValidationAttribute
 		if (value is string stringValue && string.IsNullOrWhiteSpace(stringValue))
 			return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));
 
+		if (value is DateTime dateTimeValue && dateTimeValue == default)
+			return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));
+
 		return ValidationResult.Success;
 	}
 }
