@@ -6,8 +6,32 @@ namespace DSaladin.Frnq.Api.Testing.Api;
 
 public class InvestmentApi(HttpClient httpClient) : BaseApi(httpClient)
 {
-    public async Task<ApiResponse<PaginatedInvestmentsResponse>> GetInvestments(int skip = 0, int take = 25)
-        => await GetAsync<PaginatedInvestmentsResponse>($"api/investments?skip={skip}&take={take}");
+    public async Task<ApiResponse<PaginatedInvestmentsResponse>> GetInvestments(int skip, int take, DateTime? fromDate = null, DateTime? toDate = null, int? quoteId = null, int? groupId = null, InvestmentType? type = null)
+	{
+		var parameters = new List<string>
+		{
+			$"skip={skip}",
+			$"take={take}"
+		};
+		
+		if (fromDate.HasValue)
+			parameters.Add($"fromDate={fromDate.Value:O}");
+		
+		if (toDate.HasValue)
+			parameters.Add($"toDate={toDate.Value:O}");
+
+		if (quoteId.HasValue)
+			parameters.Add($"quoteId={quoteId.Value}");
+
+		if (groupId.HasValue)
+			parameters.Add($"groupId={groupId.Value}");
+
+		if (type.HasValue)
+			parameters.Add($"type={type.Value}");
+
+		string queryString = string.Join("&", parameters);
+        return await GetAsync<PaginatedInvestmentsResponse>($"api/investments?{queryString}");
+	}
 
     public async Task<ApiResponse<InvestmentViewDto>> GetInvestmentById(int id)
         => await GetAsync<InvestmentViewDto>($"api/investments/{id}");
