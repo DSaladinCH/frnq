@@ -113,7 +113,7 @@ builder.Services.AddCors(options =>
 	});
 });
 
-if (!builder.Environment.IsEnvironment("Testing") && builder.Configuration["IsTesting"] != "true")
+if (!builder.Environment.IsEnvironment("Testing"))
 {
 	string connectionString = builder.Configuration.GetConnectionString("DatabaseConnection") ?? throw new InvalidOperationException("Connection string 'DatabaseConnection' not found.");
 	builder.Services.AddDbContext<DatabaseContext>(options =>
@@ -123,7 +123,7 @@ if (!builder.Environment.IsEnvironment("Testing") && builder.Configuration["IsTe
 
 WebApplication app = builder.Build();
 
-if (!app.Environment.IsEnvironment("Testing") && app.Configuration["IsTesting"] != "true")
+if (!app.Environment.IsEnvironment("Testing"))
 {
 	using IServiceScope localScope = app.Services.CreateScope();
 	DatabaseContext databaseContext = localScope.ServiceProvider.GetRequiredService<DatabaseContext>();

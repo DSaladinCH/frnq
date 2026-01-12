@@ -142,7 +142,7 @@ public class Group(CustomWebApplicationFactory<Program> factory) : BaseTest(fact
 		// Add quote to group
 		TestResponse addResponse = await Api.Groups.AddQuoteToGroup(groupId, quoteId);
         Assert.NotNull(addResponse);
-        Assert.True(addResponse.StatusCode == HttpStatusCode.Created || addResponse.StatusCode == HttpStatusCode.OK);
+        Assert.True(addResponse.StatusCode == HttpStatusCode.Created);
 
 		// Verify added to database
 		QuoteGroupMapping? groupQuote = ExecuteWithDatabaseContext(context => 

@@ -250,10 +250,10 @@ public class OidcManagement(
         {
             try
             {
-				HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, provider.UserInfoEndpoint);
+				using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, provider.UserInfoEndpoint);
                 request.Headers.Add("Authorization", $"Bearer {tokenResponse.AccessToken}");
 
-				HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
+				using HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
                 if (!response.IsSuccessStatusCode)
                 {
                     logger.LogWarning("UserInfo endpoint returned {StatusCode}", response.StatusCode);

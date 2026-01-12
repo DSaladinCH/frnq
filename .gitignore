@@ -2,6 +2,7 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=csharp,aspnetcore,svelte,node
 
 appsettings.*.json
+!appsettings.Testing.json
 */static/config.js
 
 ### ASPNETCore ###
