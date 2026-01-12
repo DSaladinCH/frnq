@@ -4,7 +4,7 @@ using DSaladin.Frnq.Api.Quote;
 namespace DSaladin.Frnq.Api.Testing.Tests;
 
 [AllureSuite("Provider")]
-public class YahooFinanceProvider
+public class YahooFinanceProvider: TestBase
 {
     private readonly Frnq.Api.Quote.Providers.YahooFinanceProvider _provider = new();
 

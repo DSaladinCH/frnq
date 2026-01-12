@@ -1,23 +1,22 @@
-using DSaladin.Frnq.Api.Auth;
-using DSaladin.Frnq.Api.Testing.Infrastructure;
 using Allure.Xunit.Attributes;
 using System.Net;
 using System.Text.Json;
-using DSaladin.Frnq.Api.Result;
 using DSaladin.Frnq.Api.Testing.Api;
+using DSaladin.Frnq.Api.Auth;
+using DSaladin.Frnq.Api.Testing.Infrastructure;
 
 namespace DSaladin.Frnq.Api.Testing.Tests;
 
 [AllureSuite("Auth")]
-public class Auth(CustomWebApplicationFactory<Program> factory) : BaseTest(factory)
+public class Auth : TestBase
 {
     [Fact]
     public async Task Login_WithValidCredentials_ReturnsToken()
     {
-		TestResponse<AuthResponseDto> response = await Api.Auth.Login(new LoginDto
+		TestResponse<AuthResponseDto> response = await ApiInterface.Auth.Login(new LoginDto
         {
-            Email = "test@example.com",
-            Password = "Password123!"
+            Email = DataSeeder.TestUserEmail,
+            Password = DataSeeder.TestUserPassword
         });
 
         Assert.NotNull(response);
@@ -28,9 +27,9 @@ public class Auth(CustomWebApplicationFactory<Program> factory) : BaseTest(facto
     [Fact]
     public async Task Login_WithInvalidCredentials_ReturnsUnauthorized()
     {
-		TestResponse<AuthResponseDto> response = await Api.Auth.Login(new LoginDto
+		TestResponse<AuthResponseDto> response = await ApiInterface.Auth.Login(new LoginDto
         {
-            Email = "test@example.com",
+            Email = DataSeeder.TestUserEmail,
             Password = "WrongPassword"
         });
 
@@ -41,7 +40,7 @@ public class Auth(CustomWebApplicationFactory<Program> factory) : BaseTest(facto
     [Fact]
     public async Task GetSignupEnabled_ReturnsTrue()
     {
-		TestResponse<bool> response = await Api.Auth.GetSignupEnabled();
+		TestResponse<bool> response = await ApiInterface.Auth.GetSignupEnabled();
         Assert.NotNull(response);
         Assert.True(response.Content);
     }
@@ -49,19 +48,18 @@ public class Auth(CustomWebApplicationFactory<Program> factory) : BaseTest(facto
     [Fact]
     public async Task GetCurrentUser_WhenAuthenticated_ReturnsUser()
     {
-        await AuthenticateAsync();
-		TestResponse<UserViewDto> response = await Api.Auth.GetCurrentUser();
+        using AuthenticationScope<UserModel> authScope = await Authenticate();
+		TestResponse<UserViewDto> response = await ApiInterface.Auth.GetCurrentUser();
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal("test@example.com", response.Content?.Email);
+        Assert.Equal(DataSeeder.TestUserEmail, response.Content?.Email);
     }
 
     [Fact]
     public async Task GetCurrentUser_WhenNotAuthenticated_ReturnsUnauthorized()
     {
-        Api.ClearToken();
-		TestResponse<UserViewDto> response = await Api.Auth.GetCurrentUser();
+		TestResponse<UserViewDto> response = await ApiInterface.Auth.GetCurrentUser();
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -77,7 +75,7 @@ public class Auth(CustomWebApplicationFactory<Program> factory) : BaseTest(facto
             Firstname = "New"
         };
 
-		TestResponse response = await Api.Auth.Signup(signup);
+		TestResponse response = await ApiInterface.Auth.Signup(signup);
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -88,12 +86,12 @@ public class Auth(CustomWebApplicationFactory<Program> factory) : BaseTest(facto
     {
 		SignupDto signup = new SignupDto
         {
-            Email = "test@example.com",
+            Email = DataSeeder.TestUserEmail,
             Password = "SecurePassword123!",
             Firstname = "Test"
         };
 
-		TestResponse response = await Api.Auth.Signup(signup);
+		TestResponse response = await ApiInterface.Auth.Signup(signup);
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
@@ -109,7 +107,7 @@ public class Auth(CustomWebApplicationFactory<Program> factory) : BaseTest(facto
             Firstname = "Weak"
         };
 
-		TestResponse response = await Api.Auth.Signup(signup);
+		TestResponse response = await ApiInterface.Auth.Signup(signup);
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -118,19 +116,19 @@ public class Auth(CustomWebApplicationFactory<Program> factory) : BaseTest(facto
     [Fact]
     public async Task UpdateCurrentUser_WithValidData_ReturnsOk()
     {
-        await AuthenticateAsync();
+        using AuthenticationScope<UserModel> authScope = await Authenticate();
 		UserDto update = new UserDto
         {
             DateFormat = DateFormat.German
         };
 
-		TestResponse response = await Api.Auth.UpdateCurrentUser(update);
+		TestResponse response = await ApiInterface.Auth.UpdateCurrentUser(update);
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
 		// Verify change
-		TestResponse<UserViewDto> me = await Api.Auth.GetCurrentUser();
+		TestResponse<UserViewDto> me = await ApiInterface.Auth.GetCurrentUser();
         Assert.Equal("german", me.Content?.DateFormat);
     }
 
@@ -138,10 +136,10 @@ public class Auth(CustomWebApplicationFactory<Program> factory) : BaseTest(facto
     public async Task RefreshToken_WithValidCookie_ReturnsNewToken()
     {
 		// Login normally (bypass TestAuthHandler simulation for this)
-		TestResponse<AuthResponseDto> loginResponse = await Api.Auth.Login(new LoginDto
+		TestResponse<AuthResponseDto> loginResponse = await ApiInterface.Auth.Login(new LoginDto
         {
-            Email = "test@example.com",
-            Password = "Password123!"
+            Email = DataSeeder.TestUserEmail,
+            Password = DataSeeder.TestUserPassword
         });
 
         Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
@@ -166,8 +164,8 @@ public class Auth(CustomWebApplicationFactory<Program> factory) : BaseTest(facto
     [Fact]
     public async Task Logout_ReturnsOk()
     {
-        await AuthenticateAsync();
-		TestResponse response = await Api.Auth.Logout();
+        using AuthenticationScope<UserModel> authScope = await Authenticate();
+		TestResponse response = await ApiInterface.Auth.Logout();
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

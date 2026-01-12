@@ -8,12 +8,12 @@ using DSaladin.Frnq.Api.Testing.Api;
 namespace DSaladin.Frnq.Api.Testing.Tests;
 
 [AllureSuite("Auth OIDC")]
-public class AuthOidc(CustomWebApplicationFactory<Program> factory) : BaseTest(factory)
+public class AuthOidc : TestBase
 {
     [Fact]
     public async Task GetProviders_ReturnsListWithEnabledProviders()
     {
-		TestResponse<List<OidcProviderDto>> response = await Api.Oidc.GetProviders();
+		TestResponse<List<OidcProviderDto>> response = await ApiInterface.Oidc.GetProviders();
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -25,7 +25,7 @@ public class AuthOidc(CustomWebApplicationFactory<Program> factory) : BaseTest(f
     [Fact]
     public async Task InitiateLogin_ReturnsRedirect()
     {
-		HttpClient client = Factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+		HttpClient client = _factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
         {
             AllowAutoRedirect = false
         });
@@ -40,7 +40,7 @@ public class AuthOidc(CustomWebApplicationFactory<Program> factory) : BaseTest(f
     [Fact]
     public async Task Callback_WithInvalidState_RedirectsToLoginWithError()
     {
-		HttpClient client = Factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+		HttpClient client = _factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
         {
             AllowAutoRedirect = false
         });
@@ -54,13 +54,13 @@ public class AuthOidc(CustomWebApplicationFactory<Program> factory) : BaseTest(f
 }
 
 [AllureSuite("Auth External Links")]
-public class AuthExternalLinks(CustomWebApplicationFactory<Program> factory) : BaseTest(factory)
+public class AuthExternalLinks : TestBase
 {
     [Fact]
     public async Task GetLinks_WhenAuthenticated_ReturnsListWithSeededLink()
     {
-        await AuthenticateAsync();
-		TestResponse<List<ExternalLinkViewDto>> response = await Api.ExternalLinks.GetLinks();
+        using AuthenticationScope<UserModel> authScope = await Authenticate();
+		TestResponse<List<ExternalLinkViewDto>> response = await ApiInterface.ExternalLinks.GetLinks();
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -72,8 +72,8 @@ public class AuthExternalLinks(CustomWebApplicationFactory<Program> factory) : B
     [Fact]
     public async Task InitiateLink_WhenAuthenticated_ReturnsAuthUrl()
     {
-        await AuthenticateAsync();
-		TestResponse<object> response = await Api.ExternalLinks.InitiateLink("test-provider");
+        using AuthenticationScope<UserModel> authScope = await Authenticate();
+		TestResponse<object> response = await ApiInterface.ExternalLinks.InitiateLink("test-provider");
 
         Assert.NotNull(response);
         // It should return 200 OK with the authorization URL
@@ -83,10 +83,10 @@ public class AuthExternalLinks(CustomWebApplicationFactory<Program> factory) : B
     [Fact]
     public async Task UnlinkAccount_WithValidId_ReturnsOk()
     {
-        await AuthenticateAsync();
+        using AuthenticationScope<UserModel> authScope = await Authenticate();
 		// The seeded link ID is 00000000-0000-0000-0000-000000000003
 		Guid linkId = Guid.Parse("00000000-0000-0000-0000-000000000003");
-		TestResponse response = await Api.ExternalLinks.UnlinkAccount(linkId);
+		TestResponse response = await ApiInterface.ExternalLinks.UnlinkAccount(linkId);
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -95,8 +95,8 @@ public class AuthExternalLinks(CustomWebApplicationFactory<Program> factory) : B
     [Fact]
     public async Task UnlinkAccount_WithNonExistentId_ReturnsNotFound()
     {
-        await AuthenticateAsync();
-		TestResponse response = await Api.ExternalLinks.UnlinkAccount(Guid.NewGuid());
+        using AuthenticationScope<UserModel> authScope = await Authenticate();
+		TestResponse response = await ApiInterface.ExternalLinks.UnlinkAccount(Guid.NewGuid());
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);

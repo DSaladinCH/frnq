@@ -192,7 +192,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 		return true;
 	}
 
-	private string GenerateAccessToken(UserModel user)
+	public string GenerateAccessToken(UserModel user)
 	{
 		IConfigurationSection jwtSettings = configuration.GetSection("JwtSettings");
 		byte[] key = Encoding.ASCII.GetBytes(jwtSettings["SecretKey"]!);

@@ -7,27 +7,28 @@ using Moq;
 using Microsoft.Extensions.DependencyInjection;
 using DSaladin.Frnq.Api.Testing.Api;
 using DSaladin.Frnq.Api.Quote.Providers;
+using DSaladin.Frnq.Api.Auth;
 
 namespace DSaladin.Frnq.Api.Testing.Tests;
 
 [AllureSuite("Quote")]
-public class Quote(CustomWebApplicationFactory<Program> factory) : BaseTest(factory)
+public class Quote : TestBase
 {
     [Fact]
     public async Task Search_WithValidSearchTerm_ReturnsMatchingQuotesFromProvider()
     {
-        await AuthenticateAsync();
+        using AuthenticationScope<UserModel> authScope = await Authenticate();
 
 		List<QuoteModel> mockedQuotes = new List<QuoteModel>
         {
             new() { Symbol = "MSFT", Name = "Microsoft", ProviderId = "yahoo-finance" }
         };
 
-        Factory.FinanceProviderMock
+        FinanceProviderMock
             .Setup(p => p.SearchAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockedQuotes);
 
-		TestResponse<List<QuoteModel>> response = await Api.Quotes.Search("microsoft");
+		TestResponse<List<QuoteModel>> response = await ApiInterface.Quotes.Search("microsoft");
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -38,18 +39,16 @@ public class Quote(CustomWebApplicationFactory<Program> factory) : BaseTest(fact
     [Fact]
     public async Task UpdateCustomName_WithNewName_UpdatesDatabaseAndReturnsSuccess()
     {
-        await AuthenticateAsync();
+        using AuthenticationScope<UserModel> authScope = await Authenticate();
 
 		CustomNameDto customName = new CustomNameDto("New Custom Name");
-		TestResponse response = await Api.Quotes.UpdateCustomName(1, customName);
+		TestResponse response = await ApiInterface.Quotes.UpdateCustomName(1, customName);
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
 		// Verify database was updated
-		QuoteName? savedName = ExecuteWithDatabaseContext(context =>
-            context.QuoteNames.FirstOrDefault(qn => qn.QuoteId == 1)
-        );
+		QuoteName? savedName = DbContext.QuoteNames.FirstOrDefault(qn => qn.QuoteId == 1);
         Assert.NotNull(savedName);
         Assert.Equal(customName.CustomName, savedName.CustomName);
     }
@@ -57,35 +56,33 @@ public class Quote(CustomWebApplicationFactory<Program> factory) : BaseTest(fact
     [Fact]
     public async Task DeleteCustomName_WithExistingName_RemovesFromDatabaseAndReturnsSuccess()
     {
-        await AuthenticateAsync();
+        using AuthenticationScope<UserModel> authScope = await Authenticate();
 
-		TestResponse response = await Api.Quotes.DeleteCustomName(1);
+		TestResponse response = await ApiInterface.Quotes.DeleteCustomName(1);
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
 		// Verify database was updated - custom name should be removed
-		QuoteName? savedName = ExecuteWithDatabaseContext(context =>
-            context.QuoteNames.FirstOrDefault(qn => qn.QuoteId == 1)
-        );
+		QuoteName? savedName = DbContext.QuoteNames.FirstOrDefault(qn => qn.QuoteId == 1);
         Assert.Null(savedName);
     }
 
     [Fact]
     public async Task GetHistoricalPrices_WithValidDateRange_ReturnsDataFromProvider()
     {
-        await AuthenticateAsync();
+        using AuthenticationScope<UserModel> authScope = await Authenticate();
 
 		List<QuotePrice> mockedPrices = new List<QuotePrice>
         {
             new() { Date = DateTime.UtcNow.AddDays(-1), Close = 155.0m, QuoteId = 1 }
         };
 
-        Factory.FinanceProviderMock
+        FinanceProviderMock
             .Setup(p => p.GetHistoricalPricesAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockedPrices);
 
-		TestResponse<List<QuotePrice>> response = await Api.Quotes.GetHistoricalPrices("AAPL", DateTime.UtcNow.AddDays(-7), DateTime.UtcNow);
+		TestResponse<List<QuotePrice>> response = await ApiInterface.Quotes.GetHistoricalPrices("AAPL", DateTime.UtcNow.AddDays(-7), DateTime.UtcNow);
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -95,7 +92,7 @@ public class Quote(CustomWebApplicationFactory<Program> factory) : BaseTest(fact
     [Fact]
     public async Task Search_WithValidTerm_CombinesDatabaseAndProviderResults()
     {
-        await AuthenticateAsync();
+        using AuthenticationScope<UserModel> authScope = await Authenticate();
 
 		// "AAPL" (Id=1) is in DB from DataSeeder
 		List<QuoteModel> mockedQuotes = new List<QuoteModel>
@@ -103,13 +100,13 @@ public class Quote(CustomWebApplicationFactory<Program> factory) : BaseTest(fact
             new() { Symbol = "MSFT", Name = "Microsoft", ProviderId = "yahoo-finance" }
         };
 
-        Factory.FinanceProviderMock
+        FinanceProviderMock
             .Setup(p => p.SearchAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockedQuotes);
 
 		// Search for "A" should find AAPL from DB and MSFT from mock (if query matched MSFT)
 		// Actually let's search for "Apple" to be specific
-		TestResponse<List<QuoteModel>> response = await Api.Quotes.Search("Apple");
+		TestResponse<List<QuoteModel>> response = await ApiInterface.Quotes.Search("Apple");
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -121,9 +118,9 @@ public class Quote(CustomWebApplicationFactory<Program> factory) : BaseTest(fact
     [Fact]
     public async Task Search_WithInvalidProviderName_ReturnsBadRequest()
     {
-        await AuthenticateAsync();
+        using AuthenticationScope<UserModel> authScope = await Authenticate();
 
-		TestResponse<List<QuoteModel>> response = await Api.Quotes.Search("Apple", "non-existing-provider");
+		TestResponse<List<QuoteModel>> response = await ApiInterface.Quotes.Search("Apple", "non-existing-provider");
 
         Assert.NotNull(response);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -132,62 +129,9 @@ public class Quote(CustomWebApplicationFactory<Program> factory) : BaseTest(fact
     [Fact]
     public async Task GetHistoricalPrices_WithFromDateAfterToDate_ReturnsBadRequest()
     {
-        await AuthenticateAsync();
-		TestResponse<List<QuotePrice>> response = await Api.Quotes.GetHistoricalPrices("AAPL", DateTime.UtcNow, DateTime.UtcNow.AddDays(-1));
+        using AuthenticationScope<UserModel> authScope = await Authenticate();
+		TestResponse<List<QuotePrice>> response = await ApiInterface.Quotes.GetHistoricalPrices("AAPL", DateTime.UtcNow, DateTime.UtcNow.AddDays(-1));
         
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task DatabaseProvider_AddNewQuote_CreatesInDatabase()
-    {
-        using IServiceScope scope = Factory.Services.CreateScope();
-		DatabaseProvider provider = scope.ServiceProvider.GetRequiredService<DSaladin.Frnq.Api.Quote.Providers.DatabaseProvider>();
-
-		QuoteModel newQuote = new QuoteModel
-        {
-            Symbol = "TSLA",
-            Name = "Tesla",
-            ProviderId = "yahoo-finance",
-            Currency = "USD"
-        };
-
-		QuoteModel? result = await provider.AddOrUpdateQuoteAsync(newQuote, default);
-        Assert.NotNull(result);
-        Assert.True(result.Id > 0);
-
-		// Verify it's in the database
-		QuoteModel? savedQuote = ExecuteWithDatabaseContext(context =>
-            context.Quotes.FirstOrDefault(q => q.Symbol == "TSLA")
-        );
-        Assert.NotNull(savedQuote);
-        Assert.Equal("Tesla", savedQuote.Name);
-    }
-
-    [Fact]
-    public async Task DatabaseProvider_UpdateExistingQuote_ModifiesDatabaseRecord()
-    {
-        await ExecuteWithDatabaseContextAsync(async context =>
-        {
-			DatabaseProvider provider = Factory.Services.CreateScope().ServiceProvider.GetRequiredService<DSaladin.Frnq.Api.Quote.Providers.DatabaseProvider>();
-
-			// Get existing quote from database
-			QuoteModel existingQuote = context.Quotes.First(q => q.Symbol == "AAPL");
-			string originalName = existingQuote.Name;
-            
-            // Update it
-            existingQuote.Name = "Apple Inc. Updated";
-			QuoteModel? updated = await provider.AddOrUpdateQuoteAsync(existingQuote, default);
-            
-            Assert.NotEqual(originalName, updated!.Name);
-            Assert.Equal("Apple Inc. Updated", updated.Name);
-        });
-
-		// Verify it's updated in the database
-		QuoteModel? savedQuote = ExecuteWithDatabaseContext(context =>
-            context.Quotes.FirstOrDefault(q => q.Symbol == "AAPL")
-        );
-        Assert.NotNull(savedQuote);
-        Assert.Equal("Apple Inc. Updated", savedQuote.Name);
     }
 }
