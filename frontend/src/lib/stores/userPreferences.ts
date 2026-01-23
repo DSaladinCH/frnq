@@ -43,7 +43,7 @@ function createUserPreferencesStore() {
 		async setDateFormat(format: DateFormatType): Promise<boolean> {
 			try {
 				const res = await fetchWithAuth('/api/auth/me', {
-					method: 'PATCH',
+					method: 'PUT',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({ dateFormat: format })
 				});

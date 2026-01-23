@@ -4,101 +4,108 @@ using Xunit;
 using Allure.Xunit.Attributes;
 using System.Net;
 using DSaladin.Frnq.Api.Testing.Api;
+using DSaladin.Frnq.Api.Result;
+using Microsoft.EntityFrameworkCore;
 
 namespace DSaladin.Frnq.Api.Testing.Tests;
 
 [AllureSuite("Auth OIDC")]
-public class AuthOidc(CustomWebApplicationFactory<Program> factory) : BaseTest(factory)
+public class AuthOidc : TestBase
 {
-    [Fact]
-    public async Task GetProviders_ReturnsListWithEnabledProviders()
-    {
-		TestResponse<List<OidcProviderDto>> response = await Api.Oidc.GetProviders();
+	[Fact]
+	public async Task GetProviders()
+	{
+		ApiResponse<List<OidcProviderDto>> response = await ApiInterface.Oidc.GetProviders();
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.NotNull(response.Content);
-        // We seeded 'test-provider' as enabled
-        Assert.Contains(response.Content, p => p.ProviderId == "test-provider");
-    }
+		Assert.NotNull(response);
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		Assert.NotNull(response.Value);
+		Assert.Contains(response.Value, p => p.ProviderId == "test-provider");
+	}
 
-    [Fact]
-    public async Task InitiateLogin_ReturnsRedirect()
-    {
-		HttpClient client = Factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
-        {
-            AllowAutoRedirect = false
-        });
+	[Fact]
+	public async Task InitiateLogin()
+	{
+		HttpClient client = _factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+		{
+			AllowAutoRedirect = false
+		});
 
 		HttpResponseMessage response = await client.GetAsync("api/AuthOidc/login/test-provider");
 
-        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-        Assert.NotNull(response.Headers.Location);
-        Assert.Contains("example.com/auth", response.Headers.Location.ToString());
-    }
+		Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+		Assert.NotNull(response.Headers.Location);
+		Assert.Contains("example.com/auth", response.Headers.Location.ToString());
+	}
 
-    [Fact]
-    public async Task Callback_WithInvalidState_RedirectsToLoginWithError()
-    {
-		HttpClient client = Factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
-        {
-            AllowAutoRedirect = false
-        });
+	[Fact]
+	public async Task CallbackInvalidState()
+	{
+		HttpClient client = _factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+		{
+			AllowAutoRedirect = false
+		});
 
-		// Current OidcManagement redirects on failure
 		HttpResponseMessage response = await client.GetAsync("api/AuthOidc/callback/test-provider?code=123&state=invalid");
 
-        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-        Assert.Contains("error=", response.Headers.Location!.ToString());
-    }
+		Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+		Assert.Contains("error=", response.Headers.Location!.ToString());
+	}
 }
 
 [AllureSuite("Auth External Links")]
-public class AuthExternalLinks(CustomWebApplicationFactory<Program> factory) : BaseTest(factory)
+public class AuthExternalLinks : TestBase
 {
-    [Fact]
-    public async Task GetLinks_WhenAuthenticated_ReturnsListWithSeededLink()
-    {
-        await AuthenticateAsync();
-		TestResponse<List<ExternalLinkViewDto>> response = await Api.ExternalLinks.GetLinks();
+	[Fact]
+	public async Task GetLinks()
+	{
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.NotNull(response.Content);
-        Assert.NotEmpty(response.Content);
-        Assert.Contains(response.Content, l => l.ProviderId == "test-provider");
-    }
+		ApiResponse<List<ExternalLinkViewDto>> response = await ApiInterface.ExternalLinks.GetLinks();
 
-    [Fact]
-    public async Task InitiateLink_WhenAuthenticated_ReturnsAuthUrl()
-    {
-        await AuthenticateAsync();
-		TestResponse<object> response = await Api.ExternalLinks.InitiateLink("test-provider");
+		Assert.NotNull(response);
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		Assert.NotNull(response.Value);
+		Assert.NotEmpty(response.Value);
+		Assert.Contains(response.Value, l => l.ProviderId == "test-provider");
+	}
 
-        Assert.NotNull(response);
-        // It should return 200 OK with the authorization URL
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-    }
+	[Fact]
+	public async Task InitiateLink()
+	{
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
 
-    [Fact]
-    public async Task UnlinkAccount_WithValidId_ReturnsOk()
-    {
-        await AuthenticateAsync();
-		// The seeded link ID is 00000000-0000-0000-0000-000000000003
-		Guid linkId = Guid.Parse("00000000-0000-0000-0000-000000000003");
-		TestResponse response = await Api.ExternalLinks.UnlinkAccount(linkId);
+		ApiResponse<object> response = await ApiInterface.ExternalLinks.InitiateLink("test-provider");
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-    }
+		Assert.NotNull(response);
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+	}
 
-    [Fact]
-    public async Task UnlinkAccount_WithNonExistentId_ReturnsNotFound()
-    {
-        await AuthenticateAsync();
-		TestResponse response = await Api.ExternalLinks.UnlinkAccount(Guid.NewGuid());
+	[Fact]
+	public async Task UnlinkAccountValid()
+	{
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
+		int externalUserLinkCount = await DbContext.ExternalUserLinks.CountAsync(e => e.UserId == DataSeeder.TestUserId);
+		ExternalUserLink externalUserLink = await DbContext.ExternalUserLinks.FirstAsync(e => e.UserId == DataSeeder.TestUserId);
+
+		ApiResponse response = await ApiInterface.ExternalLinks.UnlinkAccount(externalUserLink.Id);
+
+		Assert.NotNull(response);
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+		DbContext.ChangeTracker.Clear();
+		Assert.Equal(externalUserLinkCount - 1, await DbContext.ExternalUserLinks.CountAsync(e => e.UserId == DataSeeder.TestUserId));
+	}
+
+	[Fact]
+	public async Task UnlinkAccountInvalid()
+	{
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+
+		ApiResponse response = await ApiInterface.ExternalLinks.UnlinkAccount(Guid.NewGuid());
+
+		Assert.NotNull(response);
+		Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+	}
 }

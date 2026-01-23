@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using DSaladin.Frnq.Api.Validation;
 
 namespace DSaladin.Frnq.Api.Investment;
@@ -12,6 +11,8 @@ public class InvestmentDto
 	public int QuoteId { get; set; }
 	public string ProviderId { get; set; } = string.Empty;
 	public string QuoteSymbol { get; set; } = string.Empty;
+
+	[RequiredField]
 	public required DateTime Date { get; set; }
 
 	public required InvestmentType Type { get; set; }
@@ -19,7 +20,7 @@ public class InvestmentDto
 	[MinValue(0, false)]
 	public required decimal Amount { get; set; }
 
-	[MinValue(0, false)]
+	[MinValue(0)]
 	public required decimal PricePerUnit { get; set; }
 
 	[MinValue(0)]

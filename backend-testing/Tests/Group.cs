@@ -5,185 +5,411 @@ using Xunit;
 using Allure.Xunit.Attributes;
 using System.Net;
 using DSaladin.Frnq.Api.Testing.Api;
+using DSaladin.Frnq.Api.Auth;
+using DSaladin.Frnq.Api.Result;
 
 namespace DSaladin.Frnq.Api.Testing.Tests;
 
 [AllureSuite("Group")]
-public class Group(CustomWebApplicationFactory<Program> factory) : BaseTest(factory)
+public class Group : TestBase
 {
-    [Fact]
-    public async Task GetGroups_WhenAuthenticated_ReturnsListOfUserGroups()
-    {
-        await AuthenticateAsync();
-		TestResponse<List<QuoteGroupViewDto>> response = await Api.Groups.GetGroups();
+	[Fact]
+	public async Task GetUserGroups()
+	{
+		int groupCountBefore = DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count();
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-    }
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+		ApiResponse<List<QuoteGroupViewDto>> response = await ApiInterface.Groups.GetGroups();
 
-    [Fact]
-    public async Task CreateGroup_WithUniqueGroupName_CreatesInDatabaseAndReturnsCreated()
-    {
-        await AuthenticateAsync();
-		QuoteGroupDto group = new QuoteGroupDto("My Tech Portfolio");
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		Assert.Equal(groupCountBefore, response.Value!.Count);
+	}
 
-		TestResponse response = await Api.Groups.CreateGroup(group);
+	[Theory]
+	[InlineData("Normal Name")] // Normal name
+	[InlineData("Weird&/&%*+$# Name")] // Special chars
+	[InlineData("1")] // 1 chars
+	[InlineData("Long Name Long Name Long Name Long Name Long Name Long Name Long Name Long Name Long Name Long Name")] // 99 chars
+	public async Task CreateUserGroupValid(string name)
+	{
+		int groupCountBefore = DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count();
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
 
-		// Verify created in database
-		QuoteGroup? createdGroup = ExecuteWithDatabaseContext(context => 
-            context.QuoteGroups.FirstOrDefault(g => g.Name == "My Tech Portfolio"));
-        Assert.NotNull(createdGroup);
-        Assert.NotEqual(Guid.Empty, createdGroup.UserId);
-    }
+		QuoteGroupDto group = new(name);
+		ApiResponse response = await ApiInterface.Groups.CreateGroup(group);
 
-    [Fact]
-    public async Task CreateGroup_WithDuplicateNameForSameUser_ReturnsConflict()
-    {
-        await AuthenticateAsync();
-		QuoteGroupDto group = new QuoteGroupDto("Tech");
-        await Api.Groups.CreateGroup(group);
+		Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-		TestResponse response = await Api.Groups.CreateGroup(group);
+		DbContext.ChangeTracker.Clear();
+		QuoteGroup? createdGroup = DbContext.QuoteGroups.FirstOrDefault(g => g.Name == group.Name);
+		Assert.NotNull(createdGroup);
+		Assert.NotEqual(Guid.Empty, createdGroup.UserId);
+		Assert.Equal(groupCountBefore + 1, DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count());
+	}
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+	[Theory]
+	[InlineData("")] // Empty name
+	[InlineData("   ")] // Whitespace name
+	[InlineData("Long Name Long Name Long Name Long Name Long Name Long Name Long Name Long Name Long Name Long Name Long Name Long Name")] // 100+ chars
+	public async Task CreateUserGroupInvalid(string name)
+	{
+		int groupCountBefore = DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count();
 
-		// Verify only one group exists in database
-		int groupCount = ExecuteWithDatabaseContext(context => 
-            context.QuoteGroups.Count(g => g.Name == "Tech"));
-        Assert.Equal(1, groupCount);
-    }
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
 
-    [Fact]
-    public async Task UpdateGroup_WithNewName_ModifiesDatabaseAndReturnsSuccess()
-    {
-        await AuthenticateAsync();
-        
-        // Setup: Create initial group directly in database
-        const string originalName = "Original Group";
-        Guid userId = DataSeeder.TestUserId; // TestAuthHandler uses this
-        using (DatabaseContext setupContext = GetDatabaseContext())
-        {
-            setupContext.QuoteGroups.Add(new QuoteGroup
-            {
-                Id = 999,
-                Name = originalName,
-                UserId = userId
-            });
-            setupContext.SaveChanges();
-        }
+		QuoteGroupDto group = new(name);
+		ApiResponse response = await ApiInterface.Groups.CreateGroup(group);
 
-		string updatedName = "Updated Group";
-		QuoteGroupDto updateDto = new QuoteGroupDto(updatedName);
-		TestResponse response = await Api.Groups.UpdateGroup(999, updateDto);
+		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		DbContext.ChangeTracker.Clear();
+		QuoteGroup? createdGroup = DbContext.QuoteGroups.FirstOrDefault(g => g.Name == group.Name);
+		Assert.Null(createdGroup);
+		Assert.Equal(groupCountBefore, DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count());
+	}
 
-		// Verify updated in database
-		QuoteGroup? updatedGroup = ExecuteWithDatabaseContext(context => 
-            context.QuoteGroups.FirstOrDefault(g => g.Id == 999));
-        Assert.NotNull(updatedGroup);
-        Assert.Equal(updatedName, updatedGroup.Name);
-    }
+	[Fact]
+	public async Task CreateUserGroupDuplicate()
+	{
+		int groupCountBefore = DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count();
+		QuoteGroup quoteGroup = DbContext.QuoteGroups.First(g => g.UserId == DataSeeder.TestUserId);
 
-    [Fact]
-    public async Task DeleteGroup_WithExistingId_RemovesFromDatabaseAndReturnsSuccess()
-    {
-        await AuthenticateAsync();
-        
-        // Setup: Create initial group directly in database
-        Guid userId = DataSeeder.TestUserId; // TestAuthHandler uses this
-        using (DatabaseContext setupContext = GetDatabaseContext())
-        {
-            setupContext.QuoteGroups.Add(new QuoteGroup
-            {
-                Id = 999,
-                Name = "Group to Delete",
-                UserId = userId
-            });
-            setupContext.SaveChanges();
-        }
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
 
-		TestResponse response = await Api.Groups.DeleteGroup(999);
+		QuoteGroupDto group = new(quoteGroup.Name);
+		ApiResponse response = await ApiInterface.Groups.CreateGroup(group);
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
 
-		// Verify deleted from database
-		QuoteGroup? deletedGroup = ExecuteWithDatabaseContext(context => 
-            context.QuoteGroups.FirstOrDefault(g => g.Id == 999));
-        Assert.Null(deletedGroup);
-    }
+		DbContext.ChangeTracker.Clear();
+		QuoteGroup? createdGroup = DbContext.QuoteGroups.FirstOrDefault(g => g.Name == group.Name);
+		Assert.NotNull(createdGroup);
+		Assert.Equal(groupCountBefore, DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count());
+	}
 
-    [Fact]
-    public async Task AddQuoteToGroup_WithValidIds_CreatesRelationshipInDatabase()
-    {
-        await AuthenticateAsync();
-        
-        // Setup: Create a test group directly in database
-        Guid userId = DataSeeder.TestUserId;
-        const int groupId = 888;
-        const int quoteId = 1; // AAPL from DataSeeder
-        using (DatabaseContext setupContext = GetDatabaseContext())
-        {
-            setupContext.QuoteGroups.Add(new QuoteGroup
-            {
-                Id = groupId,
-                Name = "Test Group",
-                UserId = userId
-            });
-            setupContext.SaveChanges();
-        }
+	[Fact]
+	public async Task CreateUserGroupUnauthenticated()
+	{
+		int groupCountBefore = DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count();
 
-		// Add quote to group
-		TestResponse addResponse = await Api.Groups.AddQuoteToGroup(groupId, quoteId);
-        Assert.NotNull(addResponse);
-        Assert.True(addResponse.StatusCode == HttpStatusCode.Created);
+		QuoteGroupDto group = new("Unauthorized Group");
+		ApiResponse response = await ApiInterface.Groups.CreateGroup(group);
 
-		// Verify added to database
-		QuoteGroupMapping? groupQuote = ExecuteWithDatabaseContext(context => 
-            context.QuoteGroupMappings.FirstOrDefault(gq => gq.GroupId == groupId && gq.QuoteId == quoteId));
-        Assert.NotNull(groupQuote);
-    }
+		Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
 
-    [Fact]
-    public async Task RemoveQuoteFromGroup_WithValidIds_RemovesRelationshipFromDatabase()
-    {
-        await AuthenticateAsync();
-        
-        // Setup: Create a test group with a quote relationship directly in database
-        Guid userId = DataSeeder.TestUserId;
-        const int groupId = 777;
-        const int quoteId = 1; // AAPL from DataSeeder
-        using (DatabaseContext setupContext = GetDatabaseContext())
-        {
-            setupContext.QuoteGroups.Add(new QuoteGroup
-            {
-                Id = groupId,
-                Name = "Test Group",
-                UserId = userId
-            });
-            setupContext.QuoteGroupMappings.Add(new QuoteGroupMapping
-            {
-                GroupId = groupId,
-                QuoteId = quoteId,
-                UserId = userId
-            });
-            setupContext.SaveChanges();
-        }
+		DbContext.ChangeTracker.Clear();
+		QuoteGroup? createdGroup = DbContext.QuoteGroups.FirstOrDefault(g => g.Name == group.Name);
+		Assert.Null(createdGroup);
+		Assert.Equal(groupCountBefore, DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count());
+	}
 
-		// Remove quote from group
-		TestResponse removeResponse = await Api.Groups.RemoveQuoteFromGroup(groupId, quoteId);
-        Assert.NotNull(removeResponse);
-        Assert.Equal(HttpStatusCode.OK, removeResponse.StatusCode);
+	[Theory]
+	[InlineData("Normal Name")] // Normal name
+	[InlineData("Weird&/&%*+$# Name")] // Special chars
+	[InlineData("1")] // 1 chars
+	[InlineData("Long Name Long Name Long Name Long Name Long Name Long Name Long Name Long Name Long Name Long Name")] // 99 chars
+	public async Task UpdateUserGroupValid(string name)
+	{
+		int groupCountBefore = DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count();
+		QuoteGroup quoteGroup = DbContext.QuoteGroups.First(g => g.UserId == DataSeeder.TestUserId);
 
-		// Verify removed from database
-		QuoteGroupMapping? groupQuote = ExecuteWithDatabaseContext(context => 
-            context.QuoteGroupMappings.FirstOrDefault(gq => gq.GroupId == groupId && gq.QuoteId == quoteId));
-        Assert.Null(groupQuote);
-    }
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+
+		QuoteGroupDto group = new(name);
+		ApiResponse response = await ApiInterface.Groups.UpdateGroup(quoteGroup.Id, group);
+
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+		DbContext.ChangeTracker.Clear();
+		QuoteGroup? createdGroup = DbContext.QuoteGroups.FirstOrDefault(g => g.Name == group.Name);
+		Assert.NotNull(createdGroup);
+		Assert.NotEqual(Guid.Empty, createdGroup.UserId);
+		Assert.Equal(groupCountBefore, DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count());
+	}
+
+	[Theory]
+	[InlineData("")] // Empty name
+	[InlineData("   ")] // Whitespace name
+	[InlineData("Long Name Long Name Long Name Long Name Long Name Long Name Long Name Long Name Long Name Long Name Long Name Long Name")] // 100+ chars
+	public async Task UpdateUserGroupInvalid(string name)
+	{
+		int groupCountBefore = DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count();
+		QuoteGroup quoteGroup = DbContext.QuoteGroups.First(g => g.UserId == DataSeeder.TestUserId);
+
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+
+		QuoteGroupDto group = new(name);
+		ApiResponse response = await ApiInterface.Groups.UpdateGroup(quoteGroup.Id, group);
+
+		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+		DbContext.ChangeTracker.Clear();
+		QuoteGroup? createdGroup = DbContext.QuoteGroups.FirstOrDefault(g => g.Name == group.Name);
+		Assert.Null(createdGroup);
+		Assert.Equal(groupCountBefore, DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count());
+	}
+
+	[Fact]
+	public async Task UpdateUserGroupNotExisting()
+	{
+		int groupCountBefore = DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count();
+
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+
+		QuoteGroupDto group = new("NonExistingGroupName");
+		ApiResponse response = await ApiInterface.Groups.UpdateGroup(999, group);
+
+		Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+		DbContext.ChangeTracker.Clear();
+		QuoteGroup? createdGroup = DbContext.QuoteGroups.FirstOrDefault(g => g.Name == group.Name);
+		Assert.Null(createdGroup);
+		Assert.Equal(groupCountBefore, DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count());
+	}
+
+	[Fact]
+	public async Task UpdateUserGroupDuplicate()
+	{
+		QuoteGroup quoteGroup = DbContext.QuoteGroups.First(g => g.UserId == DataSeeder.TestUserId);
+
+		// Create another group to cause duplicate on update
+		QuoteGroup existingNewGroup = new()
+		{
+			UserId = DataSeeder.TestUserId,
+			Name = "Existing Group for Duplicate Test"
+		};
+		await DbContext.QuoteGroups.AddAsync(existingNewGroup);
+		await DbContext.SaveChangesAsync();
+
+		int groupCountBefore = DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count();
+
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+
+		QuoteGroupDto group = new(existingNewGroup.Name);
+		ApiResponse response = await ApiInterface.Groups.UpdateGroup(quoteGroup.Id, group);
+
+		Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+
+		DbContext.ChangeTracker.Clear();
+		// The original group should remain unchanged
+		QuoteGroup? createdGroup = DbContext.QuoteGroups.FirstOrDefault(g => g.Name == quoteGroup.Name);
+		Assert.NotNull(createdGroup);
+		Assert.Equal(groupCountBefore, DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count());
+	}
+
+	[Fact]
+	public async Task UpdateUserGroupUnauthenticated()
+	{
+		int groupCountBefore = DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count();
+		QuoteGroup quoteGroup = DbContext.QuoteGroups.First(g => g.UserId == DataSeeder.TestUserId);
+
+		QuoteGroupDto group = new("Unauthorized Group");
+		ApiResponse response = await ApiInterface.Groups.UpdateGroup(quoteGroup.Id, group);
+
+		Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+
+		DbContext.ChangeTracker.Clear();
+		QuoteGroup? createdGroup = DbContext.QuoteGroups.FirstOrDefault(g => g.Name == group.Name);
+		Assert.Null(createdGroup);
+		Assert.Equal(groupCountBefore, DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count());
+	}
+
+	[Fact]
+	public async Task DeleteUserGroupValid()
+	{
+		int groupCountBefore = DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count();
+		QuoteGroup quoteGroup = DbContext.QuoteGroups.First(g => g.UserId == DataSeeder.TestUserId);
+
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+
+		ApiResponse response = await ApiInterface.Groups.DeleteGroup(quoteGroup.Id);
+
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+		DbContext.ChangeTracker.Clear();
+		QuoteGroup? deletedGroup = DbContext.QuoteGroups.FirstOrDefault(g => g.Id == quoteGroup.Id);
+		Assert.Null(deletedGroup);
+		Assert.Equal(groupCountBefore - 1, DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count());
+	}
+
+	[Fact]
+	public async Task DeleteUserGroupInvalid()
+	{
+		int groupCountBefore = DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count();
+
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+
+		ApiResponse response = await ApiInterface.Groups.DeleteGroup(999);
+
+		Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+		DbContext.ChangeTracker.Clear();
+		Assert.Equal(groupCountBefore, DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count());
+	}
+
+	[Fact]
+	public async Task DeleteUserGroupUnauthenticated()
+	{
+		int groupCountBefore = DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count();
+		QuoteGroup quoteGroup = DbContext.QuoteGroups.First(g => g.UserId == DataSeeder.TestUserId);
+
+		ApiResponse response = await ApiInterface.Groups.DeleteGroup(quoteGroup.Id);
+
+		Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+
+		DbContext.ChangeTracker.Clear();
+		QuoteGroup? createdGroup = DbContext.QuoteGroups.FirstOrDefault(g => g.Id == quoteGroup.Id);
+		Assert.NotNull(createdGroup);
+		Assert.Equal(groupCountBefore, DbContext.QuoteGroups.Where(g => g.UserId == DataSeeder.TestUserId).Count());
+	}
+
+	[Fact]
+	public async Task AddQuoteToGroupValid()
+	{
+		QuoteGroupMapping existingMapping = DbContext.QuoteGroupMappings.First(gq => gq.UserId == DataSeeder.TestUserId);
+
+		// Remove the existing mapping so we can test adding it again
+		DbContext.QuoteGroupMappings.Remove(existingMapping);
+		await DbContext.SaveChangesAsync();
+
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+		ApiResponse response = await ApiInterface.Groups.AddQuoteToGroup(existingMapping.GroupId, existingMapping.QuoteId);
+
+		Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+		DbContext.ChangeTracker.Clear();
+		QuoteGroupMapping? createdMapping = DbContext.QuoteGroupMappings.FirstOrDefault(gq =>
+			gq.UserId == DataSeeder.TestUserId && gq.GroupId == existingMapping.GroupId && gq.QuoteId == existingMapping.QuoteId);
+
+		Assert.NotNull(createdMapping);
+	}
+
+	[Fact]
+	public async Task AddQuoteToGroupInvalidGroup()
+	{
+		QuoteGroupMapping existingMapping = DbContext.QuoteGroupMappings.First(gq => gq.UserId == DataSeeder.TestUserId);
+
+		// Remove the existing mapping so we can test adding it again
+		DbContext.QuoteGroupMappings.Remove(existingMapping);
+		await DbContext.SaveChangesAsync();
+
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+		ApiResponse response = await ApiInterface.Groups.AddQuoteToGroup(999, existingMapping.QuoteId);
+
+		Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+		DbContext.ChangeTracker.Clear();
+		QuoteGroupMapping? createdMapping = DbContext.QuoteGroupMappings.FirstOrDefault(gq =>
+			gq.UserId == DataSeeder.TestUserId && gq.GroupId == 999 && gq.QuoteId == existingMapping.QuoteId);
+
+		Assert.Null(createdMapping);
+	}
+
+	[Fact]
+	public async Task AddQuoteToGroupInvalidQuote()
+	{
+		QuoteGroupMapping existingMapping = DbContext.QuoteGroupMappings.First(gq => gq.UserId == DataSeeder.TestUserId);
+
+		// Remove the existing mapping so we can test adding it again
+		DbContext.QuoteGroupMappings.Remove(existingMapping);
+		await DbContext.SaveChangesAsync();
+
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+		ApiResponse response = await ApiInterface.Groups.AddQuoteToGroup(existingMapping.GroupId, 999);
+
+		Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+		DbContext.ChangeTracker.Clear();
+		QuoteGroupMapping? createdMapping = DbContext.QuoteGroupMappings.FirstOrDefault(gq =>
+			gq.UserId == DataSeeder.TestUserId && gq.GroupId == existingMapping.GroupId && gq.QuoteId == 999);
+
+		Assert.Null(createdMapping);
+	}
+
+	[Fact]
+	public async Task AddQuoteToGroupDuplicate()
+	{
+		QuoteGroupMapping existingMapping = DbContext.QuoteGroupMappings.First(gq => gq.UserId == DataSeeder.TestUserId);
+
+		// We don't remove the existing mapping here to test duplicate addition
+
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+		ApiResponse response = await ApiInterface.Groups.AddQuoteToGroup(existingMapping.GroupId, existingMapping.QuoteId);
+
+		// Should return Created even if duplicate, per API design
+		Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+		DbContext.ChangeTracker.Clear();
+		QuoteGroupMapping? createdMapping = DbContext.QuoteGroupMappings.FirstOrDefault(gq =>
+			gq.UserId == DataSeeder.TestUserId && gq.GroupId == existingMapping.GroupId && gq.QuoteId == existingMapping.QuoteId);
+
+		Assert.NotNull(createdMapping);
+	}
+
+	[Fact]
+	public async Task UpdateQuoteToGroupValid()
+	{
+		QuoteGroupMapping existingMapping = DbContext.QuoteGroupMappings.First(gq => gq.UserId == DataSeeder.TestUserId);
+		QuoteGroup newGroup = new()
+		{
+			UserId = DataSeeder.TestUserId,
+			Name = "New Group for Update Test"
+		};
+		await DbContext.QuoteGroups.AddAsync(newGroup);
+		await DbContext.SaveChangesAsync();
+
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+		ApiResponse response = await ApiInterface.Groups.AddQuoteToGroup(newGroup.Id, existingMapping.QuoteId);
+
+		Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+		DbContext.ChangeTracker.Clear();
+
+		// Old mapping should be removed
+		QuoteGroupMapping? oldMapping = DbContext.QuoteGroupMappings.FirstOrDefault(gq =>
+			gq.UserId == DataSeeder.TestUserId && gq.GroupId == existingMapping.GroupId && gq.QuoteId == existingMapping.QuoteId);
+
+		Assert.Null(oldMapping);
+
+		// New mapping should be created
+		QuoteGroupMapping? createdMapping = DbContext.QuoteGroupMappings.FirstOrDefault(gq =>
+			gq.UserId == DataSeeder.TestUserId && gq.GroupId == newGroup.Id && gq.QuoteId == existingMapping.QuoteId);
+
+		Assert.NotNull(createdMapping);
+	}
+
+	[Fact]
+	public async Task RemoveQuoteFromGroupValid()
+	{
+		QuoteGroupMapping existingMapping = DbContext.QuoteGroupMappings.First(gq => gq.UserId == DataSeeder.TestUserId);
+
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+		ApiResponse response = await ApiInterface.Groups.RemoveQuoteFromGroup(existingMapping.GroupId, existingMapping.QuoteId);
+
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+		DbContext.ChangeTracker.Clear();
+		QuoteGroupMapping? createdMapping = DbContext.QuoteGroupMappings.FirstOrDefault(gq =>
+			gq.UserId == DataSeeder.TestUserId && gq.GroupId == existingMapping.GroupId && gq.QuoteId == existingMapping.QuoteId);
+
+		Assert.Null(createdMapping);
+	}
+
+	[Fact]
+	public async Task RemoveQuoteFromGroupInvalid()
+	{
+		QuoteGroupMapping existingMapping = DbContext.QuoteGroupMappings.First(gq => gq.UserId == DataSeeder.TestUserId);
+
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+		ApiResponse response = await ApiInterface.Groups.RemoveQuoteFromGroup(999, 999);
+
+		Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+		DbContext.ChangeTracker.Clear();
+		QuoteGroupMapping? createdMapping = DbContext.QuoteGroupMappings.FirstOrDefault(gq =>
+			gq.UserId == DataSeeder.TestUserId && gq.GroupId == existingMapping.GroupId && gq.QuoteId == existingMapping.QuoteId);
+
+		Assert.NotNull(createdMapping);
+	}
 }

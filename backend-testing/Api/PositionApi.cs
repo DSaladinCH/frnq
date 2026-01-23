@@ -6,7 +6,7 @@ namespace DSaladin.Frnq.Api.Testing.Api;
 
 public class PositionApi(HttpClient httpClient) : BaseApi(httpClient)
 {
-    public async Task<TestResponse<PositionsResponse>> GetPositions(DateTime? from = null, DateTime? to = null)
+    public async Task<ApiResponse<PositionsResponse>> GetPositions(DateTime? from = null, DateTime? to = null)
     {
 		string url = "api/positions";
         if (from.HasValue || to.HasValue)

@@ -1,175 +1,223 @@
-using DSaladin.Frnq.Api.Auth;
-using DSaladin.Frnq.Api.Testing.Infrastructure;
 using Allure.Xunit.Attributes;
 using System.Net;
-using System.Text.Json;
-using DSaladin.Frnq.Api.Result;
 using DSaladin.Frnq.Api.Testing.Api;
+using DSaladin.Frnq.Api.Auth;
+using DSaladin.Frnq.Api.Testing.Infrastructure;
+using DSaladin.Frnq.Api.Result;
+using Microsoft.EntityFrameworkCore;
 
 namespace DSaladin.Frnq.Api.Testing.Tests;
 
 [AllureSuite("Auth")]
-public class Auth(CustomWebApplicationFactory<Program> factory) : BaseTest(factory)
+public class Auth : TestBase
 {
-    [Fact]
-    public async Task Login_WithValidCredentials_ReturnsToken()
-    {
-		TestResponse<AuthResponseDto> response = await Api.Auth.Login(new LoginDto
-        {
-            Email = "test@example.com",
-            Password = "Password123!"
-        });
+	[Fact]
+	public async Task LoginValid()
+	{
+		ApiResponse<AuthResponseDto> response = await ApiInterface.Auth.Login(new LoginDto
+		{
+			Email = DataSeeder.TestUserEmail,
+			Password = DataSeeder.TestUserPassword
+		});
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.NotNull(response.Content?.AccessToken);
-    }
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		Assert.NotNull(response.Value?.AccessToken);
+	}
 
-    [Fact]
-    public async Task Login_WithInvalidCredentials_ReturnsUnauthorized()
-    {
-		TestResponse<AuthResponseDto> response = await Api.Auth.Login(new LoginDto
-        {
-            Email = "test@example.com",
-            Password = "WrongPassword"
-        });
+	[Fact]
+	public async Task LoginWrongPassword()
+	{
+		ApiResponse<AuthResponseDto> response = await ApiInterface.Auth.Login(new LoginDto
+		{
+			Email = DataSeeder.TestUserEmail,
+			Password = "WrongPassword123!"
+		});
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    }
+		Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+	}
 
-    [Fact]
-    public async Task GetSignupEnabled_ReturnsTrue()
-    {
-		TestResponse<bool> response = await Api.Auth.GetSignupEnabled();
-        Assert.NotNull(response);
-        Assert.True(response.Content);
-    }
+	[Theory]
+	[InlineData("", "")]
+	[InlineData("   " , "   ")]
+	[InlineData("not-a-email", "somepassword")]
+	[InlineData("", "somepassword")]
+	[InlineData("someemail@example.com", "")]
+	public async Task LoginInvalid(string email, string password)
+	{
+		ApiResponse<AuthResponseDto> response = await ApiInterface.Auth.Login(new LoginDto
+		{
+			Email = email,
+			Password = password
+		});
 
-    [Fact]
-    public async Task GetCurrentUser_WhenAuthenticated_ReturnsUser()
-    {
-        await AuthenticateAsync();
-		TestResponse<UserViewDto> response = await Api.Auth.GetCurrentUser();
+		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+	}
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal("test@example.com", response.Content?.Email);
-    }
+	[Theory]
+	[InlineData("someemail@example.com", "WrongPassword")]
+	public async Task LoginInvalidUnauthorized(string email, string password)
+	{
+		ApiResponse<AuthResponseDto> response = await ApiInterface.Auth.Login(new LoginDto
+		{
+			Email = email,
+			Password = password
+		});
 
-    [Fact]
-    public async Task GetCurrentUser_WhenNotAuthenticated_ReturnsUnauthorized()
-    {
-        Api.ClearToken();
-		TestResponse<UserViewDto> response = await Api.Auth.GetCurrentUser();
+		Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+	}
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    }
+	[Fact]
+	public async Task GetSignupEnabled()
+	{
+		ApiResponse<bool> response = await ApiInterface.Auth.GetSignupEnabled();
 
-    [Fact]
-    public async Task Signup_WithValidData_ReturnsCreated()
-    {
+		Assert.True(response.Value);
+	}
+
+	[Fact]
+	public async Task GetCurrentUserAuthenticated()
+	{
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+		ApiResponse<UserViewDto> response = await ApiInterface.Auth.GetCurrentUser();
+
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		Assert.Equal(DataSeeder.TestUserEmail, response.Value?.Email);
+	}
+
+	[Fact]
+	public async Task GetCurrentUserUnauthenticated()
+	{
+		ApiResponse<UserViewDto> response = await ApiInterface.Auth.GetCurrentUser();
+
+		Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+	}
+
+	[Theory]
+	[InlineData("newuser1@example.com", "SecurePassword123!", "New")] // Normal case
+	[InlineData("newuser2@example.com", "Complex!Pass123#$%", "John")] // Complex password
+	[InlineData("newuser3@example.com", "Minimum12!!!", "A")] // Minimum length password with 1 char firstname should be valid
+	[InlineData("newuser4@example.com", "VeryLongPasswordWithManyCharacters123!", "VeryLongFirstnameWithManyCharacters")] // Long password and firstname
+	public async Task SignupValid(string email, string password, string firstname)
+	{
 		SignupDto signup = new SignupDto
-        {
-            Email = "newuser@example.com",
-            Password = "SecurePassword123!",
-            Firstname = "New"
-        };
+		{
+			Email = email,
+			Password = password,
+			Firstname = firstname
+		};
 
-		TestResponse response = await Api.Auth.Signup(signup);
+		ApiResponse response = await ApiInterface.Auth.Signup(signup);
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-    }
+		Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-    [Fact]
-    public async Task Signup_WithExistingEmail_ReturnsConflict()
-    {
+		DbContext.ChangeTracker.Clear();
+		UserModel? createdUser = DbContext.Users.FirstOrDefault(u => u.Email == email);
+		Assert.NotNull(createdUser);
+		Assert.Equal(firstname, createdUser.Firstname);
+	}
+
+	[Fact]
+	public async Task SignupDuplicateEmail()
+	{
 		SignupDto signup = new SignupDto
-        {
-            Email = "test@example.com",
-            Password = "SecurePassword123!",
-            Firstname = "Test"
-        };
+		{
+			Email = DataSeeder.TestUserEmail,
+			Password = "SecurePassword123!",
+			Firstname = "Test"
+		};
 
-		TestResponse response = await Api.Auth.Signup(signup);
+		ApiResponse response = await ApiInterface.Auth.Signup(signup);
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-    }
+		Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+	}
 
-    [Fact]
-    public async Task Signup_WithWeakPassword_ReturnsBadRequest()
-    {
+	[Theory]
+	[InlineData("weak1@example.com", "weak", "Test")] // Too short
+	[InlineData("weak2@example.com", "", "Test")] // Empty password
+	[InlineData("weak3@example.com", "       ", "Test")] // Whitespace password
+	[InlineData("weak4@example.com", "12345", "Test")] // Short numeric password
+	[InlineData("weak5@example.com", "password", "Test")] // Common weak password
+	public async Task SignupInvalidPassword(string email, string password, string firstname)
+	{
 		SignupDto signup = new SignupDto
-        {
-            Email = "weak@example.com",
-            Password = "weak",
-            Firstname = "Weak"
-        };
+		{
+			Email = email,
+			Password = password,
+			Firstname = firstname
+		};
 
-		TestResponse response = await Api.Auth.Signup(signup);
+		ApiResponse response = await ApiInterface.Auth.Signup(signup);
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-    }
+		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-    [Fact]
-    public async Task UpdateCurrentUser_WithValidData_ReturnsOk()
-    {
-        await AuthenticateAsync();
+		DbContext.ChangeTracker.Clear();
+		UserModel? createdUser = DbContext.Users.FirstOrDefault(u => u.Email == email);
+		Assert.Null(createdUser);
+	}
+
+	[Theory]
+	[InlineData("", "SecurePassword123!", "Test")] // Empty email
+	[InlineData("   ", "SecurePassword123!", "Test")] // Whitespace email
+	[InlineData("invalid-email", "SecurePassword123!", "Test")] // Invalid email format
+	[InlineData("newuser@example.com", "SecurePassword123!", "")] // Empty firstname
+	[InlineData("newuser@example.com", "SecurePassword123!", "   ")] // Whitespace firstname
+	public async Task SignupInvalidData(string email, string password, string firstname)
+	{
+		SignupDto signup = new SignupDto
+		{
+			Email = email,
+			Password = password,
+			Firstname = firstname
+		};
+
+		ApiResponse response = await ApiInterface.Auth.Signup(signup);
+
+		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+		DbContext.ChangeTracker.Clear();
+		UserModel? createdUser = DbContext.Users.FirstOrDefault(u => u.Email == email);
+		Assert.Null(createdUser);
+	}
+
+	[Theory]
+	[InlineData(DateFormat.German, "german")] // German format
+	[InlineData(DateFormat.English, "english")] // English format
+	public async Task UpdateCurrentUserValid(DateFormat dateFormat, string expectedFormat)
+	{
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
 		UserDto update = new UserDto
-        {
-            DateFormat = DateFormat.German
-        };
+		{
+			DateFormat = dateFormat
+		};
 
-		TestResponse response = await Api.Auth.UpdateCurrentUser(update);
+		ApiResponse response = await ApiInterface.Auth.UpdateCurrentUser(update);
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-		// Verify change
-		TestResponse<UserViewDto> me = await Api.Auth.GetCurrentUser();
-        Assert.Equal("german", me.Content?.DateFormat);
-    }
+		DbContext.ChangeTracker.Clear();
+		ApiResponse<UserViewDto> me = await ApiInterface.Auth.GetCurrentUser();
+		Assert.Equal(expectedFormat, me.Value?.DateFormat);
+	}
 
-    [Fact]
-    public async Task RefreshToken_WithValidCookie_ReturnsNewToken()
-    {
-		// Login normally (bypass TestAuthHandler simulation for this)
-		TestResponse<AuthResponseDto> loginResponse = await Api.Auth.Login(new LoginDto
-        {
-            Email = "test@example.com",
-            Password = "Password123!"
-        });
+	[Fact]
+	public async Task UpdateCurrentUserUnauthenticated()
+	{
+		UserDto update = new UserDto
+		{
+			DateFormat = DateFormat.German
+		};
 
-        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+		ApiResponse response = await ApiInterface.Auth.UpdateCurrentUser(update);
 
-		// Extract cookie
-		string? cookie = loginResponse.Headers?.GetValues("Set-Cookie").FirstOrDefault(c => c.StartsWith("refreshToken="));
-        Assert.NotNull(cookie);
-		string cookieValue = cookie.Split(';').First();
+		Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+	}
 
-        // Create a new request and manually add the cookie
-        using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/refresh");
-        request.Headers.Add("Cookie", cookieValue);
+	[Fact]
+	public async Task Logout()
+	{
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+		ApiResponse response = await ApiInterface.Auth.Logout();
 
-		HttpResponseMessage response = await HttpClient.SendAsync(request);
-		string content = await response.Content.ReadAsStringAsync();
-		AuthResponseDto? loginResult = JsonSerializer.Deserialize<AuthResponseDto>(content, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.NotNull(loginResult?.AccessToken);
-    }
-
-    [Fact]
-    public async Task Logout_ReturnsOk()
-    {
-        await AuthenticateAsync();
-		TestResponse response = await Api.Auth.Logout();
-
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-    }
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+	}
 }

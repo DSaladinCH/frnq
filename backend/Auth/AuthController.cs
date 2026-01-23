@@ -58,7 +58,7 @@ public class AuthController(AuthManagement authManagement, IConfiguration config
 		return await authManagement.GetUserAsync(cancellationToken);
     }
 
-    [HttpPatch("me")]
+    [HttpPut("me")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(CodeDescriptionModel), StatusCodes.Status404NotFound)]

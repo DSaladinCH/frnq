@@ -6,15 +6,15 @@ namespace DSaladin.Frnq.Api.Testing.Api;
 
 public class QuoteApi(HttpClient httpClient) : BaseApi(httpClient)
 {
-    public async Task<TestResponse<List<QuoteModel>>> Search(string query, string providerId = "yahoo-finance")
+    public async Task<ApiResponse<List<QuoteModel>>> Search(string query, string providerId = "yahoo-finance")
         => await GetAsync<List<QuoteModel>>($"api/quote/search?query={query}&providerId={providerId}");
 
-    public async Task<TestResponse<List<QuotePrice>>> GetHistoricalPrices(string symbol, DateTime from, DateTime to, string providerId = "yahoo-finance")
+    public async Task<ApiResponse<List<QuotePrice>>> GetHistoricalPrices(string symbol, DateTime from, DateTime to, string providerId = "yahoo-finance")
         => await GetAsync<List<QuotePrice>>($"api/quote/historical?symbol={symbol}&from={from:yyyy-MM-dd}&to={to:yyyy-MM-dd}&providerId={providerId}");
 
-    public async Task<TestResponse> UpdateCustomName(int quoteId, CustomNameDto customName)
+    public async Task<ApiResponse> UpdateCustomName(int quoteId, CustomNameDto customName)
         => await PutAsync($"api/quote/{quoteId}/customName", customName);
 
-    public async Task<TestResponse> DeleteCustomName(int quoteId)
+    public async Task<ApiResponse> DeleteCustomName(int quoteId)
         => await DeleteAsync($"api/quote/{quoteId}/customName");
 }

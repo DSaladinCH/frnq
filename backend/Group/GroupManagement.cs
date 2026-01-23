@@ -18,9 +18,6 @@ public class GroupManagement(DatabaseContext databaseContext, AuthManagement aut
 
 	public async Task<ApiResponse> CreateGroupAsync(QuoteGroupDto quoteGroup, CancellationToken cancellationToken)
 	{
-		if (string.IsNullOrWhiteSpace(quoteGroup.Name))
-			return ApiResponses.EmptyFields400;
-
 		if (await databaseContext.QuoteGroups.AnyAsync(g => g.UserId == userId && g.Name == quoteGroup.Name, cancellationToken))
 			return ApiResponses.Conflict409;
 
@@ -38,9 +35,6 @@ public class GroupManagement(DatabaseContext databaseContext, AuthManagement aut
 
 		if (group is null)
 			return ApiResponses.NotFound404;
-
-		if (string.IsNullOrWhiteSpace(quoteGroup.Name))
-			return ApiResponses.EmptyFields400;
 
 		if (await databaseContext.QuoteGroups.AnyAsync(g => g.UserId == userId && g.Name == quoteGroup.Name && g.Id != groupId, cancellationToken))
 			return ApiResponses.Conflict409;

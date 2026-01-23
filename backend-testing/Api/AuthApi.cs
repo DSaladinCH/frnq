@@ -7,31 +7,24 @@ namespace DSaladin.Frnq.Api.Testing.Api;
 
 public class AuthApi(HttpClient httpClient) : BaseApi(httpClient)
 {
-    public async Task<TestResponse<bool>> GetSignupEnabled()
+    public async Task<ApiResponse<bool>> GetSignupEnabled()
         => await GetAsync<bool>("api/auth/signup-enabled");
 
-    public async Task<TestResponse> Signup(SignupDto signup)
+    public async Task<ApiResponse> Signup(SignupDto signup)
         => await PostAsync("api/auth/signup", signup);
 
-    public async Task<TestResponse<AuthResponseDto>> Login(LoginDto login)
+    public async Task<ApiResponse<AuthResponseDto>> Login(LoginDto login)
         => await PostAsync<AuthResponseDto, LoginDto>("api/auth/login", login);
 
-    public async Task<TestResponse<AuthResponseDto>> RefreshToken()
+    public async Task<ApiResponse<AuthResponseDto>> RefreshToken()
         => await PostAsync<AuthResponseDto, object?>("api/auth/refresh", null);
 
-    public async Task<TestResponse> Logout()
+    public async Task<ApiResponse> Logout()
         => await PostAsync("api/auth/logout");
 
-    public async Task<TestResponse<UserViewDto>> GetCurrentUser()
+    public async Task<ApiResponse<UserViewDto>> GetCurrentUser()
         => await GetAsync<UserViewDto>("api/auth/me");
 
-    public async Task<TestResponse> UpdateCurrentUser(UserDto updateModel)
-    {
-		HttpResponseMessage response = await HttpClient.PatchAsJsonAsync("api/auth/me", updateModel);
-		TestResponse testResponse = new TestResponse { StatusCode = response.StatusCode };
-		string content = await response.Content.ReadAsStringAsync();
-        if (!string.IsNullOrWhiteSpace(content))
-            testResponse.Error = JsonSerializer.Deserialize<CodeDescriptionModel>(content, JsonOptions);
-        return testResponse;
-    }
+    public async Task<ApiResponse> UpdateCurrentUser(UserDto updateModel)
+		=> await PutAsync("api/auth/me", updateModel);
 }

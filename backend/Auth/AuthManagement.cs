@@ -72,16 +72,6 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 		if (!signupEnabled)
 			return ApiResponse.Create(ResponseCodes.Signup.SignupDisabled, System.Net.HttpStatusCode.Forbidden);
 
-		// Validate required fields
-		if (string.IsNullOrWhiteSpace(signup.Email))
-			return ApiResponse.Create(ResponseCodes.Signup.EmailRequired, System.Net.HttpStatusCode.BadRequest);
-
-		if (string.IsNullOrWhiteSpace(signup.Password))
-			return ApiResponse.Create(ResponseCodes.Signup.PasswordRequired, System.Net.HttpStatusCode.BadRequest);
-
-		if (string.IsNullOrWhiteSpace(signup.Firstname))
-			return ApiResponse.Create(ResponseCodes.Signup.FirstnameRequired, System.Net.HttpStatusCode.BadRequest);
-
 		// Check if user already exists
 		if (await GetUserByEmailAsync(signup.Email, cancellationToken) != null)
 			return ApiResponses.Conflict409;
@@ -192,7 +182,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 		return true;
 	}
 
-	private string GenerateAccessToken(UserModel user)
+	public string GenerateAccessToken(UserModel user)
 	{
 		IConfigurationSection jwtSettings = configuration.GetSection("JwtSettings");
 		byte[] key = Encoding.ASCII.GetBytes(jwtSettings["SecretKey"]!);
