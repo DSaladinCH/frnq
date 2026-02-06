@@ -19,10 +19,6 @@ public class Investment : TestBase
 	public async Task GetInvestments()
 	{
 		int investmentCountBefore = DbContext.Investments.Where(i => i.UserId == DataSeeder.TestUserId).Count();
-		InvestmentModel investment = DbContext.Investments
-			.Include(i => i.Quote)
-			.ThenInclude(q => q.Mappings.Where(m => m.UserId == DataSeeder.TestUserId))
-			.First(i => i.UserId == DataSeeder.TestUserId);
 
 		using AuthenticationScope<UserModel> authScope = await Authenticate();
 		ApiResponse<PaginatedInvestmentsResponse> response = await ApiInterface.Investments.GetInvestments(0, 25);
@@ -111,8 +107,10 @@ public class Investment : TestBase
 	[Theory]
 	[InlineData("2023-01-15", 10, 150.0, 2.0, InvestmentType.Buy)]
 	[InlineData("2023-01-15", 10, 150.0, 0, InvestmentType.Buy)] // Buy with zero fees
+	[InlineData("2023-01-15", 10, 0.0, 2.0, InvestmentType.Buy)] // Buy with zero price (e.g., bonus shares)
 	[InlineData("2022-12-01", 5, 200.5, 1.5, InvestmentType.Sell)]
 	[InlineData("2022-12-01", 5, 200.5, 0, InvestmentType.Sell)] // Sell with zero fees
+	[InlineData("2022-12-01", 5, 0.0, 1.5, InvestmentType.Sell)] // Sell with zero price (e.g., worthless stock)
 	[InlineData("2023-03-10", 3.25, 0.0, 0.0, InvestmentType.Dividend)]
 	public async Task CreateInvestmentValid(DateTime date, decimal amount, decimal pricePerUnit, decimal totalFees, InvestmentType type)
 	{
@@ -308,7 +306,6 @@ public class Investment : TestBase
 	public async Task CreateInvestmentsBulkInvalidSymbol()
 	{
 		int investmentCountBefore = DbContext.Investments.Where(i => i.UserId == DataSeeder.TestUserId).Count();
-		QuoteModel quote = DbContext.Quotes.First();
 
 		using AuthenticationScope<UserModel> authScope = await Authenticate();
 
@@ -377,8 +374,10 @@ public class Investment : TestBase
 	[Theory]
 	[InlineData("2022-12-01", 15, 200.0, 2.0, InvestmentType.Buy)]
 	[InlineData("2022-12-01", 15, 200.0, 0, InvestmentType.Buy)] // Buy with zero fees
+	[InlineData("2022-12-01", 15, 0.0, 2.0, InvestmentType.Buy)] // Buy with zero price (e.g., bonus shares)
 	[InlineData("2023-01-15", 20, 175.0, 3.5, InvestmentType.Sell)]
 	[InlineData("2023-01-15", 20, 175.0, 0, InvestmentType.Sell)] // Sell with zero fees
+	[InlineData("2023-01-15", 20, 0.0, 3.5, InvestmentType.Sell)] // Sell with zero price (e.g., worthless stock)
 	[InlineData("2023-03-10", 5.5, 0, 0, InvestmentType.Dividend)]
 	public async Task UpdateInvestmentValid(DateTime date, decimal amount, decimal pricePerUnit, decimal totalFees, InvestmentType type)
 	{

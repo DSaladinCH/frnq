@@ -25,7 +25,7 @@ public static class DataSeeder
 		await AddUser(TestUserId, "Test", TestUserEmail, TestUserPassword, context);
 		await AddUser(TestUser2Id, "Test2", TestUser2Email, TestUser2Password, context);
 
-		context.SaveChanges();
+		await context.SaveChangesAsync();
 	}
 
 	private static async Task AddSetupData(DatabaseContext context)
@@ -144,7 +144,7 @@ public static class DataSeeder
 					quote,
 					DateTime.UtcNow.Date.AddDays(-20 + i),
 					amount: 20 + i,
-					pricePerUnit: 150.0m + (i * 2),
+					pricePerUnit: 150.0m + (i * 2m),
 					totalFees: 1.0m + (i * 0.1m),
 					type: InvestmentType.Buy,
 					context);

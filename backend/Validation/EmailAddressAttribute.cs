@@ -4,10 +4,12 @@ using DSaladin.Frnq.Api.Result;
 namespace DSaladin.Frnq.Api.Validation;
 
 /// <summary>
-/// Validates that a string length is within a specified range.
+/// Validates that a string is a well-formed email address using the built-in .NET email validation.
 /// </summary>
 public class EmailAddressAttribute : ResponseCodeValidationAttribute
 {
+	private static readonly System.ComponentModel.DataAnnotations.EmailAddressAttribute _builtInValidator = new();
+
 	public EmailAddressAttribute() : base(CodeDescriptionModel.InvalidFields) { }
 
 	protected override ValidationResult? IsValidCore(object? value, ValidationContext validationContext)
@@ -15,19 +17,14 @@ public class EmailAddressAttribute : ResponseCodeValidationAttribute
 		if (value is null)
 			return ValidationResult.Success;
 
-		if (!(value is string valueAsString))
+		if (value is not string)
 			return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));
 
-		if (valueAsString.AsSpan().ContainsAny('\r', '\n'))
-			return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));
+		// Use the built-in .NET EmailAddressAttribute for robust validation
+		bool isValid = _builtInValidator.IsValid(value);
 
-		// only return true if there is only 1 '@' character
-		// and it is neither the first nor the last character
-		int index = valueAsString.IndexOf('@');
-
-		if (index > 0 && index != valueAsString.Length - 1 && index == valueAsString.LastIndexOf('@'))
-			return ValidationResult.Success;
-
-		return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));
+		return isValid 
+			? ValidationResult.Success 
+			: new ValidationResult(FormatErrorMessage(validationContext.DisplayName));
 	}
 }
