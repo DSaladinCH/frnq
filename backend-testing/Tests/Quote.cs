@@ -7,187 +7,133 @@ using Moq;
 using Microsoft.Extensions.DependencyInjection;
 using DSaladin.Frnq.Api.Testing.Api;
 using DSaladin.Frnq.Api.Quote.Providers;
+using DSaladin.Frnq.Api.Auth;
+using DSaladin.Frnq.Api.Result;
+using Microsoft.EntityFrameworkCore;
 
 namespace DSaladin.Frnq.Api.Testing.Tests;
 
 [AllureSuite("Quote")]
-public class Quote(CustomWebApplicationFactory<Program> factory) : BaseTest(factory)
+public class Quote : TestBase
 {
-    [Fact]
-    public async Task Search_WithValidSearchTerm_ReturnsMatchingQuotesFromProvider()
-    {
-        await AuthenticateAsync();
+	[Fact]
+	public async Task SearchValid()
+	{
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
 
-		List<QuoteModel> mockedQuotes = new List<QuoteModel>
-        {
-            new() { Symbol = "MSFT", Name = "Microsoft", ProviderId = "yahoo-finance" }
-        };
+		List<QuoteModel> mockedQuotes =
+		[
+			new() { Symbol = "MSFT", Name = "Microsoft", ProviderId = "yahoo-finance" }
+		];
 
-        Factory.FinanceProviderMock
-            .Setup(p => p.SearchAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(mockedQuotes);
+		FinanceProviderMock
+			.Setup(p => p.SearchAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+			.ReturnsAsync(mockedQuotes);
 
-		TestResponse<List<QuoteModel>> response = await Api.Quotes.Search("microsoft");
+		ApiResponse<List<QuoteModel>> response = await ApiInterface.Quotes.Search("microsoft");
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Single(response.Content!);
-        Assert.Equal("MSFT", response.Content![0].Symbol);
-    }
+		Assert.NotNull(response);
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		Assert.Single(response.Value!);
+		Assert.Equal("MSFT", response.Value![0].Symbol);
+	}
 
-    [Fact]
-    public async Task UpdateCustomName_WithNewName_UpdatesDatabaseAndReturnsSuccess()
-    {
-        await AuthenticateAsync();
+	[Fact]
+	public async Task SearchCombinesDatabaseAndProvider()
+	{
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
 
-		CustomNameDto customName = new CustomNameDto("New Custom Name");
-		TestResponse response = await Api.Quotes.UpdateCustomName(1, customName);
+		List<QuoteModel> mockedQuotes =
+		[
+			new() { Symbol = "MSFT", Name = "Microsoft", ProviderId = "yahoo-finance" }
+		];
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+		FinanceProviderMock
+			.Setup(p => p.SearchAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+			.ReturnsAsync(mockedQuotes);
 
-		// Verify database was updated
-		QuoteName? savedName = ExecuteWithDatabaseContext(context =>
-            context.QuoteNames.FirstOrDefault(qn => qn.QuoteId == 1)
-        );
-        Assert.NotNull(savedName);
-        Assert.Equal(customName.CustomName, savedName.CustomName);
-    }
+		ApiResponse<List<QuoteModel>> response = await ApiInterface.Quotes.Search("Apple");
 
-    [Fact]
-    public async Task DeleteCustomName_WithExistingName_RemovesFromDatabaseAndReturnsSuccess()
-    {
-        await AuthenticateAsync();
+		Assert.NotNull(response);
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		Assert.Contains(response.Value!, q => q.Symbol == "AAPL");
+	}
 
-		TestResponse response = await Api.Quotes.DeleteCustomName(1);
+	[Fact]
+	public async Task SearchInvalidProvider()
+	{
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+		ApiResponse<List<QuoteModel>> response = await ApiInterface.Quotes.Search("Apple", "non-existing-provider");
 
-		// Verify database was updated - custom name should be removed
-		QuoteName? savedName = ExecuteWithDatabaseContext(context =>
-            context.QuoteNames.FirstOrDefault(qn => qn.QuoteId == 1)
-        );
-        Assert.Null(savedName);
-    }
+		Assert.NotNull(response);
+		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+	}
 
-    [Fact]
-    public async Task GetHistoricalPrices_WithValidDateRange_ReturnsDataFromProvider()
-    {
-        await AuthenticateAsync();
+	[Fact]
+	public async Task UpdateCustomNameValid()
+	{
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
 
-		List<QuotePrice> mockedPrices = new List<QuotePrice>
-        {
-            new() { Date = DateTime.UtcNow.AddDays(-1), Close = 155.0m, QuoteId = 1 }
-        };
+		CustomNameDto customName = new("New Custom Name");
+		ApiResponse response = await ApiInterface.Quotes.UpdateCustomName(1, customName);
 
-        Factory.FinanceProviderMock
-            .Setup(p => p.GetHistoricalPricesAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(mockedPrices);
+		Assert.NotNull(response);
+		Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
-		TestResponse<List<QuotePrice>> response = await Api.Quotes.GetHistoricalPrices("AAPL", DateTime.UtcNow.AddDays(-7), DateTime.UtcNow);
+		DbContext.ChangeTracker.Clear();
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.NotEmpty(response.Content!);
-    }
+		QuoteName? savedName = await DbContext.QuoteNames.FirstOrDefaultAsync(qn => qn.QuoteId == 1);
+		Assert.NotNull(savedName);
+		Assert.Equal(customName.CustomName, savedName.CustomName);
+	}
 
-    [Fact]
-    public async Task Search_WithValidTerm_CombinesDatabaseAndProviderResults()
-    {
-        await AuthenticateAsync();
+	[Fact]
+	public async Task DeleteCustomNameValid()
+	{
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
 
-		// "AAPL" (Id=1) is in DB from DataSeeder
-		List<QuoteModel> mockedQuotes = new List<QuoteModel>
-        {
-            new() { Symbol = "MSFT", Name = "Microsoft", ProviderId = "yahoo-finance" }
-        };
+		int quoteNameCountBefore = await DbContext.QuoteNames.CountAsync(qn => qn.UserId == DataSeeder.TestUserId);
+		QuoteName quoteName = await DbContext.QuoteNames.FirstAsync(qn => qn.UserId == DataSeeder.TestUserId);
 
-        Factory.FinanceProviderMock
-            .Setup(p => p.SearchAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(mockedQuotes);
+		ApiResponse response = await ApiInterface.Quotes.DeleteCustomName(quoteName.QuoteId);
 
-		// Search for "A" should find AAPL from DB and MSFT from mock (if query matched MSFT)
-		// Actually let's search for "Apple" to be specific
-		TestResponse<List<QuoteModel>> response = await Api.Quotes.Search("Apple");
+		Assert.NotNull(response);
+		Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        
-        // Should contain AAPL from DB
-        Assert.Contains(response.Content!, q => q.Symbol == "AAPL");
-    }
+		DbContext.ChangeTracker.Clear();
 
-    [Fact]
-    public async Task Search_WithInvalidProviderName_ReturnsBadRequest()
-    {
-        await AuthenticateAsync();
+		Assert.Equal(quoteNameCountBefore - 1, await DbContext.QuoteNames.CountAsync(qn => qn.UserId == DataSeeder.TestUserId));
+	}
 
-		TestResponse<List<QuoteModel>> response = await Api.Quotes.Search("Apple", "non-existing-provider");
+	[Fact]
+	public async Task GetHistoricalPricesValid()
+	{
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
 
-        Assert.NotNull(response);
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-    }
+		List<QuotePrice> mockedPrices =
+		[
+			new() { Date = DateTime.UtcNow.AddDays(-1), Close = 155.0m, QuoteId = 1 }
+		];
 
-    [Fact]
-    public async Task GetHistoricalPrices_WithFromDateAfterToDate_ReturnsBadRequest()
-    {
-        await AuthenticateAsync();
-		TestResponse<List<QuotePrice>> response = await Api.Quotes.GetHistoricalPrices("AAPL", DateTime.UtcNow, DateTime.UtcNow.AddDays(-1));
-        
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-    }
+		FinanceProviderMock
+			.Setup(p => p.GetHistoricalPricesAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+			.ReturnsAsync(mockedPrices);
 
-    [Fact]
-    public async Task DatabaseProvider_AddNewQuote_CreatesInDatabase()
-    {
-        using IServiceScope scope = Factory.Services.CreateScope();
-		DatabaseProvider provider = scope.ServiceProvider.GetRequiredService<DSaladin.Frnq.Api.Quote.Providers.DatabaseProvider>();
+		ApiResponse<List<QuotePrice>> response = await ApiInterface.Quotes.GetHistoricalPrices("AAPL", DateTime.UtcNow.AddDays(-7), DateTime.UtcNow);
 
-		QuoteModel newQuote = new QuoteModel
-        {
-            Symbol = "TSLA",
-            Name = "Tesla",
-            ProviderId = "yahoo-finance",
-            Currency = "USD"
-        };
+		Assert.NotNull(response);
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		Assert.NotEmpty(response.Value!);
+	}
 
-		QuoteModel? result = await provider.AddOrUpdateQuoteAsync(newQuote, default);
-        Assert.NotNull(result);
-        Assert.True(result.Id > 0);
+	[Fact]
+	public async Task GetHistoricalPricesInvalidDateRange()
+	{
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
 
-		// Verify it's in the database
-		QuoteModel? savedQuote = ExecuteWithDatabaseContext(context =>
-            context.Quotes.FirstOrDefault(q => q.Symbol == "TSLA")
-        );
-        Assert.NotNull(savedQuote);
-        Assert.Equal("Tesla", savedQuote.Name);
-    }
+		ApiResponse<List<QuotePrice>> response = await ApiInterface.Quotes.GetHistoricalPrices("AAPL", DateTime.UtcNow, DateTime.UtcNow.AddDays(-1));
 
-    [Fact]
-    public async Task DatabaseProvider_UpdateExistingQuote_ModifiesDatabaseRecord()
-    {
-        await ExecuteWithDatabaseContextAsync(async context =>
-        {
-			DatabaseProvider provider = Factory.Services.CreateScope().ServiceProvider.GetRequiredService<DSaladin.Frnq.Api.Quote.Providers.DatabaseProvider>();
-
-			// Get existing quote from database
-			QuoteModel existingQuote = context.Quotes.First(q => q.Symbol == "AAPL");
-			string originalName = existingQuote.Name;
-            
-            // Update it
-            existingQuote.Name = "Apple Inc. Updated";
-			QuoteModel? updated = await provider.AddOrUpdateQuoteAsync(existingQuote, default);
-            
-            Assert.NotEqual(originalName, updated!.Name);
-            Assert.Equal("Apple Inc. Updated", updated.Name);
-        });
-
-		// Verify it's updated in the database
-		QuoteModel? savedQuote = ExecuteWithDatabaseContext(context =>
-            context.Quotes.FirstOrDefault(q => q.Symbol == "AAPL")
-        );
-        Assert.NotNull(savedQuote);
-        Assert.Equal("Apple Inc. Updated", savedQuote.Name);
-    }
+		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+	}
 }

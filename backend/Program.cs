@@ -98,6 +98,29 @@ builder.Services.AddAuthentication(options =>
 		ValidateLifetime = true,
 		ClockSkew = TimeSpan.Zero
 	};
+
+	options.Events = new JwtBearerEvents
+	{
+		OnChallenge = async context =>
+		{
+			context.HandleResponse();
+			
+			context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+			await ApiResponses.Unauthorized401.Response.GetResultAsync(context.Response);
+		},
+
+		OnForbidden = async context =>
+		{
+			context.Response.StatusCode = StatusCodes.Status403Forbidden;
+			await ApiResponses.Forbidden403.Response.GetResultAsync(context.Response);
+		},
+
+		OnAuthenticationFailed = async context =>
+		{
+			context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+			await ApiResponses.Unauthorized401.Response.GetResultAsync(context.Response);
+		}
+	};
 });
 
 // Add CORS policy with configurable origins
