@@ -102,7 +102,7 @@
 	}
 </script>
 
-<div class="grid gap-4 overflow-y-auto pr-1">
+<div class="grid gap-4 pr-1">
 	<div class="grid gap-3 md:grid-cols-[2fr_1fr]">
 		<div class="xs:grid-cols-2 grid gap-3 sm:grid-cols-3">
 			{#each investmentTypes as type}
