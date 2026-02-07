@@ -74,6 +74,7 @@
 	}
 
 	let keyActive = (key: string) => (currentPath.startsWith(key) ? 'active' : '');
+	let isKeyActive = (key: string) => currentPath.startsWith(key);
 
 	// Get current path for active state
 	let currentPath = $derived($page.url.pathname);
@@ -143,7 +144,7 @@
 			{#each visibleLinks as { key, icon, label }}
 				<button
 					type="button"
-					class="{keyActive(key)} mobile-nav-item mb-2 flex w-full items-center gap-3 rounded-md px-3 py-3 text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+					class="mobile-nav-item {isKeyActive(key) ? 'font-bold gradient-text ' + keyActive(key) : ''} mb-2 flex w-full items-center gap-3 rounded-md px-3 py-3 text-left transition-colors"
 					onclick={() => navigateTo(key)}
 				>
 					<i class="{icon} text-xl"></i>
@@ -158,7 +159,7 @@
 <div class="min-h-screen md:grid md:grid-cols-[70px_1fr]">
 	<!-- Desktop Sidebar -->
 	<div
-		class="bg-card fixed bottom-0 left-0 top-0 hidden w-[70px] flex-col items-center justify-between p-1 md:flex"
+		class="bg-card fixed bottom-0 left-0 top-0 hidden w-17.5 flex-col items-center justify-between p-1 md:flex"
 	>
 		<div class="flex h-full flex-col">
 			<button
@@ -171,12 +172,12 @@
 			{#each mainLinks as { key, icon, label }, i}
 				<button
 					type="button"
-					class="{keyActive(key)} nav-item h-12.5 w-12.5 hover:scale-115 my-1 flex flex-col items-center justify-center text-2xl transition-transform hover:cursor-pointer"
+					class="h-12.5 w-12.5 hover:scale-115 my-1 flex flex-col items-center justify-center text-2xl transition-transform hover:cursor-pointer"
 					aria-label={label}
 					title={label}
 					onclick={() => navigateTo(key)}
 				>
-					<i class={icon}></i>
+					<i class="{icon} {keyActive(key)} gradient-text"></i>
 					<span class="display md:hidden">{label}</span>
 				</button>
 				{#if i < mainLinks.length - 1}
@@ -187,7 +188,7 @@
 			{#each footerLinks as { key, icon, label }, i}
 				<button
 					type="button"
-					class="nav-item h-12.5 w-12.5 flex flex-col items-center justify-center text-2xl {i === 0
+					class="h-12.5 w-12.5 flex flex-col items-center justify-center text-2xl {i === 0
 						? 'mt-auto'
 						: 'my-1'} hover:scale-115 transition-transform hover:cursor-pointer {currentPath === key
 						? 'active'
@@ -196,7 +197,7 @@
 					title={label}
 					onclick={() => navigateTo(key)}
 				>
-					<i class={icon}></i>
+					<i class="{icon} {keyActive(key)} gradient-text"></i>
 					<span class="display md:hidden">{label}</span>
 				</button>
 				{#if i < footerLinks.length - 1}
@@ -216,24 +217,6 @@
 <NotificationContainer />
 
 <style>
-	.nav-item.active {
-		color: var(--color-accent);
-	}
-
-	.nav-item:hover {
-		color: var(--color-primary);
-	}
-
-	/* Mobile navigation styles */
-	.mobile-nav-item.active {
-		background-color: var(--color-primary);
-		color: white;
-	}
-
-	.mobile-nav-item.active:hover {
-		background-color: var(--color-primary);
-	}
-
 	/* Hamburger menu styles */
 	.hamburger-icon {
 		position: relative;

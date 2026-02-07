@@ -132,10 +132,11 @@
 <!-- Pill Toggle Display -->
 <div
 	bind:this={containerEl}
-	class="flex bg-card border border-button relative gap-0.5 rounded-xl p-1 {direction ===
+	class="gradient-border flex bg-card relative gap-0.5 rounded-xl p-1 {direction ===
 	'horizontal'
 		? 'flex-row'
 		: 'flex-col'}"
+	style="--gradient-border-radius: 0.75rem;"
 >
 	<div
 		bind:this={indicatorEl}

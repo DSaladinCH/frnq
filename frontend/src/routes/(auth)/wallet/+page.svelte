@@ -107,7 +107,7 @@
 	<PageTitle title="Wallet" icon="fa-solid fa-wallet" />
 
 	<div
-		class="investments-list 3xl:grid-cols-4 grid gap-2 overflow-y-auto py-1 pr-1 lg:grid-cols-2 2xl:grid-cols-3"
+		class="investments-list 3xl:grid-cols-4 grid gap-2 py-1 pr-1 lg:grid-cols-2 2xl:grid-cols-3"
 	>
 		{#each quotes as quote (quote.id)}
 			{@const snapshot = snapshotMap.get(quote.id)}
