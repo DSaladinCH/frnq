@@ -158,7 +158,7 @@
 <div class="min-h-screen md:grid md:grid-cols-[70px_1fr]">
 	<!-- Desktop Sidebar -->
 	<div
-		class="bg-card fixed bottom-0 left-0 top-0 hidden w-[70px] flex-col items-center justify-between p-1 md:flex"
+		class="bg-card fixed bottom-0 left-0 top-0 hidden w-17.5 flex-col items-center justify-between p-1 md:flex"
 	>
 		<div class="flex h-full flex-col">
 			<button

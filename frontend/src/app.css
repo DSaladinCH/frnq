@@ -11,12 +11,12 @@
 :root {
 	--color-background: #121213;
 	--color-background-backdrop: #28282ed7;
-	--color-card: #2a2a41;
-	--color-text: #e5e5e5;
+	--color-card: #221f28;
+	--color-text: #e5e6f6;
 	--color-muted: #cccccc;
 	--color-primary: #e02c1f;
-	--color-secondary: #cd3c32;
-	--color-accent: #ca261a;
+	--color-secondary: #7a2b7d;
+	--color-accent: #c14bac;
 	--color-button: #6c6c6c;
 	--color-error: #ff4d4d;
 	--color-warning: #eb9d17;
@@ -214,20 +214,78 @@ body {
 .card {
 	--bg-card-color: var(--color-card);
 	--white-ratio: 5%;
-	background-image: linear-gradient(to right,
-			var(--bg-card-color) 0%,
-			color-mix(in srgb, var(--bg-card-color), white var(--white-ratio)) 51%,
-			var(--bg-card-color) 100%);
-	background-size: 200% auto;
-	transition: 0.5s;
+	background: 
+		linear-gradient(135deg, 
+			hsl(from var(--bg-card-color) h s calc(l * 1.15)) 0%,
+			var(--bg-card-color) 50%,
+			hsl(from var(--bg-card-color) h s calc(l * 0.85)) 100%
+		);
 	border-radius: 1.1rem;
 	padding: 1.2rem;
 	width: 100%;
 	outline: none;
+	position: relative;
+	overflow: hidden;
+	transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+	transform: translate3d(0, 0, 0) scale(1);
+	transform-origin: center center;
+	will-change: transform, box-shadow;
+	backface-visibility: hidden;
+	-webkit-font-smoothing: subpixel-antialiased;
+	
+	/* Gradient border effect using pseudo-element */
+	&::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: 1.1rem;
+		padding: 2px;
+		background: linear-gradient(
+			135deg, 
+			hsl(from var(--color-primary) h s l / 0.3),
+			hsl(from var(--color-secondary) h s l / 0.2),
+			hsl(from var(--color-accent) h s l / 0.3)
+		);
+		-webkit-mask: 
+			linear-gradient(#fff 0 0) content-box, 
+			linear-gradient(#fff 0 0);
+		-webkit-mask-composite: xor;
+		mask-composite: exclude;
+		opacity: 0.6;
+		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+		will-change: opacity;
+	}
+	
+	/* Subtle inner glow */
+	&::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 40%;
+		background: linear-gradient(
+			180deg,
+			hsl(from var(--color-secondary) h s l / 0.08) 0%,
+			transparent 100%
+		);
+		border-radius: 1.1rem 1.1rem 0 0;
+		pointer-events: none;
+	}
+	
+	/* Ambient glow shadow */
+	box-shadow: 
+		0 4px 20px hsl(from var(--color-background) h s calc(l * 0.5) / 0.6),
+		0 0 40px hsl(from var(--color-secondary) h s l / 0.05),
+		inset 0 1px 0 hsl(from var(--color-card) h s calc(l * 1.5) / 0.15);
 }
 
 .card.card-slim {
 	padding: 0.8rem 1.2rem;
+	
+	&::after {
+		height: 30%;
+	}
 }
 
 .card.card-reactive:not(.no-click) {
@@ -235,33 +293,170 @@ body {
 }
 
 .card.card-reactive:hover {
-	background-position: right center;
+	background: 
+		linear-gradient(135deg, 
+			hsl(from var(--bg-card-color) h s calc(l * 1.25)) 0%,
+			hsl(from var(--bg-card-color) h s calc(l * 1.1)) 50%,
+			var(--bg-card-color) 100%
+		);
+	transform: translate3d(0, 0, 0) scale(1.01);
+	box-shadow: 
+		0 8px 30px hsl(from var(--color-background) h s calc(l * 0.3) / 0.8),
+		0 0 60px hsl(from var(--color-secondary) h s l / 0.15),
+		0 0 100px hsl(from var(--color-primary) h s l / 0.08),
+		inset 0 1px 0 hsl(from var(--color-card) h s calc(l * 2) / 0.25);
+	
+	&::before {
+		opacity: 1;
+		background: linear-gradient(
+			135deg, 
+			hsl(from var(--color-primary) h s l / 0.5),
+			hsl(from var(--color-secondary) h s l / 0.4),
+			hsl(from var(--color-accent) h s l / 0.5)
+		);
+	}
 }
 
 .card.selected {
-	--white-ratio: 15%;
 	--bg-card-color: var(--color-secondary);
+	background: 
+		linear-gradient(135deg, 
+			hsl(from var(--color-secondary) h s calc(l * 1.15)) 0%,
+			var(--color-secondary) 50%,
+			hsl(from var(--color-secondary) h s calc(l * 0.85)) 100%
+		);
+	box-shadow: 
+		0 6px 25px hsl(from var(--color-secondary) h s l / 0.3),
+		0 0 50px hsl(from var(--color-secondary) h s l / 0.15),
+		0 0 80px hsl(from var(--color-accent) h s l / 0.1),
+		inset 0 1px 0 hsl(from var(--color-secondary) h s calc(l * 1.5) / 0.2);
+	
+	&::before {
+		opacity: 0.8;
+		background: linear-gradient(
+			135deg, 
+			hsl(from var(--color-accent) h s l / 0.4),
+			hsl(from var(--color-primary) h s l / 0.3),
+			hsl(from var(--color-accent) h s l / 0.4)
+		);
+	}
+	
+	&::after {
+		background: linear-gradient(
+			180deg,
+			hsl(from var(--color-accent) h s l / 0.12) 0%,
+			transparent 100%
+		);
+	}
+}
+
+.card.selected.card-reactive:hover {
+	background: 
+		linear-gradient(135deg, 
+			hsl(from var(--color-secondary) h s calc(l * 1.25)) 0%,
+			hsl(from var(--color-secondary) h s calc(l * 1.1)) 50%,
+			var(--color-secondary) 100%
+		);
+	transform: translate3d(0, 0, 0) scale(1.01);
+	box-shadow: 
+		0 8px 32px hsl(from var(--color-secondary) h s l / 0.4),
+		0 0 80px hsl(from var(--color-secondary) h s l / 0.25),
+		0 0 120px hsl(from var(--color-accent) h s l / 0.15),
+		inset 0 1px 0 hsl(from var(--color-secondary) h s calc(l * 1.8) / 0.3);
+	
+	&::before {
+		opacity: 1;
+		background: linear-gradient(
+			135deg, 
+			hsl(from var(--color-accent) h s l / 0.6),
+			hsl(from var(--color-primary) h s l / 0.5),
+			hsl(from var(--color-accent) h s l / 0.6)
+		);
+	}
 }
 
 /* --- Button Styles --- */
 .btn {
 	--btn-bg: var(--color-button);
-	--white-ratio: 15%;
-	background-image: linear-gradient(to right,
-			var(--btn-bg) 0%,
-			color-mix(in srgb, var(--btn-bg), white var(--white-ratio)) 51%,
-			var(--btn-bg) 100%);
-	background-size: 200% auto;
-	transition: background-position 0.5s;
+	background: 
+		linear-gradient(135deg, 
+			hsl(from var(--btn-bg) h s calc(l * 1.15)) 0%,
+			var(--btn-bg) 50%,
+			hsl(from var(--btn-bg) h s calc(l * 0.85)) 100%
+		);
 	color: var(--color-text);
 	border-radius: 10px;
 	padding: 0.5rem 1rem;
 	text-align: center;
-	/* text-transform: uppercase; */
 	display: inline-block;
 	text-decoration: none;
 	border: none;
 	cursor: pointer;
+	position: relative;
+	overflow: hidden;
+	transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+	
+	/* Gradient border effect */
+	&::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: 10px;
+		padding: 1.5px;
+		background: linear-gradient(
+			135deg, 
+			hsl(from var(--btn-bg) h s calc(l * 1.4) / 0.4),
+			hsl(from var(--btn-bg) h s calc(l * 0.8) / 0.3)
+		);
+		-webkit-mask: 
+			linear-gradient(#fff 0 0) content-box, 
+			linear-gradient(#fff 0 0);
+		-webkit-mask-composite: xor;
+		mask-composite: exclude;
+		opacity: 0.6;
+		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+	
+	/* Subtle top highlight */
+	&::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 50%;
+		background: linear-gradient(
+			180deg,
+			hsl(from var(--btn-bg) h s calc(l * 1.8) / 0.12) 0%,
+			transparent 100%
+		);
+		border-radius: 10px 10px 0 0;
+		pointer-events: none;
+	}
+	
+	box-shadow: 
+		0 2px 12px hsl(from var(--btn-bg) h s calc(l * 0.3) / 0.4),
+		0 0 20px hsl(from var(--btn-bg) h s l / 0.15),
+		inset 0 1px 0 hsl(from var(--btn-bg) h s calc(l * 1.6) / 0.2);
+}
+
+.btn:hover {
+	background: 
+		linear-gradient(135deg, 
+			hsl(from var(--btn-bg) h s calc(l * 1.3)) 0%,
+			hsl(from var(--btn-bg) h s calc(l * 1.15)) 50%,
+			var(--btn-bg) 100%
+		);
+	transform: translateY(-1px) scale(1.02);
+	box-shadow: 
+		0 4px 20px hsl(from var(--btn-bg) h s calc(l * 0.3) / 0.6),
+		0 0 35px hsl(from var(--btn-bg) h s l / 0.25),
+		inset 0 1px 0 hsl(from var(--btn-bg) h s calc(l * 2) / 0.3);
+	
+	&::before {
+		opacity: 1;
+		padding: 2px;
+	}
 }
 
 .btn.btn-small {
@@ -271,10 +466,6 @@ body {
 .btn.btn-big {
 	padding: 0.9rem 2.25rem;
 	font-size: 1.2rem;
-}
-
-.btn:hover {
-	background-position: right center;
 }
 
 .btn-fake {
@@ -289,21 +480,67 @@ body {
 .btn.btn-selected,
 .btn.btn-success {
 	--btn-bg: var(--color-success);
+	box-shadow: 
+		0 2px 12px hsl(from var(--color-success) h s calc(l * 0.3) / 0.5),
+		0 0 25px hsl(from var(--color-success) h s l / 0.2),
+		inset 0 1px 0 hsl(from var(--color-success) h s calc(l * 1.6) / 0.25);
+	
+	&:hover {
+		box-shadow: 
+			0 4px 20px hsl(from var(--color-success) h s calc(l * 0.3) / 0.7),
+			0 0 40px hsl(from var(--color-success) h s l / 0.3),
+			inset 0 1px 0 hsl(from var(--color-success) h s calc(l * 2) / 0.35);
+	}
 }
 
 /* Error/Cancel/Abort Button */
 .btn.btn-error {
 	--btn-bg: var(--color-error);
+	box-shadow: 
+		0 2px 12px hsl(from var(--color-error) h s calc(l * 0.3) / 0.5),
+		0 0 25px hsl(from var(--color-error) h s l / 0.2),
+		inset 0 1px 0 hsl(from var(--color-error) h s calc(l * 1.6) / 0.25);
+	
+	&:hover {
+		box-shadow: 
+			0 4px 20px hsl(from var(--color-error) h s calc(l * 0.3) / 0.7),
+			0 0 40px hsl(from var(--color-error) h s l / 0.3),
+			inset 0 1px 0 hsl(from var(--color-error) h s calc(l * 2) / 0.35);
+	}
 }
 
 /* Primary Button */
 .btn.btn-primary {
 	--btn-bg: var(--color-primary);
+	box-shadow: 
+		0 2px 12px hsl(from var(--color-primary) h s calc(l * 0.3) / 0.5),
+		0 0 25px hsl(from var(--color-primary) h s l / 0.2),
+		inset 0 1px 0 hsl(from var(--color-primary) h s calc(l * 1.6) / 0.25);
+	
+	&:hover {
+		box-shadow: 
+			0 4px 20px hsl(from var(--color-primary) h s calc(l * 0.3) / 0.7),
+			0 0 40px hsl(from var(--color-primary) h s l / 0.3),
+			inset 0 1px 0 hsl(from var(--color-primary) h s calc(l * 2) / 0.35);
+	}
 }
 
 /* Secondary Button */
 .btn.btn-secondary {
 	--btn-bg: var(--color-secondary);
+	box-shadow: 
+		0 2px 12px hsl(from var(--color-secondary) h s calc(l * 0.3) / 0.5),
+		0 0 25px hsl(from var(--color-secondary) h s l / 0.2),
+		0 0 40px hsl(from var(--color-accent) h s l / 0.1),
+		inset 0 1px 0 hsl(from var(--color-secondary) h s calc(l * 1.6) / 0.25);
+	
+	&:hover {
+		box-shadow: 
+			0 4px 20px hsl(from var(--color-secondary) h s calc(l * 0.3) / 0.7),
+			0 0 40px hsl(from var(--color-secondary) h s l / 0.3),
+			0 0 60px hsl(from var(--color-accent) h s l / 0.15),
+			inset 0 1px 0 hsl(from var(--color-secondary) h s calc(l * 2) / 0.35);
+	}
 }
 
 .link-button {
