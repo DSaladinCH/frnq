@@ -74,6 +74,7 @@
 	}
 
 	let keyActive = (key: string) => (currentPath.startsWith(key) ? 'active' : '');
+	let isKeyActive = (key: string) => currentPath.startsWith(key);
 
 	// Get current path for active state
 	let currentPath = $derived($page.url.pathname);
@@ -143,7 +144,7 @@
 			{#each visibleLinks as { key, icon, label }}
 				<button
 					type="button"
-					class="{keyActive(key)} mobile-nav-item mb-2 flex w-full items-center gap-3 rounded-md px-3 py-3 text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+					class="mobile-nav-item {isKeyActive(key) ? 'font-bold gradient-text ' + keyActive(key) : ''} mb-2 flex w-full items-center gap-3 rounded-md px-3 py-3 text-left transition-colors"
 					onclick={() => navigateTo(key)}
 				>
 					<i class="{icon} text-xl"></i>
@@ -171,7 +172,7 @@
 			{#each mainLinks as { key, icon, label }, i}
 				<button
 					type="button"
-					class="{keyActive(key)} nav-item h-12.5 w-12.5 hover:scale-115 my-1 flex flex-col items-center justify-center text-2xl transition-transform hover:cursor-pointer"
+					class="{keyActive(key)} gradient-text h-12.5 w-12.5 hover:scale-115 my-1 flex flex-col items-center justify-center text-2xl transition-transform hover:cursor-pointer"
 					aria-label={label}
 					title={label}
 					onclick={() => navigateTo(key)}
@@ -187,7 +188,7 @@
 			{#each footerLinks as { key, icon, label }, i}
 				<button
 					type="button"
-					class="nav-item h-12.5 w-12.5 flex flex-col items-center justify-center text-2xl {i === 0
+					class="gradient-text h-12.5 w-12.5 flex flex-col items-center justify-center text-2xl {i === 0
 						? 'mt-auto'
 						: 'my-1'} hover:scale-115 transition-transform hover:cursor-pointer {currentPath === key
 						? 'active'
@@ -216,24 +217,6 @@
 <NotificationContainer />
 
 <style>
-	.nav-item.active {
-		color: var(--color-accent);
-	}
-
-	.nav-item:hover {
-		color: var(--color-primary);
-	}
-
-	/* Mobile navigation styles */
-	.mobile-nav-item.active {
-		background-color: var(--color-primary);
-		color: white;
-	}
-
-	.mobile-nav-item.active:hover {
-		background-color: var(--color-primary);
-	}
-
 	/* Hamburger menu styles */
 	.hamburger-icon {
 		position: relative;

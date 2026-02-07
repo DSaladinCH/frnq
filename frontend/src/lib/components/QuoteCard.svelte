@@ -89,18 +89,15 @@
 	</div>
 
 	<!-- Top Section: Name & Symbol -->
-	<div class="flex items-start justify-between gap-3 pr-8">
+	<div class="flex items-start justify-between gap-3 pr-6">
 		<div class="flex flex-col">
-			<div class="flex items-baseline gap-2 flex-wrap">
+			<div class="flex items-baseline gap-2 flex-wrap line-clamp-1">
 				<h3 class="text-xl font-bold leading-tight">{quote.customName || quote.name}</h3>
-				{#if quote.customName}
-					<span class="text-xs color-muted italic">({quote.name})</span>
-				{/if}
 			</div>
-			<div class="flex items-center gap-2 mt-0.5">
+			<div class="flex items-center gap-2 mt-0.5 line-clamp-1">
 				<span class="text-xs font-bold color-muted tracking-wider">{quote.symbol}</span>
 				<span class="text-xs color-muted">•</span>
-				<span class="text-xs uppercase color-secondary font-semibold"
+				<span class="text-xs uppercase color-accent font-semibold"
 					>{quote.group ? quote.group.name : 'No Group'}</span
 				>
 			</div>
@@ -110,35 +107,35 @@
 	<!-- All Values -->
 	<div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-3 mt-4">
 		<div class="flex flex-col">
-			<span class="text-xs color-muted mb-1">Amount</span>
+			<span class="text-xs leading-none color-muted mb-1">Amount</span>
 			<span class="text-sm font-semibold leading-none">{formatNumber(snapshot.amount)}</span>
 		</div>
 
 		<div class="flex flex-col">
-			<span class="text-xs color-muted mb-1">Market Price</span>
+			<span class="text-xs leading-none color-muted mb-1">Market Price</span>
 			<span class="text-sm font-semibold leading-none">{formatCurrency(snapshot.marketPricePerUnit)}</span>
 		</div>
 
 		<div class="flex flex-col">
-			<span class="text-xs color-muted mb-1">Current Value</span>
+			<span class="text-xs leading-none color-muted mb-1">Current Value</span>
 			<span class="text-sm font-bold leading-none">{formatCurrency(snapshot.currentValue)}</span>
 		</div>
 
 		<div class="flex flex-col">
-			<span class="text-xs color-muted mb-1">Invested</span>
+			<span class="text-xs leading-none color-muted mb-1">Invested</span>
 			<span class="text-sm font-semibold leading-none">{formatCurrency(snapshot.invested)}</span>
 		</div>
 
 		<div class="flex flex-col">
-			<span class="text-xs color-muted mb-1">Total Fees</span>
+			<span class="text-xs leading-none color-muted mb-1">Total Fees</span>
 			<span class="text-sm font-semibold leading-none">{formatCurrency(snapshot.totalFees)}</span>
 		</div>
 	</div>
 
 	<!-- Performance -->
 	<div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 mt-4 border-t border-t-[#333]">
-		<div class="flex flex-col">
-			<span class="text-xs color-muted mb-1">Position Gain</span>
+		<div class="flex flex-col pt-2">
+			<span class="text-xs leading-none color-muted mb-1">Position Gain</span>
 			<div class="flex items-baseline gap-1.5">
 				<span class="text-sm font-bold leading-none {unrealizedGain < 0 ? 'color-error' : 'color-success'}"
 					>{unrealizedGain >= 0 ? '+' : ''} {formatCurrency(unrealizedGain)}</span
@@ -150,7 +147,7 @@
 		</div>
 
 		{#if snapshot.realizedGain !== 0}
-			<div class="flex flex-col">
+			<div class="flex flex-col pt-2">
 				<span class="text-xs leading-none color-muted mb-1">Realized Gains</span>
 				<span
 					class="text-sm font-semibold leading-none {snapshot.realizedGain < 0 ? 'color-error' : 'color-success'}"
@@ -160,7 +157,7 @@
 		{/if}
 
 		<div class="flex flex-col md:col-span-2 pt-2 border-t border-t-[#444]">
-			<span class="text-xs color-muted font-semibold mb-1">Total Profit</span>
+			<span class="text-xs leading-none color-muted font-semibold mb-1">Total Profit</span>
 			<div class="flex items-baseline gap-1.5">
 				<span class="text-lg font-bold leading-none {totalProfit < 0 ? 'color-error' : 'color-success'}"
 					>{totalProfit >= 0 ? '+' : ''} {formatCurrency(totalProfit)}</span

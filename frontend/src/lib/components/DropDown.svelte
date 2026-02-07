@@ -152,7 +152,8 @@
 
 	<div
 		bind:this={dropdownRef}
-		class="grow relative inline-block w-full {className}"
+		class="grow relative inline-block w-full gradient-border {className}"
+		style="--gradient-border-radius: 0.25rem;"
 		class:opacity-50={disabled}
 		class:pointer-events-none={disabled}
 		class:open={isOpen}
@@ -220,7 +221,7 @@
 	.dropdown-button {
 		width: 100%;
 		padding: 0.5rem 0.75rem 0.5rem 0.75rem;
-		border: 1px solid var(--color-button);
+		border: 1px solid transparent;
 		border-radius: 0.25rem;
 		background: var(--color-card);
 		color: var(--color-text);
@@ -236,13 +237,11 @@
 	}
 
 	.dropdown-button:hover:not(:disabled) {
-		border-color: var(--color-primary);
 		background: color-mix(in srgb, var(--color-card), var(--color-primary) 5%);
 	}
 
 	.dropdown-button:focus {
 		outline: none;
-		border-color: var(--color-secondary);
 		box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary), transparent 85%);
 	}
 
@@ -271,12 +270,34 @@
 
 	.dropdown-menu {
 		background: var(--color-card);
-		border: 1px solid var(--color-button);
+		border: 1px solid transparent;
 		border-radius: 6px;
 		box-shadow: 0 4px 12px color-mix(in srgb, var(--color-text), transparent 85%);
 		max-height: 200px;
 		overflow-y: auto;
 		animation: dropdownSlide 0.15s ease-out;
+		position: relative;
+	}
+
+	.dropdown-menu::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: 6px;
+		padding: 1px;
+		background: linear-gradient(
+			135deg, 
+			hsl(from var(--color-primary) h s l / 0.4),
+			hsl(from var(--color-secondary) h s l / 0.3),
+			hsl(from var(--color-accent) h s l / 0.4)
+		);
+		-webkit-mask: 
+			linear-gradient(#fff 0 0) content-box, 
+			linear-gradient(#fff 0 0);
+		-webkit-mask-composite: xor;
+		mask-composite: exclude;
+		opacity: 1;
+		pointer-events: none;
 	}
 
 	.dropdown-menu-absolute {

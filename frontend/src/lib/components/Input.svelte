@@ -313,7 +313,7 @@
 	{#if isCheckbox}
 		<input class="checkbox" type="checkbox" {id} bind:checked {required} {onchange} {disabled} />
 	{:else if isFileInput}
-		<div class="relative flex w-full flex-1 grow">
+		<div class="gradient-border" style="--gradient-border-radius: 0.25em;">
 			<input
 				class="absolute h-0 w-0 overflow-hidden opacity-0"
 				type="file"
@@ -337,38 +337,42 @@
 			</label>
 		</div>
 	{:else if isDateTimeInput}
-		<input
-			bind:this={dateInputRef}
-			class="textbox grow"
-			type="text"
-			{id}
-			{required}
-			{disabled}
-			{placeholder}
-			{onfocus}
-			readonly
-		/>
+		<div class="gradient-border" style="--gradient-border-radius: 0.25em;">
+			<input
+				bind:this={dateInputRef}
+				class="textbox grow"
+				type="text"
+				{id}
+				{required}
+				{disabled}
+				{placeholder}
+				{onfocus}
+				readonly
+			/>
+		</div>
 	{:else}
-		<input
-			class="textbox grow"
-			bind:this={inputElement}
-			{type}
-			{id}
-			{autocomplete}
-			{required}
-			{oninput}
-			{onkeydown}
-			{onchange}
-			{onfocus}
-			bind:value
-			{placeholder}
-			{onkeypress}
-			{accept}
-			{disabled}
-			{step}
-			{min}
-			{max}
-		/>
+		<div class="gradient-border" style="--gradient-border-radius: 0.25em;">
+			<input
+				class="textbox grow"
+				bind:this={inputElement}
+				{type}
+				{id}
+				{autocomplete}
+				{required}
+				{oninput}
+				{onkeydown}
+				{onchange}
+				{onfocus}
+				bind:value
+				{placeholder}
+				{onkeypress}
+				{accept}
+				{disabled}
+				{step}
+				{min}
+				{max}
+			/>
+		</div>
 	{/if}
 </div>
 
@@ -378,7 +382,7 @@
 		display: block;
 		width: 100%;
 		max-width: 100%;
-		border-width: 1px;
+		border-width: 0;
 		border-radius: 0.25em;
 		border-style: solid;
 		min-height: 30px;
@@ -387,22 +391,18 @@
 		padding-right: 10px;
 		outline: 0;
 		background-color: var(--color-card);
-		border-color: var(--color-button);
+		border-color: transparent;
 		color: var(--color-text);
-	}
-
-	.textbox.flex {
-		display: flex !important;
-	}
-
-	.textbox:hover {
-		border-color: var(--color-primary) !important;
 	}
 
 	.textbox:focus,
 	.textbox:-webkit-autofill:focus {
+		outline: none !important;
 		box-shadow: none !important;
-		border-color: var(--color-secondary) !important;
+	}
+
+	.textbox.flex {
+		display: flex !important;
 	}
 
 	.checkbox {
