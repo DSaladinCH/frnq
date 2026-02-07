@@ -172,12 +172,12 @@
 			{#each mainLinks as { key, icon, label }, i}
 				<button
 					type="button"
-					class="{keyActive(key)} gradient-text h-12.5 w-12.5 hover:scale-115 my-1 flex flex-col items-center justify-center text-2xl transition-transform hover:cursor-pointer"
+					class="h-12.5 w-12.5 hover:scale-115 my-1 flex flex-col items-center justify-center text-2xl transition-transform hover:cursor-pointer"
 					aria-label={label}
 					title={label}
 					onclick={() => navigateTo(key)}
 				>
-					<i class={icon}></i>
+					<i class="{icon} {keyActive(key)} gradient-text"></i>
 					<span class="display md:hidden">{label}</span>
 				</button>
 				{#if i < mainLinks.length - 1}
@@ -188,7 +188,7 @@
 			{#each footerLinks as { key, icon, label }, i}
 				<button
 					type="button"
-					class="gradient-text h-12.5 w-12.5 flex flex-col items-center justify-center text-2xl {i === 0
+					class="h-12.5 w-12.5 flex flex-col items-center justify-center text-2xl {i === 0
 						? 'mt-auto'
 						: 'my-1'} hover:scale-115 transition-transform hover:cursor-pointer {currentPath === key
 						? 'active'
@@ -197,7 +197,7 @@
 					title={label}
 					onclick={() => navigateTo(key)}
 				>
-					<i class={icon}></i>
+					<i class="{icon} {keyActive(key)} gradient-text"></i>
 					<span class="display md:hidden">{label}</span>
 				</button>
 				{#if i < footerLinks.length - 1}

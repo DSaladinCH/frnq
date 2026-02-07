@@ -291,6 +291,9 @@
 			hsl(from var(--color-secondary) h s l / 0.3),
 			hsl(from var(--color-accent) h s l / 0.4)
 		);
+		mask: 
+			linear-gradient(#fff 0 0) content-box, 
+			linear-gradient(#fff 0 0);
 		-webkit-mask: 
 			linear-gradient(#fff 0 0) content-box, 
 			linear-gradient(#fff 0 0);

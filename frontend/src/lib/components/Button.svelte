@@ -154,6 +154,9 @@
 			hsl(from var(--btn-bg) h s l / 0.2),
 			hsl(from var(--btn-bg) h s l / 0.3)
 		);
+		mask: 
+			linear-gradient(#fff 0 0) content-box, 
+			linear-gradient(#fff 0 0);
 		-webkit-mask: 
 			linear-gradient(#fff 0 0) content-box, 
 			linear-gradient(#fff 0 0);
