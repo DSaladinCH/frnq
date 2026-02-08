@@ -328,7 +328,7 @@
 	let fadeColor = $derived(
 		chartOption === 'profitOnly' 
 			? '#44223f' 
-			: '#7a2b7d'
+			: '#6b2b67'
 	);
 
 	function updateChartData() {
@@ -359,7 +359,7 @@
 			dataset1.label = 'Total Invested';
 			dataset1.data = groupedSnapshots.map((s) => roundValue(s.totalInvestedCash));
 			dataset1.borderColor = '#7a2b7d';
-			dataset1.backgroundColor = '#7a2b7daa';
+			dataset1.backgroundColor = '#7a2b7d88';
 			dataset1.pointBackgroundColor = '#7a2b7d';
 			dataset1.hidden = false;
 		}
