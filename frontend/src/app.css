@@ -137,7 +137,7 @@
 			hsl(from var(--color-primary) h s l / 0.3),
 			hsl(from var(--color-secondary) h s l / 0.2),
 			hsl(from var(--color-accent) h s l / 0.3));
-	mask: 
+	mask:
 		linear-gradient(#fff 0 0) content-box,
 		linear-gradient(#fff 0 0);
 	-webkit-mask:
@@ -176,31 +176,35 @@ body {
 	min-height: 100vh;
 }
 
-.gradient-text {
-	background: linear-gradient(135deg,
-			hsl(from var(--color-secondary) h s l / 0.8),
-			hsl(from var(--color-accent) h s l / 0.9));
-	background-clip: text;
-	-webkit-background-clip: text;
-	-webkit-text-fill-color: transparent;
-}
+@layer utilities {
+	.gradient-text {
+		background: linear-gradient(135deg,
+				hsl(from var(--color-secondary) h s l / 0.8),
+				hsl(from var(--color-accent) h s l / 0.9));
+		background-clip: text;
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+	}
 
-.gradient-text:hover {
-	background: linear-gradient(135deg,
-			hsl(from var(--color-primary) h s l / 0.9),
-			hsl(from var(--color-secondary) h s l / 0.8));
-	background-clip: text;
-	-webkit-background-clip: text;
-	-webkit-text-fill-color: transparent;
-}
+	.gradient-text:hover,
+	.gradient-text-hover,
+	.group:hover .group-hover\:gradient-text-hover {
+		background: linear-gradient(135deg,
+				hsl(from var(--color-primary) h s l / 0.9),
+				hsl(from var(--color-secondary) h s l / 0.8));
+		background-clip: text;
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+	}
 
-.gradient-text.active {
-	background: linear-gradient(135deg,
-			hsl(from var(--color-primary) h s l / 1),
-			hsl(from var(--color-accent) h s l / 0.9));
-	background-clip: text;
-	-webkit-background-clip: text;
-	-webkit-text-fill-color: transparent;
+	.gradient-text.active {
+		background: linear-gradient(135deg,
+				hsl(from var(--color-primary) h s l / 1),
+				hsl(from var(--color-accent) h s l / 0.9));
+		background-clip: text;
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+	}
 }
 
 /* Chart.js custom tooltip styles */
@@ -318,7 +322,7 @@ body {
 				hsl(from var(--color-primary) h s l / 0.3),
 				hsl(from var(--color-secondary) h s l / 0.2),
 				hsl(from var(--color-accent) h s l / 0.3));
-		mask: 
+		mask:
 			linear-gradient(#fff 0 0) content-box,
 			linear-gradient(#fff 0 0);
 		-webkit-mask:
@@ -466,7 +470,7 @@ body {
 		background: linear-gradient(135deg,
 				hsl(from var(--btn-bg) h s calc(l * 1.4) / 0.4),
 				hsl(from var(--btn-bg) h s calc(l * 0.8) / 0.3));
-		mask: 
+		mask:
 			linear-gradient(#fff 0 0) content-box,
 			linear-gradient(#fff 0 0);
 		-webkit-mask:
