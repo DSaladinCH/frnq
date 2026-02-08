@@ -327,8 +327,8 @@
 	// Dynamic background fade color based on chartOption
 	let fadeColor = $derived(
 		chartOption === 'profitOnly' 
-			? 'rgb(60, 39, 82)' 
-			: 'rgb(42, 85, 108)'
+			? '#44223f' 
+			: '#7a2b7d'
 	);
 
 	function updateChartData() {
@@ -344,23 +344,23 @@
 			// Show total profit (unrealized + realized)
 			dataset0.label = 'Total Profit';
 			dataset0.data = groupedSnapshots.map((s) => roundValue(s.totalProfit));
-			dataset0.borderColor = 'rgba(168,85,247,1)'; // Purple
-			dataset0.backgroundColor = 'rgba(168,85,247,0.25)';
-			dataset0.pointBackgroundColor = 'rgba(168,85,247,1)';
+			dataset0.borderColor = '#c14bac'; // Purple
+			dataset0.backgroundColor = '#c14bac49';
+			dataset0.pointBackgroundColor = '#c14bac';
 			dataset1.hidden = true; // Hide invested line
 		} else {
 			// totalValue: Show total value (position + realized gains) vs total invested
 			dataset0.label = 'Total Value';
 			dataset0.data = groupedSnapshots.map((s) => roundValue(s.currentValue + s.realizedGain));
-			dataset0.borderColor = 'rgba(16,185,129,1)'; // Green
-			dataset0.backgroundColor = 'rgba(16,185,129,0.25)';
-			dataset0.pointBackgroundColor = 'rgba(16,185,129,1)';
+			dataset0.borderColor = '#c14bac'; // Green
+			dataset0.backgroundColor = '#c14bac49';
+			dataset0.pointBackgroundColor = '#c14bac';
 			
 			dataset1.label = 'Total Invested';
 			dataset1.data = groupedSnapshots.map((s) => roundValue(s.totalInvestedCash));
-			dataset1.borderColor = 'rgba(99,102,241,1)';
-			dataset1.backgroundColor = 'rgba(99,102,241,0.35)';
-			dataset1.pointBackgroundColor = 'rgba(99,102,241,1)';
+			dataset1.borderColor = '#7a2b7d';
+			dataset1.backgroundColor = '#7a2b7daa';
+			dataset1.pointBackgroundColor = '#7a2b7d';
 			dataset1.hidden = false;
 		}
 
@@ -572,9 +572,8 @@
 		background: linear-gradient(
 			to bottom,
 			transparent 0px,
-			var(--fade-color) 10px,
-			var(--fade-color) 40%,
-			transparent 100%
+			var(--fade-color) 10%,
+			transparent 20%
 		);
 	}
 </style>

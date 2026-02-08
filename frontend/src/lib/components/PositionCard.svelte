@@ -64,11 +64,6 @@
 >
 	<div class="group-header">
 		<span class="group-title">{@html title}</span>
-		{#if onView && !minimal}
-			<span class="icon-btn view-btn" title={viewLabel} aria-label={viewLabel} tabindex="-1">
-				<i class={isActiveQuote ? 'fa-solid fa-xmark fa-lg' : 'fa-solid fa-chart-line fa-lg'}></i>
-			</span>
-		{/if}
 	</div>
 	{#if !minimal}
 		<div class="group-summary">
@@ -136,6 +131,9 @@
 		align-items: center;
 		justify-content: space-between;
 		min-height: 2.2rem;
+	}
+	.minimal-card .group-header {
+		height: 100%;
 	}
 	.icon-btn {
 		background: none;
