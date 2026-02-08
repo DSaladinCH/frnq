@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { FullAutoFill } from 'svelte/elements';
+	import Input from './Input.svelte';
 
 	let {
 		id = '',
@@ -46,9 +47,7 @@
 	{/if}
 
 	<div class="relative">
-		<input
-			class="textbox grow"
-			style="padding-right: 2.5rem;"
+		<Input
 			{type}
 			{id}
 			{autocomplete}
@@ -57,8 +56,7 @@
 			bind:value
 			{placeholder}
 			{onkeypress}
-			{disabled}
-		/>
+			{disabled} />
 
 		<button
 			type="button"
@@ -72,33 +70,7 @@
 </div>
 
 <style>
-	.textbox,
-	.textbox:-webkit-autofill {
-		display: block;
-		width: 100%;
-		max-width: 100%;
-		border-width: 1px;
-		border-radius: 0.25em;
-		border-style: solid;
-		min-height: 30px;
-		max-height: 50px;
-		padding-left: 10px;
-		padding-right: 10px;
-		margin-top: 5px;
-		margin-bottom: 5px;
-		outline: 0;
-		background-color: var(--color-card);
-		border-color: var(--color-button);
-		color: var(--color-text);
-	}
-
-	.textbox:hover {
-		border-color: var(--color-primary) !important;
-	}
-
-	.textbox:focus,
-	.textbox:-webkit-autofill:focus {
-		box-shadow: none !important;
-		border-color: var(--color-secondary) !important;
+	:global(.textbox) {
+		padding-right: 2.5rem !important;
 	}
 </style>
