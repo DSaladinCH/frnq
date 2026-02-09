@@ -1,7 +1,7 @@
 {
 	"name": "frnq",
 	"private": true,
-	"version": "1.0.2",
+	"version": "1.1.0",
 	"type": "module",
 	"scripts": {
 		"dev": "npm run generate-config && vite dev --open",
