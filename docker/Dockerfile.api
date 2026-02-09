@@ -4,15 +4,15 @@ WORKDIR /src
 
 # Copy csproj and restore dependencies
 COPY backend/frnq-api.csproj ./
-RUN dotnet restore
+RUN dotnet restore frnq-api.csproj
 
 # Copy everything else and build
 COPY backend/ ./
-RUN dotnet build -c Release -o /app/build
+RUN dotnet build frnq-api.csproj -c Release -o /app/build
 
 # Stage 2: Publish
 FROM build AS publish
-RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish frnq-api.csproj -c Release -o /app/publish /p:UseAppHost=false
 
 # Stage 3: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
