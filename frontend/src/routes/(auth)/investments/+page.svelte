@@ -212,7 +212,7 @@
 		/>
 	</div>
 
-	<div class="investments-list grid gap-2 overflow-y-auto py-1 min-h-0 px-4 xs:px-8">
+	<div class="grid gap-2 overflow-y-auto py-1 min-h-0 px-4 xs:px-8">
 		{#each investments as investment}
 			<div class="max-lg:hidden">
 				<InvestmentListItem
@@ -234,7 +234,7 @@
 		{/each}
 		
 		<!-- Infinite scroll component -->
-		<InfiniteScroll 
+		<InfiniteScroll
 			onLoadMore={loadMoreInvestments} 
 			{hasMore} 
 			loading={listLoading}

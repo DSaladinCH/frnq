@@ -4,6 +4,7 @@ using DSaladin.Frnq.Api.Group;
 using DSaladin.Frnq.Api.Investment;
 using DSaladin.Frnq.Api.Position;
 using DSaladin.Frnq.Api.Quote;
+using DSaladin.Frnq.Api.GeneralFee;
 using DSaladin.Frnq.Api.Quote.Providers;
 using DSaladin.Frnq.Api.Result;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -39,6 +40,7 @@ builder.Services.AddScoped<InvestmentManagement>();
 builder.Services.AddScoped<PositionManagement>();
 builder.Services.AddScoped<QuoteManagement>();
 builder.Services.AddScoped<GroupManagement>();
+builder.Services.AddScoped<GeneralFeeManagement>();
 builder.Services.AddScoped<AuthManagement>();
 builder.Services.AddScoped<OidcManagement>();
 

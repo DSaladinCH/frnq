@@ -50,7 +50,7 @@ public static class DataSeeder
 			ProviderId = "yahoo-finance",
 			Symbol = "AAPL",
 			Name = "Apple Inc.",
-			Currency = "USD",
+			Currency = "CHF",
 			ExchangeDisposition = "NasdaqGS",
 			TypeDisposition = "EQUITY"
 		};
@@ -66,7 +66,7 @@ public static class DataSeeder
 			ProviderId = "yahoo-finance",
 			Symbol = "GOOGL",
 			Name = "Alphabet Inc.",
-			Currency = "USD",
+			Currency = "CHF",
 			ExchangeDisposition = "NasdaqGS",
 			TypeDisposition = "EQUITY"
 		};

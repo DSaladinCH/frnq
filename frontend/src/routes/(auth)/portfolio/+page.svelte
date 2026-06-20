@@ -9,7 +9,8 @@
 	// Reactive values that track the store - use $derived for efficiency
 	let snapshots = $derived(dataStore.snapshots);
 	let quotes = $derived(dataStore.quotes);
-	let loading = $derived(dataStore.loading);
+	let groupFeesSummaries = $derived(dataStore.groupFeesSummaries);
+	let overallFees = $derived(dataStore.overallFees);
 
 	// Create quote lookup map for O(1) access
 	let quoteMap = $derived(new Map(quotes.map(q => [q.id, q])));
@@ -78,6 +79,17 @@
 		const quote = quoteMap.get(quoteId);
 		if (!quote) return 'Unknown Quote';
 		return quote.customName ? quote.customName : quote.name;
+	}
+
+	// Helper to get fees for a group
+	function getGroupFees(groupId: string): number {
+		const summary = groupFeesSummaries.find(s => s.groupId?.toString() === groupId);
+		return summary ? summary.totalGeneralFees : 0;
+	}
+
+	// Helper to get portfolio-level fees (fees not assigned to any group)
+	function getPortfolioFees(): number {
+		return overallFees;
 	}
 
 	// State for filtering (use Svelte runes for reactivity)
@@ -323,6 +335,7 @@
 		isActiveQuote?: boolean;
 		viewLabel?: string;
 		profitClass?: string;
+		groupFees?: number;
 	};
 
 	function getCardProps(card: Card): PositionCardProps {
@@ -335,24 +348,27 @@
 				}
 			});
 			const summary = getGroupSummaryLast(filteredQuotes);
-			const profit = summary.totalProfit;
+			const groupFees = getGroupFees(card.groupId);
+			// Only subtract fees when viewing full portfolio (filterMode === 'full')
+			const adjustedProfit = filterMode === 'full' ? summary.totalProfit - groupFees : summary.totalProfit;
 			return {
 				type: 'group',
 				groupName: card.groupName,
 				title: card.groupName,
-				summary,
+				summary: { ...summary, totalProfit: adjustedProfit },
 				onView: () => handleGroupView(card.groupId),
 				isActiveQuote: false,
 				viewLabel: 'Show only this group',
-				profitClass: profit > 0 ? 'profit-positive' : profit < 0 ? 'profit-negative' : ''
+				profitClass: adjustedProfit > 0 ? 'profit-positive' : adjustedProfit < 0 ? 'profit-negative' : '',
+				groupFees: filterMode === 'full' ? groupFees : undefined
 			};
 		} else {
 			const summary = getSummaryFromLastSnapshots(card.snaps);
-			const profit = summary.totalProfit;
+			
 			return {
 				type: 'quote',
 				title: getQuoteDisplayName(card.quoteKey),
-				summary,
+				summary: summary,
 				onView: card.isActiveQuote
 					? card.groupId
 						? handleBackToGroupView
@@ -364,13 +380,60 @@
 						? 'Cancel quote filter'
 						: 'Back to full view'
 					: 'Show only this quote',
-				profitClass: profit > 0 ? 'profit-positive' : profit < 0 ? 'profit-negative' : ''
+				profitClass: summary.totalProfit > 0 ? 'profit-positive' : summary.totalProfit < 0 ? 'profit-negative' : ''
+				// Note: groupFees is intentionally NOT passed - quote cards never show fees
 			};
 		}
 	}
 
 	// Reactive cards array for the template
 	let cards = $derived(getQuoteCards(groupedSnapshots, filterMode, filterGroupId, filterQuoteId, activePositionsCache));
+
+	// Helper to create a card for portfolio-level fees
+	function getPortfolioFeeCard() {
+		if (filterMode === 'full' && overallFees > 0) {
+			return {
+				type: 'portfolio-fee' as const,
+				title: 'Portfolio-Level Fees',
+				fees: overallFees
+			};
+		}
+		return null;
+	}
+
+	// Helper to create a card for group-level fees
+	function getGroupFeeCard() {
+		if (filterMode === 'group' && filterGroupId) {
+			const groupName = groupedSnapshots.groups[filterGroupId]?.name || 'Unknown Group';
+			const groupFees = getGroupFees(filterGroupId);
+			if (groupFees > 0) {
+				return {
+					type: 'group-fee' as const,
+					title: `${groupName} - Fees`,
+					fees: groupFees
+				};
+			}
+		}
+		return null;
+	}
+
+	let portfolioFeeCard = $derived(getPortfolioFeeCard());
+	let groupFeeCard = $derived(getGroupFeeCard());
+
+	// Calculate total fees based on current filter mode
+	let totalFees = $derived.by(() => {
+		if (filterMode === 'quote') {
+			// Quote view: no fees
+			return 0;
+		} else if (filterMode === 'group' && filterGroupId) {
+			// Group view: only group fees for that group
+			return getGroupFees(filterGroupId);
+		} else {
+			// Full view: all fees (group + portfolio)
+			const groupFees = groupFeesSummaries.reduce((sum, gfs) => sum + (gfs.totalGeneralFees ?? 0), 0);
+			return groupFees + (overallFees ?? 0);
+		}
+	});
 </script>
 
 <PageHead title="Portfolio" />
@@ -378,22 +441,63 @@
 {#if snapshots.length === 0}
 	<p>No data available.</p>
 {:else if snapshots.length}
-	<PortfolioChart snapshots={filteredSnapshots} onPeriodChange={handlePeriodChange} />
+	<PortfolioChart snapshots={filteredSnapshots} onPeriodChange={handlePeriodChange} {totalFees} />
 
 	<div
-		class="quote-groups mx-auto mb-3 mt-4 grid w-full grid-cols-[repeat(auto-fit,_minmax(300px,_450px))] justify-center gap-5 px-3 xl:w-4/5"
+		class="quote-groups mx-auto mb-3 mt-4 grid w-full grid-cols-[repeat(auto-fit,minmax(300px,450px))] justify-center gap-5 px-3 xl:w-4/5"
 	>
 		{#if filterMode !== 'full'}
 			<PositionCard
-				type="group"
 				title="<i class='fa-solid fa-arrow-left'></i> Back to full view"
 				summary={{ invested: 0, currentValue: 0, totalValue: 0, realized: 0, totalProfit: 0 }}
 				onView={handleBackToFullView}
-				isActiveQuote={false}
 				viewLabel="Back to full view"
-				profitClass=""
 				minimal={true}
 			/>
+		{/if}
+		{#if portfolioFeeCard}
+			<div
+				class="card card-reactive"
+				role="region"
+				aria-label="Portfolio-Level Fees"
+			>
+				<div class="mb-2 min-h-8.5">
+					<span class="text-xl font-bold"><i class="fa-solid fa-money-bill-transfer mr-2"></i>Portfolio-Level Fees</span>
+				</div>
+				<div class="w-full flex flex-col gap-2">
+					<div class="flex justify-between items-center text-base">
+						<span class="font-medium color-muted">Unassigned Fees:</span>
+						<span class="font-semibold">
+							- {portfolioFeeCard.fees.toLocaleString(undefined, {
+								style: 'currency',
+								currency: 'CHF'
+							})}
+						</span>
+					</div>
+				</div>
+			</div>
+		{/if}
+		{#if groupFeeCard}
+			<div
+				class="card card-reactive"
+				role="region"
+				aria-label={groupFeeCard.title}
+			>
+				<div class="mb-2 min-h-8.5">
+					<span class="text-xl font-bold"><i class="fa-solid fa-money-bill-transfer mr-2"></i>{groupFeeCard.title}</span>
+				</div>
+				<div class="w-full flex flex-col gap-2">
+					<div class="flex justify-between items-center text-base">
+						<span class="font-medium color-muted">Group Fees:</span>
+						<span class="font-semibold">
+							- {groupFeeCard.fees.toLocaleString(undefined, {
+								style: 'currency',
+								currency: 'CHF'
+							})}
+						</span>
+					</div>
+				</div>
+			</div>
 		{/if}
 		{#each cards as card (card.type === 'group' ? `group-${card.groupId}` : card.groupId ? `quote-${card.groupId}-${card.quoteKey}` : `quote-${card.quoteKey}`)}
 			<PositionCard {...getCardProps(card)} />
