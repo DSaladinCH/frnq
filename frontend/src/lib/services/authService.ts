@@ -160,6 +160,23 @@ export async function logout(): Promise<void> {
 }
 
 /**
+ * Refresh the access token if it's missing or already expired/near expiry.
+ * Mobile browsers freeze timers (including scheduleRefresh) while a tab is
+ * backgrounded, so the proactive refresh never fires there - call this when
+ * the tab regains visibility to catch up before any data fetch runs.
+ */
+export async function ensureFreshToken(): Promise<void> {
+	let expiry: number | null = null;
+	expiresAt.subscribe((v) => (expiry = v))();
+
+	if (expiry === null) return;
+
+	if (expiry <= Date.now() + 30_000) {
+		await refreshToken();
+	}
+}
+
+/**
  * Authenticated fetch wrapper
  */
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
@@ -197,7 +214,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
 		// Retry with new token
 		if (!options.headers) options.headers = {};
 		(options.headers as Record<string, string>).Authorization = `Bearer ${refreshedToken}`;
-		res = await fetch(url, options);
+		res = await fetch(getFullUrl(url), options);
 		
 		// If still 401 after refresh, redirect to login
 		if (res.status === 401) {
