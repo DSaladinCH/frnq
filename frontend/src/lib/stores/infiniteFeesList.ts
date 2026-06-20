@@ -44,6 +44,7 @@ export class InfiniteFeesList {
 		this._items = [];
 		this._totalCount = 0;
 		this._hasMore = true;
+		this._loading = false;
 		await this.loadMore();
 	}
 
@@ -84,6 +85,7 @@ export class InfiniteFeesList {
 		this._items = [];
 		this._totalCount = 0;
 		this._hasMore = true;
+		this._loading = false;
 		this.notify();
 	}
 }

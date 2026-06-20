@@ -1,7 +1,5 @@
 <script lang="ts">
 	interface Props {
-		type: 'group' | 'quote';
-		groupName?: string;
 		summary?: {
 			invested: number;
 			currentValue: number;
@@ -13,22 +11,16 @@
 		};
 		title?: string;
 		onView?: (() => void) | null;
-		isActiveQuote?: boolean;
 		viewLabel?: string;
-		profitClass?: string;
 		minimal?: boolean; // new prop for minimal mode (e.g. back card)
 		groupFees?: number; // optional fee amount for the group or portfolio
 	}
 
 	let {
-		type,
-		groupName = '',
 		summary = { invested: 0, currentValue: 0, totalValue: 0, realized: 0, totalProfit: 0 },
 		title = '',
 		onView = null,
-		isActiveQuote = false,
 		viewLabel = '',
-		profitClass = '',
 		minimal = false,
 		groupFees = 0
 	}: Props = $props();

@@ -2,14 +2,13 @@
 	import { tick } from 'svelte';
 	import PortfolioChart from '$lib/components/PortfolioChart.svelte';
 	import PositionCard from '$lib/components/PositionCard.svelte';
-	import { type PositionSnapshot, type GroupFeesSummary } from '$lib/services/positionService';
+	import { type PositionSnapshot } from '$lib/services/positionService';
 	import { dataStore } from '$lib/stores/dataStore';
 	import PageHead from '$lib/components/PageHead.svelte';
 
 	// Reactive values that track the store - use $derived for efficiency
 	let snapshots = $derived(dataStore.snapshots);
 	let quotes = $derived(dataStore.quotes);
-	let loading = $derived(dataStore.loading);
 	let groupFeesSummaries = $derived(dataStore.groupFeesSummaries);
 	let overallFees = $derived(dataStore.overallFees);
 
@@ -366,17 +365,10 @@
 		} else {
 			const summary = getSummaryFromLastSnapshots(card.snaps);
 			
-			// Only subtract fees in full view
-			let adjustedProfit = summary.totalProfit;
-			if (filterMode === 'full') {
-				const fees = card.groupId ? getGroupFees(card.groupId) : getPortfolioFees();
-				adjustedProfit = summary.totalProfit - fees;
-			}
-			
 			return {
 				type: 'quote',
 				title: getQuoteDisplayName(card.quoteKey),
-				summary: { ...summary, totalProfit: adjustedProfit },
+				summary: summary,
 				onView: card.isActiveQuote
 					? card.groupId
 						? handleBackToGroupView
@@ -388,7 +380,7 @@
 						? 'Cancel quote filter'
 						: 'Back to full view'
 					: 'Show only this quote',
-				profitClass: adjustedProfit > 0 ? 'profit-positive' : adjustedProfit < 0 ? 'profit-negative' : ''
+				profitClass: summary.totalProfit > 0 ? 'profit-positive' : summary.totalProfit < 0 ? 'profit-negative' : ''
 				// Note: groupFees is intentionally NOT passed - quote cards never show fees
 			};
 		}
@@ -456,13 +448,10 @@
 	>
 		{#if filterMode !== 'full'}
 			<PositionCard
-				type="group"
 				title="<i class='fa-solid fa-arrow-left'></i> Back to full view"
 				summary={{ invested: 0, currentValue: 0, totalValue: 0, realized: 0, totalProfit: 0 }}
 				onView={handleBackToFullView}
-				isActiveQuote={false}
 				viewLabel="Back to full view"
-				profitClass=""
 				minimal={true}
 			/>
 		{/if}
