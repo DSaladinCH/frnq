@@ -88,6 +88,11 @@ export class InfiniteFeesList {
 		this._loading = false;
 		this.notify();
 	}
+
+	async refresh() {
+		this.reset();
+		await this.loadMore();
+	}
 }
 
 export const infiniteFeesList = new InfiniteFeesList();

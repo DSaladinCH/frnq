@@ -1,23 +1,34 @@
 <script lang="ts">
 	import type { GeneralFeeViewDto } from '$lib/services/positionService';
+	import type { QuoteGroup } from '$lib/Models/QuoteGroup';
 	import Button from './Button.svelte';
 	import { ColorStyle } from '$lib/types/ColorStyle';
 	import { TextSize } from '$lib/types/TextSize';
 	import { ContentWidth } from '$lib/types/ContentSize';
-	import { formatDate, DateFormatType } from '$lib/utils/dateFormat';
+	import { formatDate, DateFormatType, formatDateTime } from '$lib/utils/dateFormat';
 	import { StylePadding } from '$lib/types/StylePadding';
+	import { userPreferences } from '$lib/stores/userPreferences';
 
 	let {
 		fee,
+		groups = [],
 		onEdit,
 		onDelete
 	}: {
 		fee: GeneralFeeViewDto;
+		groups?: QuoteGroup[];
 		onEdit: () => void;
 		onDelete: (event: MouseEvent) => Promise<void>;
 	} = $props();
 
+	let preferences = $state($userPreferences);
 	let isDeleting = $state(false);
+
+	function getGroupName(groupId: number | null): string {
+		if (!groupId) return 'Portfolio-Level';
+		const group = groups.find(g => g.id === groupId);
+		return group?.name || 'Unknown Group';
+	}
 
 	function formatCurrency(value: number): string {
 		return value.toLocaleString(undefined, { style: 'currency', currency: 'CHF' });
@@ -38,9 +49,11 @@
 <button class="btn-fake w-full text-left" onclick={onEdit}>
 	<div class="card card-reactive relative grid grid-cols-[2fr_130px_auto] grid-rows-[auto_1fr] gap-2 text-sm items-center leading-none">
 		<div class="row-1 col-1 color-muted flex items-center gap-2">
-			<span>{formatDate(new Date(fee.date), DateFormatType.English)}</span>
+			<span>{formatDateTime(fee.date, preferences.dateFormat)}</span>
 			<span>•</span>
-			<span>Fee</span>
+			<span class="text-xs uppercase color-accent font-semibold"
+					>{getGroupName(fee.groupId)}</span
+				>
 		</div>
 
 		<div class="row-2 col-1 text-base leading-none">

@@ -5,6 +5,7 @@ import { getInvestments } from '$lib/services/investmentService';
 import { getPositionSnapshots } from '$lib/services/positionService';
 import type { QuoteGroup } from '$lib/Models/QuoteGroup';
 import { getQuoteGroups } from '$lib/services/groupService';
+import { infiniteFeesList } from './infiniteFeesList';
 
 // Simple reactive data store without using runes in TS file
 export class DataStore {
@@ -150,6 +151,7 @@ export class DataStore {
 			const { addInvestment: addInvestmentAPI } = await import('$lib/services/investmentService');
 			await addInvestmentAPI(investment as any);
 			await this.fetchAllData();
+			await infiniteFeesList.refresh();
 		});
 	}
 
@@ -161,6 +163,7 @@ export class DataStore {
 			);
 			await updateInvestmentAPI(investment);
 			await this.fetchAllData();
+			await infiniteFeesList.refresh();
 		});
 	}
 
@@ -171,6 +174,7 @@ export class DataStore {
 			);
 			await deleteInvestmentAPI(investmentId);
 			await this.fetchAllData();
+			await infiniteFeesList.refresh();
 		});
 	}
 

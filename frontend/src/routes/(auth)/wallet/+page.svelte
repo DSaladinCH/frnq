@@ -11,11 +11,25 @@
 	import { ContentWidth } from '$lib/types/ContentSize';
 	import { TextSize } from '$lib/types/TextSize';
 
-	// Use $derived for reactive store values (more efficient than $effect subscription)
-	let quotes = $derived(dataStore.quotes);
-	let snapshots = $derived(dataStore.snapshots);
-	let groups = $derived(dataStore.groups);
-	let secondaryLoading = $derived(dataStore.secondaryLoading);
+	// Use $state for reactive tracking and explicit subscription for reliable updates
+	let quotes = $state(dataStore.quotes);
+	let snapshots = $state(dataStore.snapshots);
+	let groups = $state(dataStore.groups);
+	let secondaryLoading = $state(dataStore.secondaryLoading);
+
+	// Subscribe to store changes for reliable reactivity
+	$effect(() => {
+		const unsubscribeData = dataStore.subscribe(() => {
+			quotes = dataStore.quotes;
+			snapshots = dataStore.snapshots;
+			groups = dataStore.groups;
+			secondaryLoading = dataStore.secondaryLoading;
+		});
+
+		return () => {
+			unsubscribeData();
+		};
+	});
 
 	// Create snapshot lookup map for O(1) access
 	let snapshotMap = $derived.by(() => {

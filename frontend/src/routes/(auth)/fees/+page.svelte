@@ -21,6 +21,7 @@
 	let showFeeDialog = $state(false);
 	let secondaryLoading = $state(dataStore.secondaryLoading);
 	let listLoading = $state(false);
+	let groups = $state(dataStore.groups);
 
 	// Subscribe to both stores
 	let fees = $state<GeneralFeeViewDto[]>([]);
@@ -28,6 +29,7 @@
 	$effect(() => {
 		const unsubscribe1 = dataStore.subscribe(() => {
 			secondaryLoading = dataStore.secondaryLoading;
+			groups = dataStore.groups;
 		});
 
 		const unsubscribe2 = infiniteFeesList.subscribe(() => {
@@ -127,9 +129,10 @@
 				notify.success('Fee updated successfully');
 			}
 
-			// Reset and reload fees
+			// Refresh both the fee list and dataStore snapshots
 			infiniteFeesList.reset();
 			await infiniteFeesList.initialize(25);
+			await dataStore.refreshData();
 			onFeeDialogClose();
 		} catch (error) {
 			notify.error('Error saving fee: ' + error);
@@ -161,9 +164,10 @@
 
 			if (!response.ok) throw new Error('Failed to delete fee');
 
-			// Reset and reload fees
+			// Refresh both the fee list and dataStore snapshots
 			infiniteFeesList.reset();
 			await infiniteFeesList.initialize(25);
+			await dataStore.refreshData();
 			notify.success('Fee deleted successfully');
 		} catch (error) {
 			notify.error('Error deleting fee: ' + error);
@@ -181,7 +185,7 @@
 <div class="flex flex-col h-screen">
 	<div class="px-4 pt-4 xs:px-8 xs:pt-8">
 		<PageTitle title="Fees" icon="fa-solid fa-money-bill-transfer" />
-		<div class="grid w-full max-w-56 grid-cols-1 gap-2">
+		<div class="grid w-full max-w-56 grid-cols-1 gap-2 max-lg:mx-auto">
 			<Button
 				onclick={newFee}
 				text="Add Fee"
@@ -198,6 +202,7 @@
 			<div class="max-lg:hidden">
 				<FeeListItem
 					{fee}
+					{groups}
 					onEdit={() => openFeeDialog(fee)}
 					onDelete={() => deleteFee(fee)}
 				/>
@@ -206,6 +211,7 @@
 			<div class="lg:hidden">
 				<FeeCard
 					{fee}
+					{groups}
 					onEdit={() => openFeeDialog(fee)}
 					onDelete={() => deleteFee(fee)}
 				/>

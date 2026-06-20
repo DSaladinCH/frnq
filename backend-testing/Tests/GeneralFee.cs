@@ -233,6 +233,67 @@ public class GeneralFee : TestBase
 		Assert.Equal(HttpStatusCode.BadRequest, updated.StatusCode);
 	}
 
+	[Fact]
+	public async Task UpdateFee_FromGroupToPortfolioLevel_ClearsGroupId()
+	{
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+		int groupId = GetTestUserGroupId();
+
+		// Create fee with group
+		ApiResponse<GeneralFeeViewDto> created = await ApiInterface.GeneralFees.CreateFee(new GeneralFeeDto
+		{
+			Amount = 50m,
+			Date = ValidDate,
+			Description = "Group Fee",
+			GroupId = groupId
+		});
+		int feeId = created.Value!.Id;
+		Assert.Equal(groupId, created.Value.GroupId);
+
+		// Update to portfolio-level (no group)
+		ApiResponse<GeneralFeeViewDto> updated = await ApiInterface.GeneralFees.UpdateFee(feeId, new GeneralFeeDto
+		{
+			Amount = 50m,
+			Date = ValidDate,
+			Description = "Group Fee",
+			GroupId = null
+		});
+
+		Assert.Equal(HttpStatusCode.OK, updated.StatusCode);
+		Assert.NotNull(updated.Value);
+		Assert.Null(updated.Value.GroupId);
+	}
+
+	[Fact]
+	public async Task UpdateFee_FromPortfolioLevelToGroup_SetsGroupId()
+	{
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+		int groupId = GetTestUserGroupId();
+
+		// Create portfolio-level fee
+		ApiResponse<GeneralFeeViewDto> created = await ApiInterface.GeneralFees.CreateFee(new GeneralFeeDto
+		{
+			Amount = 50m,
+			Date = ValidDate,
+			Description = "Portfolio Fee"
+		});
+		int feeId = created.Value!.Id;
+		Assert.Null(created.Value.GroupId);
+
+		// Update to add group
+		ApiResponse<GeneralFeeViewDto> updated = await ApiInterface.GeneralFees.UpdateFee(feeId, new GeneralFeeDto
+		{
+			Amount = 50m,
+			Date = ValidDate,
+			Description = "Portfolio Fee",
+			GroupId = groupId
+		});
+
+		Assert.Equal(HttpStatusCode.OK, updated.StatusCode);
+		Assert.NotNull(updated.Value);
+		Assert.Equal(groupId, updated.Value.GroupId);
+	}
+
 	// ── Delete ────────────────────────────────────────────────────────────────
 
 	[Fact]

@@ -183,7 +183,7 @@
 <div class="flex flex-col h-screen">
 	<div class="px-4 pt-4 xs:px-8 xs:pt-8">
 		<PageTitle title="Investments" icon="fa-solid fa-coins" />
-		<div class="grid w-full max-w-md grid-cols-2 gap-2">
+		<div class="grid w-full max-w-md grid-cols-2 gap-2 max-lg:mx-auto">
 			<Button
 				onclick={newInvestment}
 				text="Add Investment"

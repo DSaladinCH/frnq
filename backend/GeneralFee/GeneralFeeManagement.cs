@@ -148,14 +148,14 @@ public class GeneralFeeManagement(DatabaseContext databaseContext, AuthManagemen
     }
 
     /// <summary>
-    /// Updates an existing general fee.
+    /// Updates an existing general fee with complete data.
     /// </summary>
     public async Task<GeneralFeeViewDto> UpdateGeneralFeeAsync(
         int feeId,
-        decimal? amount = null,
-        DateTime? date = null,
-        string? description = null,
-        int? groupId = null,
+        decimal amount,
+        DateTime date,
+        string description,
+        int? groupId,
         CancellationToken cancellationToken = default)
     {
         var fee = await databaseContext.GeneralFees
@@ -165,10 +165,10 @@ public class GeneralFeeManagement(DatabaseContext databaseContext, AuthManagemen
             throw new InvalidOperationException("General fee not found or does not belong to current user.");
 
         // Validation: can't update fee to future date
-        if (date.HasValue && date > DateTime.UtcNow)
+        if (date > DateTime.UtcNow)
             throw new InvalidOperationException("General fees cannot have future dates.");
 
-        if (amount.HasValue && amount <= 0)
+        if (amount <= 0)
             throw new InvalidOperationException("General fee amount must be positive.");
 
         // Validate group ownership if groupId is specified and different
@@ -181,17 +181,10 @@ public class GeneralFeeManagement(DatabaseContext databaseContext, AuthManagemen
                 throw new InvalidOperationException("Group not found or does not belong to current user.");
         }
 
-        if (amount.HasValue)
-            fee.Amount = amount.Value;
-
-        if (date.HasValue)
-            fee.Date = DateTime.SpecifyKind(date.Value, DateTimeKind.Utc);
-
-        if (description != null)
-            fee.Description = description;
-
-        if (groupId.HasValue)
-            fee.GroupId = groupId;
+        fee.Amount = amount;
+        fee.Date = DateTime.SpecifyKind(date, DateTimeKind.Utc);
+        fee.Description = description;
+        fee.GroupId = groupId;
 
         databaseContext.GeneralFees.Update(fee);
         await databaseContext.SaveChangesAsync(cancellationToken);
