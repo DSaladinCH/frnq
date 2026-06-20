@@ -12,7 +12,7 @@ const config = {
 			precompress: {
 				brotli: true,
 				gzip: true,
-				files: ['!**/config.js'] // Don't precompress config.js since it's generated at runtime
+				files: ['!client/config.js'] // Don't precompress config.js since it's generated at runtime
 			}
 		})
 	}
