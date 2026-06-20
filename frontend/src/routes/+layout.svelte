@@ -4,7 +4,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { dataStore } from '$lib/stores/dataStore';
-	import { isLoggedIn } from '$lib/services/authService';
+	import { isLoggedIn, ensureFreshToken } from '$lib/services/authService';
 	import NotificationContainer from '$lib/components/NotificationContainer.svelte';
 	import type { Snippet } from 'svelte';
 
@@ -63,6 +63,24 @@
 	let mobileMenuOpen = $state(false);
 
 	// No data initialization in main layout - that's handled by (auth) routes
+
+	// Mobile browsers freeze timers while a tab is backgrounded, so the token's
+	// proactive refresh schedule doesn't fire there. Catch up as soon as the tab
+	// becomes visible again, before any component gets a chance to fetch with a
+	// stale token.
+	onMount(() => {
+		function handleResume() {
+			if (document.visibilityState === 'visible') {
+				ensureFreshToken();
+			}
+		}
+		document.addEventListener('visibilitychange', handleResume);
+		window.addEventListener('pageshow', handleResume);
+		return () => {
+			document.removeEventListener('visibilitychange', handleResume);
+			window.removeEventListener('pageshow', handleResume);
+		};
+	});
 
 	function navigateTo(path: string) {
 		goto(path);
