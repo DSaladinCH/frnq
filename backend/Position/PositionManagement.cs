@@ -2,6 +2,7 @@ using DSaladin.Frnq.Api.Auth;
 using DSaladin.Frnq.Api.Investment;
 using DSaladin.Frnq.Api.Quote;
 using DSaladin.Frnq.Api.Result;
+using DSaladin.Frnq.Api.GeneralFee;
 using Microsoft.EntityFrameworkCore;
 
 namespace DSaladin.Frnq.Api.Position;
@@ -201,10 +202,49 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 			.GroupBy(q => q.Id)
 			.Select(g => g.First())];
 
+		// Load general fees for the requested date range
+		DateTime fromDate = (DateTime)from;
+		DateTime toDate = (DateTime)to;
+		List<GeneralFee.GeneralFeeModel> generalFees = await databaseContext.GeneralFees
+			.AsNoTracking()
+			.Where(f => f.UserId == userId && f.Date >= fromDate && f.Date <= toDate)
+			.Include<GeneralFee.GeneralFeeModel, Group.QuoteGroup>(f => f.Group)
+			.ToListAsync(cancellationToken);
+
+		// Aggregate fees by group and calculate overall fees
+		List<GroupFeesSummaryDto> groupFeesSummaries = [];
+		decimal overallFees = 0;
+
+		// Group fees by GroupId
+		var feesByGroup = generalFees.GroupBy(f => f.GroupId);
+		foreach (var group in feesByGroup)
+		{
+			if (group.Key == null)
+			{
+				// Portfolio-level fees
+				overallFees = group.Sum(f => f.Amount);
+			}
+			else
+			{
+				// Group-level fees
+				var groupModel = group.First().Group;
+				var groupSummary = new GroupFeesSummaryDto
+				{
+					GroupId = group.Key,
+					GroupName = groupModel?.Name ?? string.Empty,
+					TotalGeneralFees = group.Sum(f => f.Amount),
+					FeeDetails = group.Select(f => GeneralFeeViewDto.FromModel(f)).ToList()
+				};
+				groupFeesSummaries.Add(groupSummary);
+			}
+		}
+
 		return ApiResponse.Create(new PositionsResponse
 		{
 			Snapshots = filteredSnapshots,
-			Quotes = [.. uniqueQuotes.Select(QuoteViewDto.FromModel)]
+			Quotes = [.. uniqueQuotes.Select(QuoteViewDto.FromModel)],
+			GroupFeesSummaries = groupFeesSummaries,
+			OverallFees = overallFees
 		}, System.Net.HttpStatusCode.OK);
 	}
 }

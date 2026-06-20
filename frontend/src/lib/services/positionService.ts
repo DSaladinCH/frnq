@@ -18,9 +18,28 @@ export interface PositionSnapshot {
 	totalInvestedCash: number;
 }
 
+export interface GeneralFeeViewDto {
+	id: number;
+	userId: string;
+	date: string;
+	amount: number;
+	description: string;
+	groupId: number | null;
+	createdAt: string;
+}
+
+export interface GroupFeesSummary {
+	groupId: number | null;
+	groupName: string | null;
+	totalGeneralFees: number;
+	feeDetails: GeneralFeeViewDto[];
+}
+
 export interface PositionsResponse {
 	snapshots: PositionSnapshot[];
 	quotes: QuoteModel[];
+	groupFeesSummaries: GroupFeesSummary[];
+	overallFees: number;
 }
 
 export async function getPositionSnapshots(

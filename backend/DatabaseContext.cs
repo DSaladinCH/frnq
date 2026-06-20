@@ -5,6 +5,7 @@ using DSaladin.Frnq.Api.Investment;
 using DSaladin.Frnq.Api.Quote;
 using DSaladin.Frnq.Api.Auth;
 using DSaladin.Frnq.Api.Group;
+using DSaladin.Frnq.Api.GeneralFee;
 
 public class DatabaseContext : DbContext
 {
@@ -16,6 +17,7 @@ public class DatabaseContext : DbContext
     public DbSet<QuoteGroupMapping> QuoteGroupMappings { get; set; } = null!;
     public DbSet<QuoteName> QuoteNames { get; set; } = null!;
     public DbSet<InvestmentModel> Investments { get; set; } = null!;
+    public DbSet<GeneralFee.GeneralFeeModel> GeneralFees { get; set; } = null!;
     public DbSet<UserModel> Users { get; set; } = null!;
     public DbSet<RefreshTokenSession> RefreshTokenSessions { get; set; } = null!;
     public DbSet<OidcProvider> OidcProviders { get; set; } = null!;
@@ -117,6 +119,21 @@ public class DatabaseContext : DbContext
         modelBuilder.Entity<OidcState>()
             .HasIndex(os => os.State)
             .IsUnique();
+
+        // General Fees configuration
+        modelBuilder.Entity<GeneralFeeModel>()
+            .HasOne(gf => gf.User)
+            .WithMany()
+            .HasForeignKey(gf => gf.UserId);
+
+        modelBuilder.Entity<GeneralFeeModel>()
+            .HasOne(gf => gf.Group)
+            .WithMany()
+            .HasForeignKey(gf => gf.GroupId)
+            .IsRequired(false);
+
+        modelBuilder.Entity<GeneralFeeModel>()
+            .HasIndex(gf => new { gf.UserId, gf.Date });
 
         base.OnModelCreating(modelBuilder);
     }

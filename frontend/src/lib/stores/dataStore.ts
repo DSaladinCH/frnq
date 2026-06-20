@@ -1,5 +1,5 @@
 import type { InvestmentModel, PaginatedInvestmentsResponse } from '$lib/services/investmentService';
-import type { PositionSnapshot } from '$lib/services/positionService';
+import type { PositionSnapshot, GroupFeesSummary } from '$lib/services/positionService';
 import type { QuoteModel } from '$lib/Models/QuoteModel';
 import { getInvestments } from '$lib/services/investmentService';
 import { getPositionSnapshots } from '$lib/services/positionService';
@@ -13,6 +13,8 @@ export class DataStore {
 	private _investments: InvestmentModel[] = [];
 	private _investmentsTotalCount = 0;
 	private _groups: QuoteGroup[] = [];
+	private _groupFeesSummaries: GroupFeesSummary[] = [];
+	private _overallFees = 0;
 	private _primaryLoading = true;
 	private _secondaryLoading = false;
 	private _error: string | null = null;
@@ -34,6 +36,12 @@ export class DataStore {
 	}
 	get groups() {
 		return this._groups;
+	}
+	get groupFeesSummaries() {
+		return this._groupFeesSummaries;
+	}
+	get overallFees() {
+		return this._overallFees;
 	}
 	get loading() {
 		return this._primaryLoading || this._secondaryLoading;
@@ -70,6 +78,8 @@ export class DataStore {
 
 		this._snapshots = positionsData.snapshots;
 		this._quotes = positionsData.quotes;
+		this._groupFeesSummaries = positionsData.groupFeesSummaries || [];
+		this._overallFees = positionsData.overallFees || 0;
 		this._investments = investmentsData.items;
 		this._investmentsTotalCount = investmentsData.totalCount;
 		this._groups = groupsData;

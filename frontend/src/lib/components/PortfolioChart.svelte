@@ -5,7 +5,7 @@
 	import PillToggle from './PillToggle.svelte';
 	import DropDown from './DropDown.svelte';
 
-	let { snapshots, onPeriodChange }: { snapshots: PositionSnapshot[], onPeriodChange?: (period: string) => void } = $props();
+	let { snapshots, onPeriodChange, totalFees = 0 }: { snapshots: PositionSnapshot[], onPeriodChange?: (period: string) => void, totalFees?: number } = $props();
 	let canvas: HTMLCanvasElement;
 	let chart: Chart;
 	let tooltipEl: HTMLDivElement;
@@ -272,8 +272,8 @@
 	);
 	let first = $derived(groupedSnapshots.length ? groupedSnapshots[0] : null);
 
-	// Total profit (realized + unrealized)
-	let totalProfit = $derived(latest ? latest.totalProfit : 0);
+	// Total profit (realized + unrealized) minus fees
+	let totalProfit = $derived(latest ? latest.totalProfit - totalFees : -totalFees);
 	
 	// Profit at start of period
 	let startProfit = $derived(first ? first.totalProfit : 0);

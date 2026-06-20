@@ -35,7 +35,7 @@ public class Position : TestBase
 			ProviderId = "yahoo-finance",
 			Symbol = "TEST1",
 			Name = "Test Single Buy",
-			Currency = "USD",
+			Currency = "CHF",
 			ExchangeDisposition = "Test",
 			TypeDisposition = "EQUITY"
 		};
@@ -94,7 +94,7 @@ public class Position : TestBase
 			ProviderId = "yahoo-finance",
 			Symbol = "TEST2",
 			Name = "Test Dividend",
-			Currency = "USD",
+			Currency = "CHF",
 			ExchangeDisposition = "Test",
 			TypeDisposition = "EQUITY"
 		};
@@ -164,7 +164,7 @@ public class Position : TestBase
 			ProviderId = "yahoo-finance",
 			Symbol = "TEST3",
 			Name = "Test FIFO",
-			Currency = "USD",
+			Currency = "CHF",
 			ExchangeDisposition = "Test",
 			TypeDisposition = "EQUITY"
 		};
@@ -246,7 +246,7 @@ public class Position : TestBase
 			ProviderId = "yahoo-finance",
 			Symbol = "TEST4",
 			Name = "Test FIFO Cross Lot",
-			Currency = "USD",
+			Currency = "CHF",
 			ExchangeDisposition = "Test",
 			TypeDisposition = "EQUITY"
 		};
@@ -322,7 +322,7 @@ public class Position : TestBase
 			ProviderId = "yahoo-finance",
 			Symbol = "TEST5",
 			Name = "Test Date Range",
-			Currency = "USD",
+			Currency = "CHF",
 			ExchangeDisposition = "Test",
 			TypeDisposition = "EQUITY"
 		};
@@ -405,7 +405,7 @@ public class Position : TestBase
 			ProviderId = "yahoo-finance",
 			Symbol = "TEST6",
 			Name = "Test Boundaries",
-			Currency = "USD",
+			Currency = "CHF",
 			ExchangeDisposition = "Test",
 			TypeDisposition = "EQUITY"
 		};
@@ -472,7 +472,7 @@ public class Position : TestBase
 			ProviderId = "yahoo-finance",
 			Symbol = "TEST7",
 			Name = "Test Complex",
-			Currency = "USD",
+			Currency = "CHF",
 			ExchangeDisposition = "Test",
 			TypeDisposition = "EQUITY"
 		};
@@ -573,7 +573,7 @@ public class Position : TestBase
 			ProviderId = "yahoo-finance",
 			Symbol = "TEST8",
 			Name = "Test Fee Allocation",
-			Currency = "USD",
+			Currency = "CHF",
 			ExchangeDisposition = "Test",
 			TypeDisposition = "EQUITY"
 		};

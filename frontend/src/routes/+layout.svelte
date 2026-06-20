@@ -33,6 +33,13 @@
 			inFooter: false
 		},
 		{
+			key: '/fees',
+			icon: 'fa-solid fa-money-bill-transfer',
+			label: 'Fees',
+			showWhenLoggedIn: true,
+			inFooter: false
+		},
+		{
 			key: '/settings',
 			icon: 'fa-solid fa-gear',
 			label: 'Settings',

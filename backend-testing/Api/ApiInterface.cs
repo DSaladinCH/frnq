@@ -25,6 +25,7 @@ public class ApiInterface(HttpClient httpClient)
 	public AuthApi Auth => new(httpClient);
 	public InvestmentApi Investments => new(httpClient);
 	public GroupApi Groups => new(httpClient);
+	public GeneralFeeApi GeneralFees => new(httpClient);
 	public PositionApi Positions => new(httpClient);
 	public QuoteApi Quotes => new(httpClient);
 	public AuthExternalLinksApi ExternalLinks => new(httpClient);
@@ -74,6 +75,12 @@ public abstract class BaseApi(HttpClient httpClient)
 	{
 		HttpResponseMessage response = await HttpClient.PutAsJsonAsync(url, request);
 		return await ParseResponse(response);
+	}
+
+	protected async Task<ApiResponse<T>> PutAsync<T, TRequest>(string url, TRequest request)
+	{
+		HttpResponseMessage response = await HttpClient.PutAsJsonAsync(url, request);
+		return await ParseResponse<T>(response);
 	}
 
 	protected async Task<ApiResponse> DeleteAsync(string url)
