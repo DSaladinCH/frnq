@@ -180,8 +180,8 @@ public class Auth : TestBase
 	}
 
 	[Theory]
-	[InlineData(DateFormat.German, "german")] // German format
-	[InlineData(DateFormat.English, "english")] // English format
+	[InlineData(DateFormat.German, "German")] // German format
+	[InlineData(DateFormat.English, "English")] // English format
 	public async Task UpdateCurrentUserValid(DateFormat dateFormat, string expectedFormat)
 	{
 		using AuthenticationScope<UserModel> authScope = await Authenticate();

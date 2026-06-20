@@ -46,7 +46,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 			UserId = user.Id,
 			Email = user.Email,
 			Name = user.Firstname,
-			DateFormat = user.DateFormat.ToString().ToLower()
+			DateFormat = user.DateFormat.ToString()
 		}, System.Net.HttpStatusCode.OK);
 	}
 
