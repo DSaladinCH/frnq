@@ -349,15 +349,15 @@
 			dataset0.pointBackgroundColor = '#c14bac';
 			dataset1.hidden = true; // Hide invested line
 		} else {
-			// totalValue: Show total value (position + realized gains) vs total invested
+			// totalValue: Show current portfolio value vs cost basis of current holdings
 			dataset0.label = 'Total Value';
 			dataset0.data = groupedSnapshots.map((s) => roundValue(s.currentValue + s.realizedGain));
-			dataset0.borderColor = '#c14bac'; // Green
+			dataset0.borderColor = '#c14bac'; // Purple
 			dataset0.backgroundColor = '#c14bac49';
 			dataset0.pointBackgroundColor = '#c14bac';
 			
-			dataset1.label = 'Total Invested';
-			dataset1.data = groupedSnapshots.map((s) => roundValue(s.totalInvestedCash));
+			dataset1.label = 'Cost Basis';
+			dataset1.data = groupedSnapshots.map((s) => roundValue(s.invested));
 			dataset1.borderColor = '#7a2b7d';
 			dataset1.backgroundColor = '#7a2b7d88';
 			dataset1.pointBackgroundColor = '#7a2b7d';
