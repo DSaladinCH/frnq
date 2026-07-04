@@ -98,18 +98,6 @@
 	let filterQuoteId = $state<number | null>(null);
 	let chartPeriod = $state<string>('3m'); // Track the chart's selected period
 
-	// Compute filtered snapshots for the chart
-	function filterLeadingZeroSnapshots(snaps: PositionSnapshot[]): PositionSnapshot[] {
-		// Find the first index where at least one of the values is non-zero
-		const firstNonZeroIdx = snaps.findIndex(
-			(s) =>
-				(s.invested ?? 0) !== 0 ||
-				(s.currentValue ?? 0) !== 0 ||
-				(s.realizedGain ?? 0) !== 0
-		);
-		return firstNonZeroIdx === -1 ? [] : snaps.slice(firstNonZeroIdx);
-	}
-
 	let filteredSnapshots = $derived.by(() => {
 		let snaps: PositionSnapshot[];
 		if (filterMode === 'full') snaps = snapshots;
@@ -120,7 +108,7 @@
 			snaps = snapshots.filter((s) => s.quoteId === filterQuoteId);
 		} else snaps = snapshots;
 		
-		return filterLeadingZeroSnapshots(snaps);
+		return snaps;
 	});
 
 	// UI handlers (update state)
