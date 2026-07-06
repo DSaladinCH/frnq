@@ -22,6 +22,13 @@ public class ForecastManagement(PositionManagement positionManagement, DatabaseC
 		int[] quoteIds = snapshots.Select(s => s.QuoteId).OrderBy(id => id).ToArray();
 		Dictionary<int, decimal> currentValueByQuote = snapshots.ToDictionary(s => s.QuoteId, s => s.CurrentValue);
 
+		// Build QuoteId -> GroupId mapping from the quotes data
+		Dictionary<int, int?> groupByQuote = new();
+		foreach (QuoteViewDto quote in positions.Value.Quotes)
+		{
+			groupByQuote[quote.Id] = quote.Group?.Id;
+		}
+
 		IEnumerable<IQueryable<DateTime>> dateQueries = quoteIds.Select(id => databaseContext.QuotePrices.Where(p => p.QuoteId == id).Select(p => p.Date));
 
 		List<DateTime> commonDates = await dateQueries
@@ -81,6 +88,7 @@ public class ForecastManagement(PositionManagement positionManagement, DatabaseC
 
 		int horizon = 252; // 1 year of trading days
 		// int horizon = 504; // 2 year of trading days
+		// int horizon = 2520; // 10 year of trading days
 		int blockLength = 10; // Length of blocks for bootstrapping
 
 		for (int sim = 0; sim < simulationCount; sim++)
@@ -90,7 +98,7 @@ public class ForecastManagement(PositionManagement positionManagement, DatabaseC
 			allQuoteValues[sim] = valuePath;
 		}
 
-		// Calculate per-quote statistics for each day
+		// Calculate forecasts for all aggregation levels: portfolio, groups, and quotes
 		DateOnly[] forecastDates = new DateOnly[horizon];
 		DateOnly current = DateOnly.FromDateTime(DateTime.UtcNow);
 
@@ -103,44 +111,98 @@ public class ForecastManagement(PositionManagement positionManagement, DatabaseC
 			forecastDates[i] = current;
 		}
 
+		// Get unique groups (including null for ungrouped quotes)
+		HashSet<int?> uniqueGroups = new(groupByQuote.Values);
+
 		List<ForecastDayDto> result = new();
 
 		for (int day = 0; day < horizon; day++)
 		{
-			List<ForecastQuoteDto> quoteForecasts = new();
+			// Compute portfolio total per simulation
+			double[] portfolioValuesPerSim = new double[simulationCount];
+			for (int sim = 0; sim < simulationCount; sim++)
+			{
+				double sum = 0;
+				for (int q = 0; q < quoteIds.Length; q++)
+				{
+					sum += allQuoteValues[sim][day][q];
+				}
+				portfolioValuesPerSim[sim] = sum;
+			}
+			ForecastBand portfolioBand = GetPercentiles(portfolioValuesPerSim);
 
+			// Compute per-group totals per simulation
+			List<ForecastGroupDto> groupForecasts = new();
+			foreach (int? groupId in uniqueGroups)
+			{
+				double[] groupValuesPerSim = new double[simulationCount];
+				for (int sim = 0; sim < simulationCount; sim++)
+				{
+					double sum = 0;
+					for (int q = 0; q < quoteIds.Length; q++)
+					{
+						if (groupByQuote[quoteIds[q]] == groupId)
+						{
+							sum += allQuoteValues[sim][day][q];
+						}
+					}
+					groupValuesPerSim[sim] = sum;
+				}
+				ForecastBand groupBand = GetPercentiles(groupValuesPerSim);
+				groupForecasts.Add(new ForecastGroupDto
+				{
+					GroupId = groupId ?? 0,
+					Band = groupBand
+				});
+			}
+
+			// Compute per-quote percentiles
+			List<ForecastQuoteDto> quoteForecasts = new();
 			for (int q = 0; q < quoteIds.Length; q++)
 			{
-				// Collect values for this quote across all simulations
 				double[] valuesThisQuote = new double[simulationCount];
 				for (int sim = 0; sim < simulationCount; sim++)
 				{
 					valuesThisQuote[sim] = allQuoteValues[sim][day][q];
 				}
-
-				Array.Sort(valuesThisQuote);
-
-				int medianIndex = valuesThisQuote.Length / 2;
-				int lowerIndex = (int)(valuesThisQuote.Length * 0.05);
-				int upperIndex = (int)(valuesThisQuote.Length * 0.95);
-
+				ForecastBand quoteBand = GetPercentiles(valuesThisQuote);
 				quoteForecasts.Add(new ForecastQuoteDto
 				{
 					QuoteId = quoteIds[q],
-					Median = valuesThisQuote[medianIndex],
-					Lower = valuesThisQuote[lowerIndex],
-					Upper = valuesThisQuote[upperIndex]
+					Band = quoteBand
 				});
 			}
 
 			result.Add(new ForecastDayDto
 			{
 				Date = forecastDates[day],
+				Portfolio = portfolioBand,
+				Groups = groupForecasts,
 				Quotes = quoteForecasts
 			});
 		}
 
 		return ApiResponse.Create(result, System.Net.HttpStatusCode.OK);
+	}
+
+	/// <summary>
+	/// Computes percentile bands (median, 5th percentile, 95th percentile) from an array of simulation values.
+	/// </summary>
+	/// <param name="values">Array of values from simulations (sorted or unsorted).</param>
+	/// <returns>A ForecastBand with median, lower (5th percentile), and upper (95th percentile) values.</returns>
+	private static ForecastBand GetPercentiles(double[] values)
+	{
+		Array.Sort(values);
+		int medianIndex = values.Length / 2;
+		int lowerIndex = (int)(values.Length * 0.05);
+		int upperIndex = (int)(values.Length * 0.95);
+
+		return new ForecastBand
+		{
+			Median = values[medianIndex],
+			Lower = values[lowerIndex],
+			Upper = values[upperIndex]
+		};
 	}
 
 	private static double[][] GenerateBootstrapPath(double[][] returnMatrix, int horizon, int blockLength, Random random)

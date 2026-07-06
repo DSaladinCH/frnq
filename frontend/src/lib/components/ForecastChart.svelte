@@ -20,10 +20,10 @@
 		const sorted = [...forecast].sort((a, b) => a.date.localeCompare(b.date));
 
 		const dates = sorted.map((f) => f.date);
-		// Aggregate per-quote values to portfolio totals
-		const medians = sorted.map((day) => day.quotes.reduce((sum, q) => sum + q.median, 0));
-		const lowers = sorted.map((day) => day.quotes.reduce((sum, q) => sum + q.lower, 0));
-		const uppers = sorted.map((day) => day.quotes.reduce((sum, q) => sum + q.upper, 0));
+		// Use pre-computed portfolio values from the backend
+		const medians = sorted.map((day) => day.portfolio.median);
+		const lowers = sorted.map((day) => day.portfolio.lower);
+		const uppers = sorted.map((day) => day.portfolio.upper);
 
 		// Create labels - show month name at first day of each new month
 		const labels = dates.map((date, idx) => {
@@ -130,22 +130,19 @@
 							},
 							label: function (context) {
 								if (context.datasetIndex === 2) {
-									// Portfolio totals (sum of all quotes)
+									// Use pre-computed portfolio values
 									const dayData = sorted[context.dataIndex];
-									const portfolioMedian = dayData.quotes.reduce((sum, q) => sum + q.median, 0);
-									const portfolioLower = dayData.quotes.reduce((sum, q) => sum + q.lower, 0);
-									const portfolioUpper = dayData.quotes.reduce((sum, q) => sum + q.upper, 0);
 									return [
-										`Portfolio Median: ${portfolioMedian.toLocaleString('en-US', {
+										`Portfolio Median: ${dayData.portfolio.median.toLocaleString('en-US', {
 											style: 'currency',
 											currency: 'CHF',
 											maximumFractionDigits: 2
 										})}`,
-										`Range: ${portfolioLower.toLocaleString('en-US', {
+										`Range: ${dayData.portfolio.lower.toLocaleString('en-US', {
 											style: 'currency',
 											currency: 'CHF',
 											maximumFractionDigits: 2
-										})} - ${portfolioUpper.toLocaleString('en-US', {
+										})} - ${dayData.portfolio.upper.toLocaleString('en-US', {
 											style: 'currency',
 											currency: 'CHF',
 											maximumFractionDigits: 2

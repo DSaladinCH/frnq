@@ -1,14 +1,25 @@
 import { fetchWithAuth } from './authService';
 
-export interface ForecastQuoteDto {
-	quoteId: number;
+export interface ForecastBand {
 	median: number;
 	lower: number;
 	upper: number;
 }
 
+export interface ForecastQuoteDto {
+	quoteId: number;
+	band: ForecastBand;
+}
+
+export interface ForecastGroupDto {
+	groupId: number;
+	band: ForecastBand;
+}
+
 export interface ForecastDayDto {
 	date: string;
+	portfolio: ForecastBand;
+	groups: ForecastGroupDto[];
 	quotes: ForecastQuoteDto[];
 }
 

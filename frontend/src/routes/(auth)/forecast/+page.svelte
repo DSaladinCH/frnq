@@ -116,17 +116,63 @@
 		// Map forecast data to only include selected quotes
 		return forecast.map(day => ({
 			date: day.date,
+			portfolio: day.portfolio,
+			groups: day.groups,
 			quotes: (day.quotes ?? []).filter(q => selectedQuoteIds.includes(q.quoteId))
 		}));
 	});
 
 	// Calculate statistics based on filtered forecast
 	let stats = $derived.by(() => {
-		if (filteredForecast.length === 0 || !filteredForecast[0]?.quotes) return null;
+		if (filteredForecast.length === 0) return null;
 
-		const medians = filteredForecast.map((day) => (day.quotes ?? []).reduce((sum, q) => sum + q.median, 0));
-		const lowers = filteredForecast.map((day) => (day.quotes ?? []).reduce((sum, q) => sum + q.lower, 0));
-		const uppers = filteredForecast.map((day) => (day.quotes ?? []).reduce((sum, q) => sum + q.upper, 0));
+		// For statistics, use portfolio for full view, or compute group/quote specific stats
+		let portfolioBands: number[] = [];
+
+		if (filterMode === 'full') {
+			// Full view: use portfolio band
+			portfolioBands = filteredForecast.map((day) => day.portfolio.median);
+		} else if (filterMode === 'group' && filterGroupId) {
+			// Group view: find the group in the forecast and use its band
+			portfolioBands = filteredForecast.map((day) => {
+				const group = day.groups.find(g => g.groupId === parseInt(filterGroupId));
+				return group?.band.median ?? 0;
+			});
+		} else if (filterMode === 'quote' && filterQuoteId != null) {
+			// Quote view: use the quote's band
+			portfolioBands = filteredForecast.map((day) => {
+				const quote = day.quotes.find(q => q.quoteId === filterQuoteId);
+				return quote?.band.median ?? 0;
+			});
+		}
+
+		if (portfolioBands.length === 0) return null;
+
+		const medians = portfolioBands;
+		const lowers = filteredForecast.map((day) => {
+			if (filterMode === 'full') return day.portfolio.lower;
+			if (filterMode === 'group' && filterGroupId) {
+				const group = day.groups.find(g => g.groupId === parseInt(filterGroupId));
+				return group?.band.lower ?? 0;
+			}
+			if (filterMode === 'quote' && filterQuoteId != null) {
+				const quote = day.quotes.find(q => q.quoteId === filterQuoteId);
+				return quote?.band.lower ?? 0;
+			}
+			return 0;
+		});
+		const uppers = filteredForecast.map((day) => {
+			if (filterMode === 'full') return day.portfolio.upper;
+			if (filterMode === 'group' && filterGroupId) {
+				const group = day.groups.find(g => g.groupId === parseInt(filterGroupId));
+				return group?.band.upper ?? 0;
+			}
+			if (filterMode === 'quote' && filterQuoteId != null) {
+				const quote = day.quotes.find(q => q.quoteId === filterQuoteId);
+				return quote?.band.upper ?? 0;
+			}
+			return 0;
+		});
 
 		const latestMedian = medians[medians.length - 1];
 		const firstMedian = medians[0];
@@ -144,22 +190,19 @@
 	});
 
 	// Get the latest quote values for cards
-	function getLatestQuoteValue(quoteId: number): { median: number; lower: number; upper: number } {
+	function getLatestQuoteValue(quoteId: number) {
 		const lastDay = forecast[forecast.length - 1];
 		if (!lastDay || !lastDay.quotes) return { median: 0, lower: 0, upper: 0 };
 		const quote = lastDay.quotes.find(q => q.quoteId === quoteId);
-		return quote ? { median: quote.median, lower: quote.lower, upper: quote.upper } : { median: 0, lower: 0, upper: 0 };
+		return quote ? quote.band : { median: 0, lower: 0, upper: 0 };
 	}
 
-	// Get group average values
-	function getGroupLatestValues(quoteIds: number[]) {
+	// Get group values from the pre-computed response
+	function getGroupLatestValues(groupId: string) {
 		const lastDay = forecast[forecast.length - 1];
-		if (!lastDay || !lastDay.quotes) return { median: 0, lower: 0, upper: 0 };
-		const groupQuotes = lastDay.quotes.filter(q => quoteIds.includes(q.quoteId));
-		const median = groupQuotes.reduce((sum, q) => sum + q.median, 0);
-		const lower = groupQuotes.reduce((sum, q) => sum + q.lower, 0);
-		const upper = groupQuotes.reduce((sum, q) => sum + q.upper, 0);
-		return { median, lower, upper };
+		if (!lastDay || !lastDay.groups) return { median: 0, lower: 0, upper: 0 };
+		const group = lastDay.groups.find(g => g.groupId === parseInt(groupId));
+		return group ? group.band : { median: 0, lower: 0, upper: 0 };
 	}
 
 	interface GroupCard {
@@ -309,7 +352,7 @@
 					</div>
 				</button>
 			{:else if card.type === 'group'}
-				{@const values = getGroupLatestValues(card.quoteIds)}
+				{@const values = getGroupLatestValues(card.groupId)}
 				<button
 					onclick={() => handleGroupView(card.groupId)}
 					class="card card-reactive cursor-pointer hover:opacity-80 transition-opacity text-left"
