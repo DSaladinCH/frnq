@@ -134,8 +134,9 @@
 			portfolioBands = filteredForecast.map((day) => day.portfolio.median);
 		} else if (filterMode === 'group' && filterGroupId) {
 			// Group view: find the group in the forecast and use its band
+			const numGroupId = parseInt(filterGroupId);
 			portfolioBands = filteredForecast.map((day) => {
-				const group = day.groups.find(g => g.groupId === parseInt(filterGroupId));
+				const group = day.groups.find(g => g.groupId === numGroupId);
 				return group?.band.median ?? 0;
 			});
 		} else if (filterMode === 'quote' && filterQuoteId != null) {
@@ -149,10 +150,11 @@
 		if (portfolioBands.length === 0) return null;
 
 		const medians = portfolioBands;
+		const numGroupId = filterGroupId ? parseInt(filterGroupId) : -1;
 		const lowers = filteredForecast.map((day) => {
 			if (filterMode === 'full') return day.portfolio.lower;
 			if (filterMode === 'group' && filterGroupId) {
-				const group = day.groups.find(g => g.groupId === parseInt(filterGroupId));
+				const group = day.groups.find(g => g.groupId === numGroupId);
 				return group?.band.lower ?? 0;
 			}
 			if (filterMode === 'quote' && filterQuoteId != null) {
@@ -164,7 +166,7 @@
 		const uppers = filteredForecast.map((day) => {
 			if (filterMode === 'full') return day.portfolio.upper;
 			if (filterMode === 'group' && filterGroupId) {
-				const group = day.groups.find(g => g.groupId === parseInt(filterGroupId));
+				const group = day.groups.find(g => g.groupId === numGroupId);
 				return group?.band.upper ?? 0;
 			}
 			if (filterMode === 'quote' && filterQuoteId != null) {
@@ -198,10 +200,11 @@
 	}
 
 	// Get group values from the pre-computed response
-	function getGroupLatestValues(groupId: string) {
+	function getGroupLatestValues(groupId: string | null) {
 		const lastDay = forecast[forecast.length - 1];
-		if (!lastDay || !lastDay.groups) return { median: 0, lower: 0, upper: 0 };
-		const group = lastDay.groups.find(g => g.groupId === parseInt(groupId));
+		if (!lastDay || !lastDay.groups || !groupId) return { median: 0, lower: 0, upper: 0 };
+		const numGroupId = parseInt(groupId);
+		const group = lastDay.groups.find(g => g.groupId === numGroupId);
 		return group ? group.band : { median: 0, lower: 0, upper: 0 };
 	}
 

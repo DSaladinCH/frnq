@@ -1,182 +1,249 @@
 using DSaladin.Frnq.Api.Auth;
-using DSaladin.Frnq.Api.Position;
-using DSaladin.Frnq.Api.Quote;
+using DSaladin.Frnq.Api.Investment;
 using DSaladin.Frnq.Api.Result;
 using Microsoft.EntityFrameworkCore;
 
 namespace DSaladin.Frnq.Api.Forecast;
 
-public class ForecastManagement(PositionManagement positionManagement, DatabaseContext databaseContext, AuthManagement authManagement)
+public class ForecastManagement(DatabaseContext databaseContext, AuthManagement authManagement)
 {
-	public async Task<ApiResponse> CreateForecast(CancellationToken cancellationToken = default)
+	public async Task<ApiResponse<List<ForecastDayDto>>> CreateForecast(CancellationToken cancellationToken = default)
 	{
-		ApiResponse<PositionsResponse> positions = await positionManagement.GetPositionsAsync(DateTime.UtcNow, DateTime.UtcNow, cancellationToken);
+		Guid userId = authManagement.GetCurrentUserId();
 
-		if (positions.Failed)
-			return ApiResponse.Create(positions.Code, positions.Description, positions.StatusCode);
-
-		List<PositionSnapshot> snapshots = positions.Value.Snapshots
-			.Where(s => s.Amount > 0)
-			.ToList();
-
-		int[] quoteIds = snapshots.Select(s => s.QuoteId).OrderBy(id => id).ToArray();
-		Dictionary<int, decimal> currentValueByQuote = snapshots.ToDictionary(s => s.QuoteId, s => s.CurrentValue);
-
-		// Build QuoteId -> GroupId mapping from the quotes data
-		Dictionary<int, int?> groupByQuote = new();
-		foreach (QuoteViewDto quote in positions.Value.Quotes)
-		{
-			groupByQuote[quote.Id] = quote.Group?.Id;
-		}
-
-		IEnumerable<IQueryable<DateTime>> dateQueries = quoteIds.Select(id => databaseContext.QuotePrices.Where(p => p.QuoteId == id).Select(p => p.Date));
-
-		List<DateTime> commonDates = await dateQueries
-			.Aggregate((a, b) => a.Intersect(b))
-			.OrderBy(d => d)
-			.ToListAsync(cancellationToken);
-
-		List<QuotePrice> rows = await databaseContext.QuotePrices
-			.Where(p => quoteIds.Contains(p.QuoteId) && commonDates.Contains(p.Date))
-			.ToListAsync(cancellationToken);
-
-		DateTime[] dateOrder = commonDates.OrderBy(d => d).ToArray();
-
-		// Temporary lookup tables for building the price matrix
-		Dictionary<DateTime, int> dateIndex = dateOrder.Select((d, i) => (d, i)).ToDictionary(x => x.d, x => x.i);
-		Dictionary<int, int> quoteIndex = quoteIds.Select((q, i) => (q, i)).ToDictionary(x => x.q, x => x.i);
-
-		double[][] priceMatrix = dateOrder.Select(_ => new double[quoteIds.Length]).ToArray();
-
-		foreach (QuotePrice row in rows)
-		{
-			int r = dateIndex[row.Date];
-			int c = quoteIndex[row.QuoteId];
-			priceMatrix[r][c] = (double)row.AdjustedClose;
-		}
-
-		int rowCount = priceMatrix.Length - 1;
-		int colCount = quoteIds.Length;
-		double[][] returnMatrix = new double[rowCount][];
-
-		// Check for invalid prices (<= 0) in the price matrix (TODO: Handle without exception)
-		for (int i = 0; i < priceMatrix.Length; i++)
-		{
-			for (int c = 0; c < quoteIds.Length; c++)
+		// Get all investments for the user, grouped by quote, calculating net position (buy - sell)
+		var investmentsByQuote = await databaseContext.Investments
+			.AsNoTracking()
+			.Where(i => i.UserId == userId && (i.Type == InvestmentType.Buy || i.Type == InvestmentType.Sell))
+			.GroupBy(i => i.QuoteId)
+			.Select(g => new
 			{
-				if (priceMatrix[i][c] <= 0)
-				{
+				QuoteId = g.Key,
+				TotalAmount = g.Sum(i => i.Type == InvestmentType.Buy ? i.Amount : -i.Amount)
+			})
+			.ToDictionaryAsync(i => i.QuoteId, i => i.TotalAmount, cancellationToken);
+
+		if (investmentsByQuote.Count == 0)
+			return ApiResponse.Create(new List<ForecastDayDto>(), System.Net.HttpStatusCode.OK);
+
+		// Filter out quotes with zero or negative net positions
+		var activePositions = investmentsByQuote.Where(kvp => kvp.Value > 0).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+		
+		if (activePositions.Count == 0)
+			return ApiResponse.Create(new List<ForecastDayDto>(), System.Net.HttpStatusCode.OK);
+
+		int[] quoteIds = activePositions.Keys.OrderBy(id => id).ToArray();
+		int quoteCount = quoteIds.Length;
+
+		// Get latest quote price for each quote and group mappings
+		var quotePriceAndGroupData = await databaseContext.Quotes
+			.AsNoTracking()
+			.Where(q => quoteIds.Contains(q.Id))
+			.Select(q => new
+			{
+				q.Id,
+				GroupId = q.Mappings
+					.Where(m => m.UserId == userId)
+					.Select(m => (int?)m.GroupId)
+					.FirstOrDefault(),
+				LatestPrice = q.Prices
+					.OrderByDescending(p => p.Date)
+					.Select(p => p.AdjustedClose)
+					.FirstOrDefault()
+			})
+			.ToListAsync(cancellationToken);
+
+		// Validate that all quotes have valid price data (not null, zero, or negative)
+		if (quotePriceAndGroupData.Any(q => q.LatestPrice == null || q.LatestPrice <= 0))
+			return ApiResponse.Create("Invalid data", "One or more quotes have invalid price data (null, zero, or negative)", System.Net.HttpStatusCode.BadRequest);
+
+		// Build lookup dictionaries
+		Dictionary<int, decimal> currentValueByQuote = new(quoteCount);
+		Dictionary<int, int?> groupByQuote = new(quoteCount);
+
+		foreach (var quoteData in quotePriceAndGroupData)
+		{
+			decimal totalAmount = activePositions[quoteData.Id];
+			decimal latestPrice = quoteData.LatestPrice ?? 0; // Already validated above
+			currentValueByQuote[quoteData.Id] = totalAmount * latestPrice;
+			groupByQuote[quoteData.Id] = quoteData.GroupId;
+		}
+
+		// --- One DB round trip, no change tracking, projected to only what we need ---
+		var priceRows = await databaseContext.QuotePrices
+			.AsNoTracking()
+			.Where(p => quoteIds.Contains(p.QuoteId))
+			.Select(p => new { p.QuoteId, p.Date, p.AdjustedClose })
+			.ToListAsync(cancellationToken);
+
+		// Common dates = dates that exist for *every* quote. Computed in memory,
+		// which avoids the giant IN clause the old commonDates.Contains(...) produced.
+		DateTime[] dateOrder = priceRows
+			.GroupBy(r => r.Date)
+			.Where(g => g.Select(x => x.QuoteId).Distinct().Count() == quoteCount)
+			.Select(g => g.Key)
+			.OrderBy(d => d)
+			.ToArray();
+
+		int dateCount = dateOrder.Length;
+		// NOTE: if you want to fail gracefully on thin history, guard here
+		// (dateCount < 2 || dateCount - 1 < blockLength) and return an ApiResponse error.
+
+		var dateIndex = new Dictionary<DateTime, int>(dateCount);
+		for (int i = 0; i < dateCount; i++)
+			dateIndex[dateOrder[i]] = i;
+
+		var quoteIndex = new Dictionary<int, int>(quoteCount);
+		for (int i = 0; i < quoteCount; i++)
+			quoteIndex[quoteIds[i]] = i;
+
+		// Price matrix [date][quote]. Rows kept as jagged arrays: cheap to reference
+		// whole rows in the hot loop, allocated once.
+		double[][] priceMatrix = new double[dateCount][];
+		for (int r = 0; r < dateCount; r++)
+			priceMatrix[r] = new double[quoteCount];
+
+		foreach (var row in priceRows)
+		{
+			if (!dateIndex.TryGetValue(row.Date, out int r))
+				continue; // not a common date
+
+			priceMatrix[r][quoteIndex[row.QuoteId]] = (double)row.AdjustedClose;
+		}
+
+		for (int r = 0; r < dateCount; r++)
+			for (int c = 0; c < quoteCount; c++)
+				if (priceMatrix[r][c] <= 0)
 					throw new InvalidOperationException(
-						$"Invalid price {priceMatrix[i][c]} for quote {quoteIds[c]} on {dateOrder[i]:yyyy-MM-dd}");
+						$"Invalid price {priceMatrix[r][c]} for quote {quoteIds[c]} on {dateOrder[r]:yyyy-MM-dd}");
+
+		// Bootstrap on price RATIOS, not log returns. Cumulative product of ratios
+		// == exp(sum of log returns), so we drop every Log() here AND every Exp()
+		// in the hot loop (~10M exp calls gone).
+		int returnCount = dateCount - 1;
+		double[][] ratioMatrix = new double[returnCount][];
+		for (int r = 0; r < returnCount; r++)
+		{
+			double[] rowRatios = new double[quoteCount];
+			for (int c = 0; c < quoteCount; c++)
+				rowRatios[c] = priceMatrix[r + 1][c] / priceMatrix[r][c];
+			ratioMatrix[r] = rowRatios;
+		}
+
+		double[] currentValues = new double[quoteCount];
+		for (int q = 0; q < quoteCount; q++)
+			currentValues[q] = (double)currentValueByQuote[quoteIds[q]];
+
+		// Dense group mapping: quote index -> group slot. Replaces the per-cell
+		// dictionary lookups inside the aggregation.
+		int?[] uniqueGroupIds = groupByQuote.Values.Distinct().ToArray();
+		int groupCount = uniqueGroupIds.Length;
+
+		var groupSlot = new Dictionary<int?, int>(groupCount);
+		for (int i = 0; i < groupCount; i++)
+			groupSlot[uniqueGroupIds[i]] = i;
+
+		int[] groupOfQuote = new int[quoteCount];
+		for (int q = 0; q < quoteCount; q++)
+			groupOfQuote[q] = groupSlot[groupByQuote.GetValueOrDefault(quoteIds[q])];
+
+		const int simulationCount = 2000;
+		const int horizon = 252;   // 1 year of trading days
+		const int blockLength = 10;
+		int returnLen = ratioMatrix.Length;
+
+		// Flat per-series storage, indexed [day * sims + sim] so all sims for a
+		// given (series, day) are contiguous -> percentile extraction is an
+		// in-place Array.Sort on a sub-range, zero temp allocations.
+		int cellCount = horizon * simulationCount;
+		double[] portfolioSeries = new double[cellCount];
+		double[][] groupSeries = new double[groupCount][];
+		for (int g = 0; g < groupCount; g++) groupSeries[g] = new double[cellCount];
+		double[][] quoteSeries = new double[quoteCount][];
+		for (int q = 0; q < quoteCount; q++) quoteSeries[q] = new double[cellCount];
+
+		var parallelOptions = new ParallelOptions { CancellationToken = cancellationToken };
+
+		Parallel.For(
+			0, simulationCount, parallelOptions,
+			// thread-local buffers, allocated once per worker
+			() => (rng: new Random(), running: new double[quoteCount], groupSums: new double[groupCount]),
+			(sim, _, local) =>
+			{
+				var (rng, running, groupSums) = local;
+				Array.Copy(currentValues, running, quoteCount);
+
+				int blockPos = blockLength; // force a fresh block on day 0
+				int startIndex = 0;
+
+				for (int day = 0; day < horizon; day++)
+				{
+					if (blockPos == blockLength)
+					{
+						startIndex = rng.Next(0, returnLen - blockLength + 1);
+						blockPos = 0;
+					}
+
+					double[] dayRatios = ratioMatrix[startIndex + blockPos];
+					blockPos++;
+
+					int idx = day * simulationCount + sim;
+					double portfolioSum = 0;
+					Array.Clear(groupSums, 0, groupCount);
+
+					for (int q = 0; q < quoteCount; q++)
+					{
+						running[q] *= dayRatios[q];          // no Exp()
+						double v = running[q];
+						quoteSeries[q][idx] = v;
+						portfolioSum += v;
+						groupSums[groupOfQuote[q]] += v;     // O(1) bucket, single pass
+					}
+
+					portfolioSeries[idx] = portfolioSum;
+					for (int g = 0; g < groupCount; g++)
+						groupSeries[g][idx] = groupSums[g];
 				}
-			}
-		}
 
-		for (int i = 0; i < rowCount; i++)
-		{
-			returnMatrix[i] = new double[colCount];
+				return local;
+			},
+			_ => { });
 
-			for (int c = 0; c < colCount; c++)
-				returnMatrix[i][c] = Math.Log(priceMatrix[i + 1][c] / priceMatrix[i][c]);
-		}
-
-		double[] currentValues = quoteIds.Select(id => (double)currentValueByQuote[id]).ToArray();
-
-		int simulationCount = 2000;
-		double[][][] allQuoteValues = new double[simulationCount][][]; // [simulation][day][quote]
-		Random random = new Random();
-
-		int horizon = 252; // 1 year of trading days
-		// int horizon = 504; // 2 year of trading days
-		// int horizon = 2520; // 10 year of trading days
-		int blockLength = 10; // Length of blocks for bootstrapping
-
-		for (int sim = 0; sim < simulationCount; sim++)
-		{
-			double[][] bootstrapPath = GenerateBootstrapPath(returnMatrix, horizon, blockLength, random: random);
-			double[][] valuePath = BuildValueTrajectory(currentValues, bootstrapPath);
-			allQuoteValues[sim] = valuePath;
-		}
-
-		// Calculate forecasts for all aggregation levels: portfolio, groups, and quotes
 		DateOnly[] forecastDates = new DateOnly[horizon];
 		DateOnly current = DateOnly.FromDateTime(DateTime.UtcNow);
-
 		for (int i = 0; i < horizon; i++)
 		{
 			current = current.AddDays(1);
-			while (current.DayOfWeek == DayOfWeek.Saturday || current.DayOfWeek == DayOfWeek.Sunday)
+			while (current.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
 				current = current.AddDays(1);
-
 			forecastDates[i] = current;
 		}
 
-		// Get unique groups (including null for ungrouped quotes)
-		HashSet<int?> uniqueGroups = new(groupByQuote.Values);
+		ForecastBand[] portfolioBands = ExtractBands(portfolioSeries, horizon, simulationCount);
 
-		List<ForecastDayDto> result = new();
+		ForecastBand[][] groupBands = new ForecastBand[groupCount][];
+		for (int g = 0; g < groupCount; g++)
+			groupBands[g] = ExtractBands(groupSeries[g], horizon, simulationCount);
 
+		ForecastBand[][] quoteBands = new ForecastBand[quoteCount][];
+		for (int q = 0; q < quoteCount; q++)
+			quoteBands[q] = ExtractBands(quoteSeries[q], horizon, simulationCount);
+
+		List<ForecastDayDto> result = new(horizon);
 		for (int day = 0; day < horizon; day++)
 		{
-			// Compute portfolio total per simulation
-			double[] portfolioValuesPerSim = new double[simulationCount];
-			for (int sim = 0; sim < simulationCount; sim++)
-			{
-				double sum = 0;
-				for (int q = 0; q < quoteIds.Length; q++)
-				{
-					sum += allQuoteValues[sim][day][q];
-				}
-				portfolioValuesPerSim[sim] = sum;
-			}
-			ForecastBand portfolioBand = GetPercentiles(portfolioValuesPerSim);
+			List<ForecastGroupDto> groupForecasts = new(groupCount);
+			for (int g = 0; g < groupCount; g++)
+				groupForecasts.Add(new ForecastGroupDto { GroupId = uniqueGroupIds[g], Band = groupBands[g][day] });
 
-			// Compute per-group totals per simulation
-			List<ForecastGroupDto> groupForecasts = new();
-			foreach (int? groupId in uniqueGroups)
-			{
-				double[] groupValuesPerSim = new double[simulationCount];
-				for (int sim = 0; sim < simulationCount; sim++)
-				{
-					double sum = 0;
-					for (int q = 0; q < quoteIds.Length; q++)
-					{
-						if (groupByQuote[quoteIds[q]] == groupId)
-						{
-							sum += allQuoteValues[sim][day][q];
-						}
-					}
-					groupValuesPerSim[sim] = sum;
-				}
-				ForecastBand groupBand = GetPercentiles(groupValuesPerSim);
-				groupForecasts.Add(new ForecastGroupDto
-				{
-					GroupId = groupId ?? 0,
-					Band = groupBand
-				});
-			}
-
-			// Compute per-quote percentiles
-			List<ForecastQuoteDto> quoteForecasts = new();
-			for (int q = 0; q < quoteIds.Length; q++)
-			{
-				double[] valuesThisQuote = new double[simulationCount];
-				for (int sim = 0; sim < simulationCount; sim++)
-				{
-					valuesThisQuote[sim] = allQuoteValues[sim][day][q];
-				}
-				ForecastBand quoteBand = GetPercentiles(valuesThisQuote);
-				quoteForecasts.Add(new ForecastQuoteDto
-				{
-					QuoteId = quoteIds[q],
-					Band = quoteBand
-				});
-			}
+			List<ForecastQuoteDto> quoteForecasts = new(quoteCount);
+			for (int q = 0; q < quoteCount; q++)
+				quoteForecasts.Add(new ForecastQuoteDto { QuoteId = quoteIds[q], Band = quoteBands[q][day] });
 
 			result.Add(new ForecastDayDto
 			{
 				Date = forecastDates[day],
-				Portfolio = portfolioBand,
+				Portfolio = portfolioBands[day],
 				Groups = groupForecasts,
 				Quotes = quoteForecasts
 			});
@@ -186,65 +253,28 @@ public class ForecastManagement(PositionManagement positionManagement, DatabaseC
 	}
 
 	/// <summary>
-	/// Computes percentile bands (median, 5th percentile, 95th percentile) from an array of simulation values.
+	/// Extracts (5th, 50th, 95th) percentile bands per day from a flat series laid out
+	/// as [day * sims + sim]. Sorts each day-slice in place; no per-day allocation.
 	/// </summary>
-	/// <param name="values">Array of values from simulations (sorted or unsorted).</param>
-	/// <returns>A ForecastBand with median, lower (5th percentile), and upper (95th percentile) values.</returns>
-	private static ForecastBand GetPercentiles(double[] values)
+	private static ForecastBand[] ExtractBands(double[] series, int horizon, int sims)
 	{
-		Array.Sort(values);
-		int medianIndex = values.Length / 2;
-		int lowerIndex = (int)(values.Length * 0.05);
-		int upperIndex = (int)(values.Length * 0.95);
-
-		return new ForecastBand
-		{
-			Median = values[medianIndex],
-			Lower = values[lowerIndex],
-			Upper = values[upperIndex]
-		};
-	}
-
-	private static double[][] GenerateBootstrapPath(double[][] returnMatrix, int horizon, int blockLength, Random random)
-	{
-		double[][] path = new double[horizon][];
-		int filled = 0;
-
-		while (filled < horizon)
-		{
-			int startIndex = random.Next(0, returnMatrix.Length - blockLength + 1);
-			int length = horizon - filled < blockLength ? horizon - filled : blockLength;
-
-			for (int i = 0; i < length; i++)
-			{
-				path[filled + i] = returnMatrix[startIndex + i];
-			}
-
-			filled += length;
-		}
-
-		return path;
-	}
-
-	private static double[][] BuildValueTrajectory(double[] currentValues, double[][] bootstrapPath)
-	{
-		int horizon = bootstrapPath.Length;
-		int quoteCount = currentValues.Length;
-		double[][] valuePath = new double[horizon][];
-
-		double[] runningValues = (double[])currentValues.Clone();
+		var bands = new ForecastBand[horizon];
+		int lowerIdx = (int)(sims * 0.05);
+		int medianIdx = sims / 2;
+		int upperIdx = (int)(sims * 0.95);
 
 		for (int day = 0; day < horizon; day++)
 		{
-			valuePath[day] = new double[quoteCount];
-
-			for (int q = 0; q < quoteCount; q++)
+			int off = day * sims;
+			Array.Sort(series, off, sims);
+			bands[day] = new ForecastBand
 			{
-				runningValues[q] *= Math.Exp(bootstrapPath[day][q]);
-				valuePath[day][q] = runningValues[q];
-			}
+				Lower = series[off + lowerIdx],
+				Median = series[off + medianIdx],
+				Upper = series[off + upperIdx]
+			};
 		}
 
-		return valuePath;
+		return bands;
 	}
 }

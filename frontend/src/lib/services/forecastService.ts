@@ -12,7 +12,7 @@ export interface ForecastQuoteDto {
 }
 
 export interface ForecastGroupDto {
-	groupId: number;
+	groupId: number | null;
 	band: ForecastBand;
 }
 

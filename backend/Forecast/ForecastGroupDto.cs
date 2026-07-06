@@ -6,9 +6,9 @@ namespace DSaladin.Frnq.Api.Forecast;
 public class ForecastGroupDto
 {
 	/// <summary>
-	/// The ID of the group.
+	/// The ID of the group. Null if this is the ungrouped (portfolio-level) forecast.
 	/// </summary>
-	public int GroupId { get; set; }
+	public int? GroupId { get; set; }
 
 	/// <summary>
 	/// The forecast band (median, lower, upper percentiles) for this group.
