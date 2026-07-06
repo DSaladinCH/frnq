@@ -19,6 +19,13 @@
 			inFooter: false
 		},
 		{
+			key: '/forecast',
+			icon: 'fa-solid fa-compass',
+			label: 'Forecast',
+			showWhenLoggedIn: true,
+			inFooter: false
+		},
+		{
 			key: '/investments',
 			icon: 'fa-solid fa-coins',
 			label: 'Investments',

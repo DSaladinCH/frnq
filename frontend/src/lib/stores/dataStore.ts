@@ -6,6 +6,7 @@ import { getPositionSnapshots } from '$lib/services/positionService';
 import type { QuoteGroup } from '$lib/Models/QuoteGroup';
 import { getQuoteGroups } from '$lib/services/groupService';
 import { infiniteFeesList } from './infiniteFeesList';
+import { getForecast, type ForecastDto } from '$lib/services/forecastService';
 
 // Simple reactive data store without using runes in TS file
 export class DataStore {
@@ -16,6 +17,7 @@ export class DataStore {
 	private _groups: QuoteGroup[] = [];
 	private _groupFeesSummaries: GroupFeesSummary[] = [];
 	private _overallFees = 0;
+	private _forecast: ForecastDto[] = [];
 	private _primaryLoading = true;
 	private _secondaryLoading = false;
 	private _error: string | null = null;
@@ -44,6 +46,9 @@ export class DataStore {
 	get overallFees() {
 		return this._overallFees;
 	}
+	get forecast() {
+		return this._forecast;
+	}
 	get loading() {
 		return this._primaryLoading || this._secondaryLoading;
 	}
@@ -71,10 +76,11 @@ export class DataStore {
 	}
 
 	private async fetchAllData() {
-		const [positionsData, investmentsData, groupsData] = await Promise.all([
+		const [positionsData, investmentsData, groupsData, forecastData] = await Promise.all([
 			getPositionSnapshots(null, null),
 			getInvestments(0, 25), // Get all investments for initial load
-			getQuoteGroups()
+			getQuoteGroups(),
+			getForecast()
 		]);
 
 		this._snapshots = positionsData.snapshots;
@@ -84,6 +90,7 @@ export class DataStore {
 		this._investments = investmentsData.items;
 		this._investmentsTotalCount = investmentsData.totalCount;
 		this._groups = groupsData;
+		this._forecast = forecastData;
 		this._error = null;
 		this.notify();
 	}

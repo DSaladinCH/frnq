@@ -15,6 +15,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using DSaladin.Frnq.Api.Forecast;
 
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -37,6 +38,7 @@ builder.Services.AddControllers()
 	});
 	
 builder.Services.AddScoped<InvestmentManagement>();
+builder.Services.AddScoped<ForecastManagement>();
 builder.Services.AddScoped<PositionManagement>();
 builder.Services.AddScoped<QuoteManagement>();
 builder.Services.AddScoped<GroupManagement>();
@@ -117,10 +119,15 @@ builder.Services.AddAuthentication(options =>
 			await ApiResponses.Forbidden403.Response.GetResultAsync(context.Response);
 		},
 
-		OnAuthenticationFailed = async context =>
+		OnAuthenticationFailed = context =>
 		{
-			context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-			await ApiResponses.Unauthorized401.Response.GetResultAsync(context.Response);
+			// Do not write to the response here: this fires for any request with an
+			// invalid/expired token, even on [AllowAnonymous] endpoints (e.g. login,
+			// signup, refresh with a stale JWT still attached). Writing the response
+			// here would race with the endpoint's own response and throw
+			// "Headers are read-only, response has already started."
+			// OnChallenge handles the 401 for endpoints that actually require auth.
+			return Task.CompletedTask;
 		}
 	};
 });
