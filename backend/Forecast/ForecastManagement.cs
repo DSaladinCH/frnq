@@ -7,6 +7,10 @@ namespace DSaladin.Frnq.Api.Forecast;
 
 public class ForecastManagement(DatabaseContext databaseContext, AuthManagement authManagement)
 {
+	private const int simulationCount = 2000;
+	private const int horizon = 252;   // 1 year of trading days
+	private const int blockLength = 10;
+
 	public async Task<ApiResponse<List<ForecastDayDto>>> CreateForecast(CancellationToken cancellationToken = default)
 	{
 		Guid userId = authManagement.GetCurrentUserId();
@@ -28,7 +32,7 @@ public class ForecastManagement(DatabaseContext databaseContext, AuthManagement 
 
 		// Filter out quotes with zero or negative net positions
 		var activePositions = investmentsByQuote.Where(kvp => kvp.Value > 0).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-		
+
 		if (activePositions.Count == 0)
 			return ApiResponse.Create(new List<ForecastDayDto>(), System.Net.HttpStatusCode.OK);
 
@@ -86,8 +90,20 @@ public class ForecastManagement(DatabaseContext databaseContext, AuthManagement 
 			.ToArray();
 
 		int dateCount = dateOrder.Length;
-		// NOTE: if you want to fail gracefully on thin history, guard here
-		// (dateCount < 2 || dateCount - 1 < blockLength) and return an ApiResponse error.
+
+		if (dateCount < 2)
+			return ApiResponse.Create(
+				"Insufficient data",
+				"Not enough overlapping price history across the selected quotes to build a forecast.",
+				System.Net.HttpStatusCode.BadRequest);
+
+		int returnCount = dateCount - 1;
+
+		if (returnCount < blockLength)
+			return ApiResponse.Create(
+				"Insufficient data",
+				$"Only {returnCount} days of overlapping return history available, but a block length of {blockLength} is required. Add more price history or reduce the block length.",
+				System.Net.HttpStatusCode.BadRequest);
 
 		var dateIndex = new Dictionary<DateTime, int>(dateCount);
 		for (int i = 0; i < dateCount; i++)
@@ -96,6 +112,8 @@ public class ForecastManagement(DatabaseContext databaseContext, AuthManagement 
 		var quoteIndex = new Dictionary<int, int>(quoteCount);
 		for (int i = 0; i < quoteCount; i++)
 			quoteIndex[quoteIds[i]] = i;
+
+
 
 		// Price matrix [date][quote]. Rows kept as jagged arrays: cheap to reference
 		// whole rows in the hot loop, allocated once.
@@ -120,7 +138,6 @@ public class ForecastManagement(DatabaseContext databaseContext, AuthManagement 
 		// Bootstrap on price RATIOS, not log returns. Cumulative product of ratios
 		// == exp(sum of log returns), so we drop every Log() here AND every Exp()
 		// in the hot loop (~10M exp calls gone).
-		int returnCount = dateCount - 1;
 		double[][] ratioMatrix = new double[returnCount][];
 		for (int r = 0; r < returnCount; r++)
 		{
@@ -147,9 +164,6 @@ public class ForecastManagement(DatabaseContext databaseContext, AuthManagement 
 		for (int q = 0; q < quoteCount; q++)
 			groupOfQuote[q] = groupSlot[groupByQuote.GetValueOrDefault(quoteIds[q])];
 
-		const int simulationCount = 2000;
-		const int horizon = 252;   // 1 year of trading days
-		const int blockLength = 10;
 		int returnLen = ratioMatrix.Length;
 
 		// Flat per-series storage, indexed [day * sims + sim] so all sims for a
