@@ -1,13 +1,18 @@
 import { fetchWithAuth } from './authService';
 
-export interface ForecastDto {
-	date: string;
+export interface ForecastQuoteDto {
+	quoteId: number;
 	median: number;
 	lower: number;
 	upper: number;
 }
 
-export async function getForecast(): Promise<ForecastDto[]> {
+export interface ForecastDayDto {
+	date: string;
+	quotes: ForecastQuoteDto[];
+}
+
+export async function getForecast(): Promise<ForecastDayDto[]> {
 	const response = await fetchWithAuth('api/forecast');
 
 	if (!response.ok) {

@@ -1,26 +1,29 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Chart from 'chart.js/auto';
-	import type { ForecastDto } from '../services/forecastService';
+	import type { ForecastDayDto } from '../services/forecastService';
 
-	let { forecast = [] }: { forecast: ForecastDto[] } = $props();
+	let { forecast = [] }: { forecast: ForecastDayDto[] } = $props();
 	let canvas: HTMLCanvasElement;
 	let chart: Chart;
 	let isMobile = false;
 
-	onMount(() => {
-		// Detect mobile
-		isMobile = window.innerWidth < 768;
-
+	function initializeChart() {
 		if (!canvas || forecast.length === 0) return;
+
+		// Destroy existing chart if it exists
+		if (chart) {
+			chart.destroy();
+		}
 
 		// Sort by date to ensure proper order
 		const sorted = [...forecast].sort((a, b) => a.date.localeCompare(b.date));
 
 		const dates = sorted.map((f) => f.date);
-		const medians = sorted.map((f) => f.median);
-		const lowers = sorted.map((f) => f.lower);
-		const uppers = sorted.map((f) => f.upper);
+		// Aggregate per-quote values to portfolio totals
+		const medians = sorted.map((day) => day.quotes.reduce((sum, q) => sum + q.median, 0));
+		const lowers = sorted.map((day) => day.quotes.reduce((sum, q) => sum + q.lower, 0));
+		const uppers = sorted.map((day) => day.quotes.reduce((sum, q) => sum + q.upper, 0));
 
 		// Create labels - show month name at first day of each new month
 		const labels = dates.map((date, idx) => {
@@ -127,19 +130,22 @@
 							},
 							label: function (context) {
 								if (context.datasetIndex === 2) {
-									// Median value
-									const value = sorted[context.dataIndex];
+									// Portfolio totals (sum of all quotes)
+									const dayData = sorted[context.dataIndex];
+									const portfolioMedian = dayData.quotes.reduce((sum, q) => sum + q.median, 0);
+									const portfolioLower = dayData.quotes.reduce((sum, q) => sum + q.lower, 0);
+									const portfolioUpper = dayData.quotes.reduce((sum, q) => sum + q.upper, 0);
 									return [
-										`Median: ${value.median.toLocaleString('en-US', {
+										`Portfolio Median: ${portfolioMedian.toLocaleString('en-US', {
 											style: 'currency',
 											currency: 'CHF',
 											maximumFractionDigits: 2
 										})}`,
-										`Range: ${value.lower.toLocaleString('en-US', {
+										`Range: ${portfolioLower.toLocaleString('en-US', {
 											style: 'currency',
 											currency: 'CHF',
 											maximumFractionDigits: 2
-										})} - ${value.upper.toLocaleString('en-US', {
+										})} - ${portfolioUpper.toLocaleString('en-US', {
 											style: 'currency',
 											currency: 'CHF',
 											maximumFractionDigits: 2
@@ -196,6 +202,11 @@
 				}
 			}
 		});
+	}
+
+	onMount(() => {
+		// Detect mobile
+		isMobile = window.innerWidth < 768;
 
 		// Handle window resize
 		const handleResize = () => {
@@ -212,6 +223,13 @@
 			window.removeEventListener('resize', handleResize);
 			chart?.destroy();
 		};
+	});
+
+	// Reactively update chart when forecast changes
+	$effect(() => {
+		if (canvas) {
+			initializeChart();
+		}
 	});
 </script>
 

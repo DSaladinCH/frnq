@@ -76,7 +76,7 @@ public class ForecastManagement(PositionManagement positionManagement, DatabaseC
 		double[] currentValues = quoteIds.Select(id => (double)currentValueByQuote[id]).ToArray();
 
 		int simulationCount = 2000;
-		double[][] allTotals = new double[simulationCount][];
+		double[][][] allQuoteValues = new double[simulationCount][][]; // [simulation][day][quote]
 		Random random = new Random();
 
 		int horizon = 252; // 1 year of trading days
@@ -87,27 +87,10 @@ public class ForecastManagement(PositionManagement positionManagement, DatabaseC
 		{
 			double[][] bootstrapPath = GenerateBootstrapPath(returnMatrix, horizon, blockLength, random: random);
 			double[][] valuePath = BuildValueTrajectory(currentValues, bootstrapPath);
-
-			allTotals[sim] = valuePath.Select(dayValues => dayValues.Sum()).ToArray();
+			allQuoteValues[sim] = valuePath;
 		}
 
-		double[] medianByDay = new double[horizon];
-		double[] lowerByDay = new double[horizon];
-		double[] upperByDay = new double[horizon];
-
-		for (int day = 0; day < horizon; day++)
-		{
-			double[] valuesThisDay = allTotals.Select(sim => sim[day]).OrderBy(v => v).ToArray();
-
-			int medianIndex = valuesThisDay.Length / 2;
-			int lowerIndex = (int)(valuesThisDay.Length * 0.05);
-			int upperIndex = (int)(valuesThisDay.Length * 0.95);
-
-			medianByDay[day] = valuesThisDay[medianIndex];
-			lowerByDay[day] = valuesThisDay[lowerIndex];
-			upperByDay[day] = valuesThisDay[upperIndex];
-		}
-
+		// Calculate per-quote statistics for each day
 		DateOnly[] forecastDates = new DateOnly[horizon];
 		DateOnly current = DateOnly.FromDateTime(DateTime.UtcNow);
 
@@ -120,15 +103,42 @@ public class ForecastManagement(PositionManagement positionManagement, DatabaseC
 			forecastDates[i] = current;
 		}
 
-		List<ForecastDto> result = Enumerable.Range(0, horizon)
-			.Select(day => new ForecastDto
+		List<ForecastDayDto> result = new();
+
+		for (int day = 0; day < horizon; day++)
+		{
+			List<ForecastQuoteDto> quoteForecasts = new();
+
+			for (int q = 0; q < quoteIds.Length; q++)
+			{
+				// Collect values for this quote across all simulations
+				double[] valuesThisQuote = new double[simulationCount];
+				for (int sim = 0; sim < simulationCount; sim++)
+				{
+					valuesThisQuote[sim] = allQuoteValues[sim][day][q];
+				}
+
+				Array.Sort(valuesThisQuote);
+
+				int medianIndex = valuesThisQuote.Length / 2;
+				int lowerIndex = (int)(valuesThisQuote.Length * 0.05);
+				int upperIndex = (int)(valuesThisQuote.Length * 0.95);
+
+				quoteForecasts.Add(new ForecastQuoteDto
+				{
+					QuoteId = quoteIds[q],
+					Median = valuesThisQuote[medianIndex],
+					Lower = valuesThisQuote[lowerIndex],
+					Upper = valuesThisQuote[upperIndex]
+				});
+			}
+
+			result.Add(new ForecastDayDto
 			{
 				Date = forecastDates[day],
-				Median = medianByDay[day],
-				Lower = lowerByDay[day],
-				Upper = upperByDay[day]
-			})
-			.ToList();
+				Quotes = quoteForecasts
+			});
+		}
 
 		return ApiResponse.Create(result, System.Net.HttpStatusCode.OK);
 	}

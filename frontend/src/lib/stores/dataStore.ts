@@ -6,7 +6,7 @@ import { getPositionSnapshots } from '$lib/services/positionService';
 import type { QuoteGroup } from '$lib/Models/QuoteGroup';
 import { getQuoteGroups } from '$lib/services/groupService';
 import { infiniteFeesList } from './infiniteFeesList';
-import { getForecast, type ForecastDto } from '$lib/services/forecastService';
+import { getForecast, type ForecastDayDto } from '$lib/services/forecastService';
 
 // Simple reactive data store without using runes in TS file
 export class DataStore {
@@ -17,7 +17,7 @@ export class DataStore {
 	private _groups: QuoteGroup[] = [];
 	private _groupFeesSummaries: GroupFeesSummary[] = [];
 	private _overallFees = 0;
-	private _forecast: ForecastDto[] = [];
+	private _forecast: ForecastDayDto[] = [];
 	private _primaryLoading = true;
 	private _secondaryLoading = false;
 	private _error: string | null = null;
