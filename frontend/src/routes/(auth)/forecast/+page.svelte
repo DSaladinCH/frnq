@@ -361,7 +361,7 @@
 					class="card card-reactive cursor-pointer hover:opacity-80 transition-opacity text-left"
 				>
 					<div class="flex items-start justify-between mb-4">
-						<h3 class="text-base font-semibold">{card.groupName}</h3>
+						<h3 class="font-bold text-xl">{card.groupName}</h3>
 					</div>
 					<div class="space-y-2">
 						<div class="flex max-xs:flex-col justify-between text-sm">
