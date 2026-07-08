@@ -101,7 +101,8 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 			Type = investmentRequest.Type,
 			Amount = investmentRequest.Amount,
 			PricePerUnit = investmentRequest.PricePerUnit,
-			TotalFees = investmentRequest.TotalFees
+			TotalFees = investmentRequest.TotalFees,
+			ExcludeFromForecast = investmentRequest.ExcludeFromForecast
 		};
 
 		await databaseContext.Investments.AddAsync(investment, cancellationToken);
@@ -135,7 +136,8 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 				Type = investmentRequest.Type,
 				Amount = investmentRequest.Amount,
 				PricePerUnit = investmentRequest.PricePerUnit,
-				TotalFees = investmentRequest.TotalFees
+				TotalFees = investmentRequest.TotalFees,
+				ExcludeFromForecast = investmentRequest.ExcludeFromForecast
 			};
 
 			investments.Add(investment);
@@ -174,6 +176,7 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 		investment.Amount = investmentRequest.Amount;
 		investment.PricePerUnit = investmentRequest.PricePerUnit;
 		investment.TotalFees = investmentRequest.TotalFees;
+		investment.ExcludeFromForecast = investmentRequest.ExcludeFromForecast;
 
 		databaseContext.Investments.Update(investment);
 		await databaseContext.SaveChangesAsync(cancellationToken);

@@ -12,8 +12,9 @@ public class ForecastController(ForecastManagement forecastManagement) : Control
 	[HttpGet]
 	[ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
 	public async Task<ApiResponse> GetForecast(
+		[FromQuery] bool includeContributions = false,
 		CancellationToken cancellationToken = default)
 	{
-		return await forecastManagement.CreateForecast();
+		return await forecastManagement.CreateForecast(includeContributions, cancellationToken);
 	}
 }

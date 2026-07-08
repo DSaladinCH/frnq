@@ -12,6 +12,7 @@
 	import { ContentWidth } from '$lib/types/ContentSize';
 	import { notify } from '$lib/services/notificationService';
 	import { StylePadding } from '$lib/types/StylePadding';
+	import PillToggle from './PillToggle.svelte';
 
 	type InvestmentTypeIcon = { type: InvestmentType; faIcon: string };
 	let isLoading = $state(false);
@@ -26,6 +27,7 @@
 			pricePerUnit: 0,
 			amount: 0,
 			totalFees: 0,
+			excludeFromForecast: false,
 			date: getLocalDateTimeString(new Date())
 		}),
 		quote = $bindable(null),
@@ -122,14 +124,14 @@
 	</div>
 
 	<div>
-		<label for="quote-search" class="mb-2 block text-lg font-bold">Quote</label>
+		<label for="quote-search" class="mb-1 block text-lg font-bold leading-none">Quote</label>
 		<SearchableDropDown
 			bind:selectedQuote={quote}
 			placeholder="Search for a quote (e.g., Apple, AAPL)..."
 		/>
 	</div>
 
-	<div class="xs:grid-cols-2 xs:gap-3 grid grid-cols-1 gap-1 sm:grid-cols-3">
+	<div class="xs:grid-cols-2 grid grid-cols-1 gap-4 sm:grid-cols-3">
 		<div class="flex flex-col {investment.type === InvestmentType.Dividend ? 'hidden' : ''}">
 			<Input
 				title="Market"
@@ -169,9 +171,24 @@
 				bind:value={investment.date}
 			/>
 		</div>
+		<div
+			class="flex flex-col items-start justify-center {investment.type === InvestmentType.Buy
+				? ''
+				: 'hidden'}"
+		>
+			<PillToggle
+				title="Forecast"
+				options={[
+					{ label: 'Exclude', value: 'exclude' },
+					{ label: 'Include', value: 'include' }
+				]}
+				selected={investment.excludeFromForecast ? 'exclude' : 'include'}
+				onSelect={(value) => (investment.excludeFromForecast = value === 'exclude')}
+			/>
+		</div>
 		<!-- Empty placeholder -->
 		<div
-			class="xs:max-sm:hidden {investment.type === InvestmentType.Dividend ? 'hidden' : ''}"
+			class="max-sm:hidden {investment.type === InvestmentType.Sell ? '' : 'hidden'}"
 		></div>
 		<div class="flex flex-col">
 			<span class="text-lg font-bold">Total</span>

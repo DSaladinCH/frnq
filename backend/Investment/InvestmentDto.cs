@@ -25,4 +25,6 @@ public class InvestmentDto
 
 	[MinValue(0)]
 	public required decimal TotalFees { get; set; }
+
+	public bool ExcludeFromForecast { get; set; } = false;
 }

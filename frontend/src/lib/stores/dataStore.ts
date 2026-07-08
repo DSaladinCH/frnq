@@ -75,12 +75,21 @@ export class DataStore {
 		this._listeners.forEach((listener) => listener());
 	}
 
-	private async fetchAllData() {
+	private getSavedForecastType(): boolean {
+		try {
+			const saved = localStorage.getItem('forecastChart.selectedType');
+			return saved === 'predict';
+		} catch {
+			return false; // Default to false if localStorage is unavailable
+		}
+	}
+
+	private async fetchAllData(includeContributions: boolean = false) {
 		const [positionsData, investmentsData, groupsData, forecastData] = await Promise.all([
 			getPositionSnapshots(null, null),
 			getInvestments(0, 25), // Get all investments for initial load
 			getQuoteGroups(),
-			getForecast()
+			getForecast(includeContributions)
 		]);
 
 		this._snapshots = positionsData.snapshots;
@@ -124,7 +133,8 @@ export class DataStore {
 		this.notify();
 
 		try {
-			await this.fetchAllData();
+			const includeContributions = this.getSavedForecastType();
+			await this.fetchAllData(includeContributions);
 			this._initialized = true;
 		} catch (e) {
 			this._error = (e as Error).message;
@@ -242,6 +252,14 @@ export class DataStore {
 			);
 			await removeCustomQuoteNameAPI(quoteId);
 			await this.fetchAllData();
+		});
+	}
+
+	// Method to refresh forecast data with optional includeContributions parameter
+	async refreshForecast(includeContributions: boolean = false) {
+		await this.runWithSecondaryLoading(async () => {
+			const forecastData = await getForecast(includeContributions);
+			this._forecast = forecastData;
 		});
 	}
 }

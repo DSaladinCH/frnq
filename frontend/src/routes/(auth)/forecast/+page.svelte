@@ -1,14 +1,26 @@
 <script lang="ts">
-	import { tick } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import PageHead from '$lib/components/PageHead.svelte';
 	import ForecastChart from '$lib/components/ForecastChart.svelte';
-	import { type ForecastDayDto, type ForecastQuoteDto } from '$lib/services/forecastService';
 	import { dataStore } from '$lib/stores/dataStore';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 
 	// Reactive values that track the store
-	let forecast = $derived(dataStore.forecast);
-	let quotes = $derived(dataStore.quotes);
+	let forecast = $state(dataStore.forecast);
+	let quotes = $state(dataStore.quotes);
+	let secondaryLoading = $state(dataStore.secondaryLoading);
+
+	$effect(() => {
+		const unsubscribe = dataStore.subscribe(() => {
+			secondaryLoading = dataStore.secondaryLoading;
+			forecast = dataStore.forecast;
+			quotes = dataStore.quotes;
+		});
+
+		return () => {
+			unsubscribe();
+		};
+	});
 
 	// Extract quote IDs that are actually in the forecast
 	let quotesInForecast = $derived.by(() => {
@@ -25,7 +37,7 @@
 	});
 
 	// Create quote lookup map for O(1) access
-	let quoteMap = $derived(new Map(quotes.map(q => [q.id, q])));
+	let quoteMap = $derived(new Map(quotes.map((q) => [q.id, q])));
 
 	// Group quotes by group, then by quoteId - only for quotes that are in the forecast
 	let groupedQuotes = $derived.by(() => {
@@ -96,6 +108,17 @@
 		tick();
 	}
 
+	// Handle forecast type change (with/without contributions)
+	async function handleTypeChange(forecastType: string) {
+		const includeContributions = forecastType === 'predict';
+		try {
+			// Let the store fetch and update the forecast data
+			await dataStore.refreshForecast(includeContributions);
+		} catch (error) {
+			console.error('Failed to fetch forecast:', error);
+		}
+	}
+
 	// Filter forecast data based on selected quotes
 	let filteredForecast = $derived.by(() => {
 		if (forecast.length === 0) return [];
@@ -114,11 +137,11 @@
 		}
 
 		// Map forecast data to only include selected quotes
-		return forecast.map(day => ({
+		return forecast.map((day) => ({
 			date: day.date,
 			portfolio: day.portfolio,
 			groups: day.groups,
-			quotes: (day.quotes ?? []).filter(q => selectedQuoteIds.includes(q.quoteId))
+			quotes: (day.quotes ?? []).filter((q) => selectedQuoteIds.includes(q.quoteId))
 		}));
 	});
 
@@ -136,13 +159,13 @@
 			// Group view: find the group in the forecast and use its band
 			const numGroupId = parseInt(filterGroupId);
 			portfolioBands = filteredForecast.map((day) => {
-				const group = day.groups.find(g => g.groupId === numGroupId);
+				const group = day.groups.find((g) => g.groupId === numGroupId);
 				return group?.band.median ?? 0;
 			});
 		} else if (filterMode === 'quote' && filterQuoteId != null) {
 			// Quote view: use the quote's band
 			portfolioBands = filteredForecast.map((day) => {
-				const quote = day.quotes.find(q => q.quoteId === filterQuoteId);
+				const quote = day.quotes.find((q) => q.quoteId === filterQuoteId);
 				return quote?.band.median ?? 0;
 			});
 		}
@@ -154,11 +177,11 @@
 		const lowers = filteredForecast.map((day) => {
 			if (filterMode === 'full') return day.portfolio.lower;
 			if (filterMode === 'group' && filterGroupId) {
-				const group = day.groups.find(g => g.groupId === numGroupId);
+				const group = day.groups.find((g) => g.groupId === numGroupId);
 				return group?.band.lower ?? 0;
 			}
 			if (filterMode === 'quote' && filterQuoteId != null) {
-				const quote = day.quotes.find(q => q.quoteId === filterQuoteId);
+				const quote = day.quotes.find((q) => q.quoteId === filterQuoteId);
 				return quote?.band.lower ?? 0;
 			}
 			return 0;
@@ -166,25 +189,27 @@
 		const uppers = filteredForecast.map((day) => {
 			if (filterMode === 'full') return day.portfolio.upper;
 			if (filterMode === 'group' && filterGroupId) {
-				const group = day.groups.find(g => g.groupId === numGroupId);
+				const group = day.groups.find((g) => g.groupId === numGroupId);
 				return group?.band.upper ?? 0;
 			}
 			if (filterMode === 'quote' && filterQuoteId != null) {
-				const quote = day.quotes.find(q => q.quoteId === filterQuoteId);
+				const quote = day.quotes.find((q) => q.quoteId === filterQuoteId);
 				return quote?.band.upper ?? 0;
 			}
 			return 0;
 		});
 
 		const latestMedian = medians[medians.length - 1];
+		const latestLower = lowers[lowers.length - 1];
+		const latestUpper = uppers[uppers.length - 1];
 		const firstMedian = medians[0];
 		const change = latestMedian - firstMedian;
 		const changePercent = (change / firstMedian) * 100;
 
 		return {
 			latestMedian,
-			minLower: Math.min(...lowers),
-			maxUpper: Math.max(...uppers),
+			minLower: latestLower,
+			maxUpper: latestUpper,
 			avgMedian: medians.reduce((a, b) => a + b, 0) / medians.length,
 			change,
 			changePercent
@@ -195,7 +220,7 @@
 	function getLatestQuoteValue(quoteId: number) {
 		const lastDay = forecast[forecast.length - 1];
 		if (!lastDay || !lastDay.quotes) return { median: 0, lower: 0, upper: 0 };
-		const quote = lastDay.quotes.find(q => q.quoteId === quoteId);
+		const quote = lastDay.quotes.find((q) => q.quoteId === quoteId);
 		return quote ? quote.band : { median: 0, lower: 0, upper: 0 };
 	}
 
@@ -204,7 +229,7 @@
 		const lastDay = forecast[forecast.length - 1];
 		if (!lastDay || !lastDay.groups || !groupId) return { median: 0, lower: 0, upper: 0 };
 		const numGroupId = parseInt(groupId);
-		const group = lastDay.groups.find(g => g.groupId === numGroupId);
+		const group = lastDay.groups.find((g) => g.groupId === numGroupId);
 		return group ? group.band : { median: 0, lower: 0, upper: 0 };
 	}
 
@@ -235,7 +260,9 @@
 
 		if (filterMode === 'full') {
 			// Add group cards
-			for (const [groupId, { name: groupName, quoteIds }] of Object.entries(groupedQuotes.groupedByGroup)) {
+			for (const [groupId, { name: groupName, quoteIds }] of Object.entries(
+				groupedQuotes.groupedByGroup
+			)) {
 				result.push({
 					type: 'group',
 					groupId,
@@ -274,8 +301,22 @@
 		<PageTitle title="Forecast" icon="fa-solid fa-compass" />
 	</div>
 
-	<div class="mb-6">
-		<ForecastChart forecast={filteredForecast} />
+	<div class="mb-6 grid">
+		{#if secondaryLoading}
+			<div class="w-full h-full flex items-center justify-center row-1 col-1">
+				Refreshing forecast...
+			</div>
+		{/if}
+
+		<div class="{secondaryLoading ? 'opacity-0' : ''} row-1 col-1">
+			<ForecastChart
+				forecast={filteredForecast}
+				{filterMode}
+				{filterGroupId}
+				{filterQuoteId}
+				onTypeChange={handleTypeChange}
+			/>
+		</div>
 	</div>
 
 	{#if stats}
@@ -340,17 +381,27 @@
 	{/if}
 
 	<!-- Cards Section -->
-	<div class="quote-groups mx-auto mb-3 mt-4 grid w-full grid-cols-[repeat(auto-fit,minmax(300px,450px))] justify-center gap-5 xl:w-4/5">
+	<div
+		class="quote-groups mx-auto mb-3 mt-4 grid w-full grid-cols-[repeat(auto-fit,minmax(300px,450px))] justify-center gap-5 xl:w-4/5"
+	>
 		{#each cardsToRender as card (card.type === 'back' ? 'back' : card.type === 'group' ? `group-${card.groupId}` : `quote-${card.quoteId}`)}
 			{#if card.type === 'back'}
 				<button
-					onclick={filterMode === 'quote' && filterGroupId ? handleBackToGroupView : handleBackToFullView}
+					onclick={filterMode === 'quote' && filterGroupId
+						? handleBackToGroupView
+						: handleBackToFullView}
 					class="card card-reactive cursor-pointer hover:opacity-80 transition-opacity text-left"
 				>
 					<div class="flex items-center justify-center h-full min-h-24">
 						<div class="text-center">
 							<i class="fa-solid fa-arrow-left text-xl mb-2 block"></i>
-							<span class="font-medium">Back to {filterMode === 'group' ? 'full view' : filterMode === 'quote' && filterGroupId ? 'group' : 'full view'}</span>
+							<span class="font-medium"
+								>Back to {filterMode === 'group'
+									? 'full view'
+									: filterMode === 'quote' && filterGroupId
+										? 'group'
+										: 'full view'}</span
+							>
 						</div>
 					</div>
 				</button>
