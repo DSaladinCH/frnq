@@ -4,6 +4,7 @@
 	import ForecastChart from '$lib/components/ForecastChart.svelte';
 	import { dataStore } from '$lib/stores/dataStore';
 	import PageTitle from '$lib/components/PageTitle.svelte';
+	import Loading from '$lib/components/Loading.svelte';
 
 	// Reactive values that track the store
 	let forecast = $state(dataStore.forecast);
@@ -110,10 +111,9 @@
 
 	// Handle forecast type change (with/without contributions)
 	async function handleTypeChange(forecastType: string) {
-		const includeContributions = forecastType === 'predict';
 		try {
 			// Let the store fetch and update the forecast data
-			await dataStore.refreshForecast(includeContributions);
+			await dataStore.refreshForecast();
 		} catch (error) {
 			console.error('Failed to fetch forecast:', error);
 		}
@@ -304,7 +304,7 @@
 	<div class="mb-6 grid">
 		{#if secondaryLoading}
 			<div class="w-full h-full flex items-center justify-center row-1 col-1">
-				Refreshing forecast...
+				<Loading text="Refreshing forecast..." />
 			</div>
 		{/if}
 

@@ -4,6 +4,7 @@
 	import type { ForecastDayDto } from '../services/forecastService';
 	import PillToggle from './PillToggle.svelte';
 	import DropDown from './DropDown.svelte';
+	import { dataStore } from '$lib/stores/dataStore';
 
 	let {
 		forecast = [],
@@ -291,6 +292,8 @@
 	}
 
 	onMount(() => {
+		selectedType = dataStore.getSavedForecastType() ? 'predict' : 'current';
+
 		// Detect mobile
 		isMobile = window.innerWidth < 768;
 

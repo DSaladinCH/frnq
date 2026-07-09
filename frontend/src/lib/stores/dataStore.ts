@@ -75,7 +75,7 @@ export class DataStore {
 		this._listeners.forEach((listener) => listener());
 	}
 
-	private getSavedForecastType(): boolean {
+	getSavedForecastType(): boolean {
 		try {
 			const saved = localStorage.getItem('forecastChart.selectedType');
 			return saved === 'predict';
@@ -255,9 +255,9 @@ export class DataStore {
 		});
 	}
 
-	// Method to refresh forecast data with optional includeContributions parameter
-	async refreshForecast(includeContributions: boolean = false) {
+	async refreshForecast() {
 		await this.runWithSecondaryLoading(async () => {
+			const includeContributions = this.getSavedForecastType();
 			const forecastData = await getForecast(includeContributions);
 			this._forecast = forecastData;
 		});

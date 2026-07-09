@@ -9,7 +9,7 @@
 		<div class="dot w-4 h-4 rounded-full"></div>
 	</div>
 	{#if text}
-		<p class="fade-in pulse">Loading positions...</p>
+		<p class="fade-in pulse">{text}</p>
 	{/if}
 </div>
 

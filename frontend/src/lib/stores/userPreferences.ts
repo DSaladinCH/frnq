@@ -1,6 +1,7 @@
 import { writable } from 'svelte/store';
 import { fetchWithAuth } from '$lib/services/authService';
 import { DateFormatType } from '$lib/utils/dateFormat';
+import { dataStore } from './dataStore';
 
 export { DateFormatType };
 
@@ -45,6 +46,12 @@ function createUserPreferencesStore() {
 		 */
 		async updateUser(format: DateFormatType, forecastNumberOfInvestments: number): Promise<boolean> {
 			try {
+				let currentPrefs: UserPreferences | undefined;
+				const unsubscribe = subscribe(prefs => {
+					currentPrefs = prefs;
+				});
+				unsubscribe();
+
 				const res = await fetchWithAuth('/api/auth/me', {
 					method: 'PUT',
 					headers: { 'Content-Type': 'application/json' },
@@ -53,9 +60,14 @@ function createUserPreferencesStore() {
 
 				if (res.ok) {
 					update(prefs => ({ ...prefs, dateFormat: format, forecastNumberOfInvestments }));
+
+					if (currentPrefs && forecastNumberOfInvestments !== currentPrefs.forecastNumberOfInvestments) {
+						dataStore.refreshForecast();
+					}
+
 					return true;
 				}
-				
+
 				update(prefs => ({ ...prefs}));
 				return false;
 
