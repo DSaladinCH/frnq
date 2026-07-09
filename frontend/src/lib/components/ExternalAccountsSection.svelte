@@ -109,14 +109,14 @@
 	}
 </script>
 
-<div class="bg-card mt-6 rounded-lg p-6 shadow-lg">
+<div class="bg-card rounded-lg p-6 shadow-lg">
 	<h2 class="mb-2 text-xl font-semibold">External Accounts</h2>
 	<p class="color-muted mb-4">Link external authentication providers to your account.</p>
 
 	{#if isLoading}
 		<Loading />
 	{:else}
-		<div class="bg-background md:w-md relative mt-2 w-full overflow-hidden rounded-lg">
+		<div class="bg-background relative mt-2 w-full overflow-hidden rounded-lg">
 			<div class="grid w-full grid-cols-1">
 				{#if availableProviders.length === 0}
 					<div class="p-8 text-center">

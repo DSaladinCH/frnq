@@ -145,60 +145,25 @@
 <div class="xs:p-8 w-full p-4">
 	<PageTitle title="Settings" icon="fa-solid fa-gear" />
 
-	<div class="bg-card mt-6 rounded-lg p-6 shadow-lg">
-		<h2 class="mb-2 text-xl font-semibold">Groups</h2>
-		<p class="color-muted mb-4">Manage your quote groups here.</p>
-		<div class="bg-background md:w-md relative mt-2 h-60 w-full overflow-hidden rounded-lg">
-			<div bind:this={groupsElement} class="grid max-h-60 w-full grid-cols-1 overflow-y-auto">
-				<div class="group-item h-12 px-4 {editMode === 0 ? 'py-1' : 'py-3'} my-auto">
-					{#if editMode === 0}
-						<div class="flex h-full gap-4">
-							<div class="flex-1">
-								<Input type="text" placeholder="New Group Name" bind:value={newGroupName} />
-							</div>
-							<div class="my-auto flex gap-1">
-								<div class="w-6">
-									<IconButton
-										icon="fa-solid fa-plus"
-										tooltip="Add Group"
-										hoverColor={ColorStyle.Success}
-										isLoading={addingGroup}
-										onclick={saveGroup}
-									/>
-								</div>
-								<div class="w-6">
-									<IconButton
-										icon="fa-solid fa-xmark"
-										tooltip="Cancel"
-										hoverColor={ColorStyle.Error}
-										onclick={toggleEdit}
-									/>
-								</div>
-							</div>
-						</div>
-					{:else}
-						<button class="btn-fake flex w-full items-center" onclick={() => toggleEdit(0)}>
-							<span class="">New Group</span>
-							<i class="fa-solid fa-plus color-muted ml-auto text-base"></i>
-						</button>
-					{/if}
-				</div>
-				<hr class="color-muted mx-4 my-1 w-5 border-t" />
-
-				{#each groups as group, i}
-					<div class="group-item flex h-12 items-center justify-center px-4 py-1">
-						{#if editMode === group.id}
-							<div class="flex h-full w-full gap-4">
-								<div class="flex-1 text-left">
+	<div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+		<div class="bg-card rounded-lg p-6 shadow-lg">
+			<h2 class="mb-2 text-xl font-semibold">Groups</h2>
+			<p class="color-muted mb-4">Manage your quote groups here.</p>
+			<div class="bg-background relative mt-2 h-60 w-full overflow-hidden rounded-lg">
+				<div bind:this={groupsElement} class="grid max-h-60 w-full grid-cols-1 overflow-y-auto">
+					<div class="group-item h-12 px-4 {editMode === 0 ? 'py-1' : 'py-3'} my-auto">
+						{#if editMode === 0}
+							<div class="flex h-full gap-4">
+								<div class="flex-1">
 									<Input type="text" placeholder="New Group Name" bind:value={newGroupName} />
 								</div>
 								<div class="my-auto flex gap-1">
 									<div class="w-6">
 										<IconButton
-											icon="fa-solid fa-check"
-											tooltip="Update Group"
+											icon="fa-solid fa-plus"
+											tooltip="Add Group"
 											hoverColor={ColorStyle.Success}
-											isLoading={savingGroup && editMode === group.id}
+											isLoading={addingGroup}
 											onclick={saveGroup}
 										/>
 									</div>
@@ -213,72 +178,107 @@
 								</div>
 							</div>
 						{:else}
-							<span class="line-clamp-1 flex-1 text-left">{group.name}</span>
-							<div class="my-auto flex gap-1">
-								<div class="w-8">
-									<IconButton
-										icon="fa-solid fa-pen"
-										tooltip="Edit Group"
-										hoverColor={ColorStyle.Success}
-										onclick={() => toggleEdit(group.id)}
-									/>
-								</div>
-								<div class="w-8">
-									<IconButton
-										icon="fa-solid fa-trash"
-										tooltip="Delete Group"
-										hoverColor={ColorStyle.Error}
-										isLoading={deletingGroup === group.id}
-										onclick={() => deleteGroup(group.id)}
-									/>
-								</div>
-							</div>
+							<button class="btn-fake flex w-full items-center" onclick={() => toggleEdit(0)}>
+								<span class="">New Group</span>
+								<i class="fa-solid fa-plus color-muted ml-auto text-base"></i>
+							</button>
 						{/if}
 					</div>
-					{#if i < groups.length - 1}
-						<hr class="color-muted mx-4 my-1 w-5 border-t" />
-					{/if}
-				{/each}
-			</div>
-		</div>
-	</div>
-
-	<div class="bg-card mt-6 rounded-lg p-6 shadow-lg">
-		<h2 class="mb-2 text-xl font-semibold">Customization</h2>
-		<p class="color-muted mb-4">
-			Configure various application settings to customize your experience.
-		</p>
-
-		<div class="flex flex-col gap-4">
-			<div class="flex flex-col gap-2">
-				<span class="color-default font-medium">Format:</span>
-				<div class="xs:w-64">
-					<DropDown
-						options={dateFormatOptions}
-						value={preferences.dateFormat}
-						disabled={savingDateFormat}
-						isLoading={savingDateFormat}
-						onchange={(e) => handleSettingsUpdate(e, preferences.forecastNumberOfInvestments)}
-					/>
+					<hr class="color-muted mx-4 my-1 w-5 border-t" />
+					{#each groups as group, i}
+						<div class="group-item flex h-12 items-center justify-center px-4 py-1">
+							{#if editMode === group.id}
+								<div class="flex h-full w-full gap-4">
+									<div class="flex-1 text-left">
+										<Input type="text" placeholder="New Group Name" bind:value={newGroupName} />
+									</div>
+									<div class="my-auto flex gap-1">
+										<div class="w-6">
+											<IconButton
+												icon="fa-solid fa-check"
+												tooltip="Update Group"
+												hoverColor={ColorStyle.Success}
+												isLoading={savingGroup && editMode === group.id}
+												onclick={saveGroup}
+											/>
+										</div>
+										<div class="w-6">
+											<IconButton
+												icon="fa-solid fa-xmark"
+												tooltip="Cancel"
+												hoverColor={ColorStyle.Error}
+												onclick={toggleEdit}
+											/>
+										</div>
+									</div>
+								</div>
+							{:else}
+								<span class="line-clamp-1 flex-1 text-left">{group.name}</span>
+								<div class="my-auto flex gap-1">
+									<div class="w-8">
+										<IconButton
+											icon="fa-solid fa-pen"
+											tooltip="Edit Group"
+											hoverColor={ColorStyle.Success}
+											onclick={() => toggleEdit(group.id)}
+										/>
+									</div>
+									<div class="w-8">
+										<IconButton
+											icon="fa-solid fa-trash"
+											tooltip="Delete Group"
+											hoverColor={ColorStyle.Error}
+											isLoading={deletingGroup === group.id}
+											onclick={() => deleteGroup(group.id)}
+										/>
+									</div>
+								</div>
+							{/if}
+						</div>
+						{#if i < groups.length - 1}
+							<hr class="color-muted mx-4 my-1 w-5 border-t" />
+						{/if}
+					{/each}
 				</div>
 			</div>
-			<div class="flex flex-col gap-2">
-				<span class="color-default font-medium">Investments in Forecast (per Quote):</span>
-				<div class="xs:w-32">
-					<Input
-						type="number"
-						min="2"
-						max="100"
-						bind:value={preferences.forecastNumberOfInvestments}
-						disabled={savingForecastNumber}
-						onchange={(e) => handleSettingsUpdate(preferences.dateFormat, preferences.forecastNumberOfInvestments)}
-					/>
+		</div>
+
+		<div class="bg-card rounded-lg p-6 shadow-lg">
+			<h2 class="mb-2 text-xl font-semibold">Customization</h2>
+			<p class="color-muted mb-4">
+				Configure various application settings to customize your experience.
+			</p>
+			<div class="flex flex-col gap-4">
+				<div class="flex flex-col gap-2">
+					<span class="color-default font-medium">Format:</span>
+					<div class="xs:w-64">
+						<DropDown
+							options={dateFormatOptions}
+							value={preferences.dateFormat}
+							disabled={savingDateFormat}
+							isLoading={savingDateFormat}
+							onchange={(e) => handleSettingsUpdate(e, preferences.forecastNumberOfInvestments)}
+						/>
+					</div>
+				</div>
+				<div class="flex flex-col gap-2">
+					<span class="color-default font-medium">Investments in Forecast (per Quote):</span>
+					<div class="xs:w-32">
+						<Input
+							type="number"
+							min="2"
+							max="100"
+							bind:value={preferences.forecastNumberOfInvestments}
+							disabled={savingForecastNumber}
+							onchange={(e) => handleSettingsUpdate(preferences.dateFormat, preferences.forecastNumberOfInvestments)}
+						/>
+					</div>
 				</div>
 			</div>
 		</div>
-	</div>
 
-	<ExternalAccountsSection />
+		<ExternalAccountsSection />
+	</div>
 </div>
 
 <style>
