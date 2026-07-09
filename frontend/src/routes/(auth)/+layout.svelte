@@ -3,6 +3,7 @@
 	import { dataStore } from '$lib/stores/dataStore';
 	import { userPreferences } from '$lib/stores/userPreferences';
 	import type { Snippet } from 'svelte';
+	import Loading from '$lib/components/Loading.svelte';
 
 	let { children }: { children: Snippet } = $props();
 
@@ -52,12 +53,7 @@
 			}
 		}}
 	>
-		<div class="bouncing-dots">
-			<div class="dot"></div>
-			<div class="dot"></div>
-			<div class="dot"></div>
-		</div>
-		<p class="fade-in pulse">Loading positions...</p>
+		<Loading text="Loading positions..." />
 	</div>
 {/if}
 
@@ -117,60 +113,6 @@
 	@keyframes fadeOut {
 		to {
 			opacity: 0;
-		}
-	}
-
-	.bouncing-dots {
-		display: flex;
-		gap: 10px;
-		margin-bottom: 18px;
-	}
-
-	.dot {
-		width: 16px;
-		height: 16px;
-		background: linear-gradient(135deg, var(--color-primary) 60%, var(--color-secondary) 100%);
-		border-radius: 50%;
-		animation: bounce 1.2s infinite ease-in-out;
-	}
-
-	.dot:nth-child(1) { animation-delay: 0s; }
-	.dot:nth-child(2) { animation-delay: 0.2s; }
-	.dot:nth-child(3) { animation-delay: 0.4s; }
-
-	@keyframes bounce {
-		0%, 80%, 100% {
-			transform: translateY(0);
-		}
-		40% {
-			transform: translateY(-24px);
-		}
-	}
-
-	.fade-in {
-		opacity: 0;
-		animation: fadeIn 1s forwards;
-	}
-
-	@keyframes fadeIn {
-		to {
-			opacity: 1;
-		}
-	}
-
-	.pulse {
-		animation: pulse 2s infinite;
-	}
-
-	@keyframes pulse {
-		0% {
-			opacity: 0.4;
-		}
-		50% {
-			opacity: 1;
-		}
-		100% {
-			opacity: 0.4;
 		}
 	}
 

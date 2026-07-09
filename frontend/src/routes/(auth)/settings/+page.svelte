@@ -29,6 +29,7 @@
 	// User preferences
 	let preferences = $state($userPreferences);
 	let savingDateFormat = $state(false);
+	let savingForecastNumber = $state(false);
 
 	// Subscribe to store changes
 	$effect(() => {
@@ -112,21 +113,24 @@
 		}
 	}
 
-	async function handleDateFormatChange(newFormat: string) {
-		if (savingDateFormat) return;
+	async function handleSettingsUpdate(dateFormat: string, forecastNumberOfInvestments: number) {
+		if (savingDateFormat || savingForecastNumber) return;
+
+		savingDateFormat = preferences.dateFormat !== dateFormat as DateFormatType;
+		savingForecastNumber = preferences.forecastNumberOfInvestments !== forecastNumberOfInvestments;
 		
-		savingDateFormat = true;
 		try {
-			const success = await userPreferences.setDateFormat(newFormat as DateFormatType);
+			const success = await userPreferences.updateUser(dateFormat as DateFormatType, forecastNumberOfInvestments);
 			if (success) {
-				notify.success('Date format updated successfully');
+				notify.success('Settings updated successfully');
 			} else {
-				notify.error('Failed to update date format');
+				notify.error('Failed to update settings');
 			}
 		} catch (error) {
-			notify.error('Failed to update date format');
+			notify.error('Failed to update settings');
 		} finally {
 			savingDateFormat = false;
+			savingForecastNumber = false;
 		}
 	}
 
@@ -240,19 +244,36 @@
 	</div>
 
 	<div class="bg-card mt-6 rounded-lg p-6 shadow-lg">
-		<h2 class="mb-2 text-xl font-semibold">Date Format</h2>
-		<p class="color-muted mb-4">Choose how dates and times are displayed throughout the application.</p>
-		
-		<div class="flex items-center gap-4">
-			<span class="color-default font-medium">Format:</span>
-			<div class="w-64">
-				<DropDown
-					options={dateFormatOptions}
-					value={preferences.dateFormat}
-					disabled={savingDateFormat}
-					isLoading={savingDateFormat}
-					onchange={handleDateFormatChange}
-				/>
+		<h2 class="mb-2 text-xl font-semibold">Customization</h2>
+		<p class="color-muted mb-4">
+			Configure various application settings to customize your experience.
+		</p>
+
+		<div class="flex flex-col gap-4">
+			<div class="flex flex-col gap-2">
+				<span class="color-default font-medium">Format:</span>
+				<div class="xs:w-64">
+					<DropDown
+						options={dateFormatOptions}
+						value={preferences.dateFormat}
+						disabled={savingDateFormat}
+						isLoading={savingDateFormat}
+						onchange={(e) => handleSettingsUpdate(e, preferences.forecastNumberOfInvestments)}
+					/>
+				</div>
+			</div>
+			<div class="flex flex-col gap-2">
+				<span class="color-default font-medium">Investments in Forecast (per Quote):</span>
+				<div class="xs:w-32">
+					<Input
+						type="number"
+						min="2"
+						max="100"
+						bind:value={preferences.forecastNumberOfInvestments}
+						disabled={savingForecastNumber}
+						onchange={(e) => handleSettingsUpdate(preferences.dateFormat, preferences.forecastNumberOfInvestments)}
+					/>
+				</div>
 			</div>
 		</div>
 	</div>

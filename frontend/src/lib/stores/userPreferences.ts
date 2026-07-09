@@ -6,11 +6,13 @@ export { DateFormatType };
 
 export interface UserPreferences {
 	dateFormat: DateFormatType;
+	forecastNumberOfInvestments: number;
 }
 
 // Default preferences
 const defaultPreferences: UserPreferences = {
-	dateFormat: DateFormatType.English
+	dateFormat: DateFormatType.English,
+	forecastNumberOfInvestments: 5
 };
 
 // Create the store
@@ -29,7 +31,8 @@ function createUserPreferencesStore() {
 				if (res.ok) {
 					const userData = await res.json();
 					set({
-						dateFormat: userData.dateFormat || DateFormatType.English
+						dateFormat: userData.dateFormat || DateFormatType.English,
+						forecastNumberOfInvestments: userData.forecastNumberOfInvestments || 5
 					});
 				}
 			} catch (error) {
@@ -40,19 +43,22 @@ function createUserPreferencesStore() {
 		/**
 		 * Update the date format preference
 		 */
-		async setDateFormat(format: DateFormatType): Promise<boolean> {
+		async updateUser(format: DateFormatType, forecastNumberOfInvestments: number): Promise<boolean> {
 			try {
 				const res = await fetchWithAuth('/api/auth/me', {
 					method: 'PUT',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ dateFormat: format })
+					body: JSON.stringify({ dateFormat: format, forecastNumberOfInvestments })
 				});
 
 				if (res.ok) {
-					update(prefs => ({ ...prefs, dateFormat: format }));
+					update(prefs => ({ ...prefs, dateFormat: format, forecastNumberOfInvestments }));
 					return true;
 				}
+				
+				update(prefs => ({ ...prefs}));
 				return false;
+
 			} catch (error) {
 				console.error('Failed to update date format:', error);
 				return false;

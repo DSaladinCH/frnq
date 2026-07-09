@@ -18,29 +18,41 @@ public class ForecastManagement(DatabaseContext databaseContext, AuthManagement 
 	{
 		Guid userId = authManagement.GetCurrentUserId();
 
-		var (positionsError, positions) = await GetActivePositionsAsync(userId, cancellationToken);
+		(ApiResponse<List<ForecastDayDto>>? positionsError, ActivePositions? positions) = await GetActivePositionsAsync(userId, cancellationToken);
+		
 		if (positionsError != null)
 			return positionsError;
+
 		if (positions == null) // no holdings at all, not an error, just an empty forecast
 			return ApiResponse.Create(new List<ForecastDayDto>(), System.Net.HttpStatusCode.OK);
 
-		var (historyError, history) = await GetPriceHistoryAsync(positions.QuoteIds, cancellationToken);
+		(ApiResponse<List<ForecastDayDto>>? historyError, PriceHistoryData? history) = await GetPriceHistoryAsync(positions.QuoteIds, cancellationToken);
+
 		if (historyError != null)
 			return historyError;
 
 		int quoteCount = positions.QuoteIds.Length;
-		var quoteIndex = new Dictionary<int, int>(quoteCount);
+		Dictionary<int, int> quoteIndex = new Dictionary<int, int>(quoteCount);
+
 		for (int i = 0; i < quoteCount; i++)
 			quoteIndex[positions.QuoteIds[i]] = i;
 
 		double[] currentValues = new double[quoteCount];
+
 		for (int q = 0; q < quoteCount; q++)
 			currentValues[q] = (double)positions.CurrentValueByQuote[positions.QuoteIds[q]];
 
-		var (groupOfQuote, uniqueGroupIds, groupCount) = BuildGroupMapping(positions.QuoteIds, positions.GroupByQuote);
+		(int[]? groupOfQuote, int?[]? uniqueGroupIds, int groupCount) = BuildGroupMapping(positions.QuoteIds, positions.GroupByQuote);
+
+		// Get user's forecast number of investments limit (default to 5 if not found or invalid)
+		int forecastNumberOfInvestments = await databaseContext.Users
+			.AsNoTracking()
+			.Where(u => u.Id == userId)
+			.Select(u => u.ForecastNumberOfInvestments)
+			.FirstOrDefaultAsync(cancellationToken);
 
 		ContributionSchedule schedule = includeContributions
-			? await GetContributionScheduleAsync(userId, positions.QuoteIds, quoteIndex, quoteCount, cancellationToken)
+			? await GetContributionScheduleAsync(userId, positions.QuoteIds, quoteIndex, quoteCount, forecastNumberOfInvestments, cancellationToken)
 			: ContributionSchedule.Empty(quoteCount);
 
 		SimulationResult simulation = RunSimulations(
@@ -61,7 +73,7 @@ public class ForecastManagement(DatabaseContext databaseContext, AuthManagement 
 
 	private async Task<(ApiResponse<List<ForecastDayDto>>? Error, ActivePositions? Data)> GetActivePositionsAsync(Guid userId, CancellationToken cancellationToken)
 	{
-		var investmentsByQuote = await databaseContext.Investments
+		Dictionary<int, decimal> investmentsByQuote = await databaseContext.Investments
 			.AsNoTracking()
 			.Where(i => i.UserId == userId && (i.Type == InvestmentType.Buy || i.Type == InvestmentType.Sell))
 			.GroupBy(i => i.QuoteId)
@@ -72,7 +84,7 @@ public class ForecastManagement(DatabaseContext databaseContext, AuthManagement 
 			})
 			.ToDictionaryAsync(i => i.QuoteId, i => i.TotalAmount, cancellationToken);
 
-		var activePositions = investmentsByQuote.Where(kvp => kvp.Value > 0).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+		Dictionary<int, decimal> activePositions = investmentsByQuote.Where(kvp => kvp.Value > 0).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 		if (activePositions.Count == 0)
 			return (null, null);
 
@@ -98,7 +110,7 @@ public class ForecastManagement(DatabaseContext databaseContext, AuthManagement 
 
 		if (quotePriceAndGroupData.Any(q => q.LatestPrice == null || q.LatestPrice <= 0))
 		{
-			var error = ApiResponse.Create<List<ForecastDayDto>>(
+			ApiResponse<List<ForecastDayDto>> error = ApiResponse.Create<List<ForecastDayDto>>(
 				"Invalid data", "One or more quotes have invalid price data (null, zero, or negative)", System.Net.HttpStatusCode.BadRequest);
 			return (error, null);
 		}
@@ -142,7 +154,7 @@ public class ForecastManagement(DatabaseContext databaseContext, AuthManagement 
 
 		if (dateCount < 2)
 		{
-			var error = ApiResponse.Create<List<ForecastDayDto>>(
+			ApiResponse<List<ForecastDayDto>> error = ApiResponse.Create<List<ForecastDayDto>>(
 				"Insufficient data", "Not enough overlapping price history across the selected quotes to build a forecast.", System.Net.HttpStatusCode.BadRequest);
 			return (error, null);
 		}
@@ -150,18 +162,18 @@ public class ForecastManagement(DatabaseContext databaseContext, AuthManagement 
 		int returnCount = dateCount - 1;
 		if (returnCount < blockLength)
 		{
-			var error = ApiResponse.Create<List<ForecastDayDto>>(
+			ApiResponse<List<ForecastDayDto>> error = ApiResponse.Create<List<ForecastDayDto>>(
 				"Insufficient data",
 				$"Only {returnCount} days of overlapping return history available, but a block length of {blockLength} is required. Add more price history or reduce the block length.",
 				System.Net.HttpStatusCode.BadRequest);
 			return (error, null);
 		}
 
-		var dateIndex = new Dictionary<DateTime, int>(dateCount);
+		Dictionary<DateTime, int> dateIndex = new Dictionary<DateTime, int>(dateCount);
 		for (int i = 0; i < dateCount; i++)
 			dateIndex[dateOrder[i]] = i;
 
-		var quoteIndex = new Dictionary<int, int>(quoteCount);
+		Dictionary<int, int> quoteIndex = new Dictionary<int, int>(quoteCount);
 		for (int i = 0; i < quoteCount; i++)
 			quoteIndex[quoteIds[i]] = i;
 
@@ -202,7 +214,7 @@ public class ForecastManagement(DatabaseContext databaseContext, AuthManagement 
 		int?[] uniqueGroupIds = groupByQuote.Values.Distinct().ToArray();
 		int groupCount = uniqueGroupIds.Length;
 
-		var groupSlot = new Dictionary<int?, int>(groupCount);
+		Dictionary<int?, int> groupSlot = new Dictionary<int?, int>(groupCount);
 		for (int i = 0; i < groupCount; i++)
 			groupSlot[uniqueGroupIds[i]] = i;
 
@@ -222,7 +234,7 @@ public class ForecastManagement(DatabaseContext databaseContext, AuthManagement 
 	}
 
 	private async Task<ContributionSchedule> GetContributionScheduleAsync(
-		Guid userId, int[] quoteIds, Dictionary<int, int> quoteIndex, int quoteCount, CancellationToken cancellationToken)
+		Guid userId, int[] quoteIds, Dictionary<int, int> quoteIndex, int quoteCount, int forecastNumberOfInvestments, CancellationToken cancellationToken)
 	{
 		ContributionSchedule schedule = ContributionSchedule.Empty(quoteCount);
 
@@ -238,6 +250,11 @@ public class ForecastManagement(DatabaseContext databaseContext, AuthManagement 
 		foreach (var group in buyHistory.GroupBy(b => b.QuoteId))
 		{
 			var purchases = group.OrderBy(b => b.Date).ToList();
+			
+			// Limit to the most recent N investments per quote
+			if (purchases.Count > forecastNumberOfInvestments)
+				purchases = purchases.TakeLast(forecastNumberOfInvestments).ToList();
+			
 			if (purchases.Count < 2)
 				continue; // no cadence derivable from a single purchase
 
@@ -281,14 +298,14 @@ public class ForecastManagement(DatabaseContext databaseContext, AuthManagement 
 		double[][] quoteSeries = new double[quoteCount][];
 		for (int q = 0; q < quoteCount; q++) quoteSeries[q] = new double[cellCount];
 
-		var parallelOptions = new ParallelOptions { CancellationToken = cancellationToken };
+		ParallelOptions parallelOptions = new ParallelOptions { CancellationToken = cancellationToken };
 
 		Parallel.For(
 			0, simulationCount, parallelOptions,
 			() => (rng: new Random(), running: new double[quoteCount], groupSums: new double[groupCount]),
 			(sim, _, local) =>
 			{
-				var (rng, running, groupSums) = local;
+				(Random? rng, double[]? running, double[]? groupSums) = local;
 				Array.Copy(currentValues, running, quoteCount);
 
 				int blockPos = blockLength;
@@ -395,7 +412,7 @@ public class ForecastManagement(DatabaseContext databaseContext, AuthManagement 
 
 	private static ForecastBand[] ExtractBands(double[] series, int horizon, int sims)
 	{
-		var bands = new ForecastBand[horizon];
+		ForecastBand[] bands = new ForecastBand[horizon];
 		int lowerIdx = (int)(sims * 0.05);
 		int medianIdx = sims / 2;
 		int upperIdx = (int)(sims * 0.95);
