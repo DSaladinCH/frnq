@@ -187,7 +187,8 @@ public class Auth : TestBase
 		using AuthenticationScope<UserModel> authScope = await Authenticate();
 		UserDto update = new UserDto
 		{
-			DateFormat = dateFormat
+			DateFormat = dateFormat,
+			ForecastNumberOfInvestments = 5
 		};
 
 		ApiResponse response = await ApiInterface.Auth.UpdateCurrentUser(update);
@@ -197,6 +198,7 @@ public class Auth : TestBase
 		DbContext.ChangeTracker.Clear();
 		ApiResponse<UserViewDto> me = await ApiInterface.Auth.GetCurrentUser();
 		Assert.Equal(expectedFormat, me.Value?.DateFormat);
+		Assert.Equal(5, me.Value?.ForecastNumberOfInvestments);
 	}
 
 	[Fact]
@@ -204,7 +206,8 @@ public class Auth : TestBase
 	{
 		UserDto update = new UserDto
 		{
-			DateFormat = DateFormat.German
+			DateFormat = DateFormat.German,
+			ForecastNumberOfInvestments = 5
 		};
 
 		ApiResponse response = await ApiInterface.Auth.UpdateCurrentUser(update);

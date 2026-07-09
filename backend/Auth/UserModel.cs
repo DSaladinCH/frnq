@@ -29,6 +29,9 @@ public class UserModel
     public string Firstname { get; set; } = string.Empty;
 
     public DateFormat DateFormat { get; set; } = DateFormat.English;
+	
+	[MinLength(2)]
+	public int ForecastNumberOfInvestments { get; set; } = 5;
 
     public virtual ICollection<InvestmentModel> Investments { get; set; } = [];
     public virtual ICollection<ExternalUserLink> ExternalLinks { get; set; } = [];

@@ -40,6 +40,13 @@
 			inFooter: false
 		},
 		{
+			key: '/forecast',
+			icon: 'fa-solid fa-compass',
+			label: 'Forecast',
+			showWhenLoggedIn: true,
+			inFooter: false
+		},
+		{
 			key: '/settings',
 			icon: 'fa-solid fa-gear',
 			label: 'Settings',

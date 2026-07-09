@@ -124,7 +124,7 @@
 		class="investments-list 3xl:grid-cols-4 grid gap-2 py-1 pr-1 lg:grid-cols-2 2xl:grid-cols-3"
 	>
 		{#each quotes as quote (quote.id)}
-			{@const snapshot = snapshotMap.get(quote.id)}
+			{@const snapshot = snapshotMap.get(quote.id)!}
 			<QuoteCard
 				{quote}
 				{snapshot}
@@ -156,7 +156,7 @@
 </Modal>
 
 <Modal bind:showModal={customNameModalOpen} onClose={closeCustomNameModal} title="Custom Name">
-	<div class="flex min-w-[300px] flex-col gap-4">
+	<div class="flex min-w-75 flex-col gap-4">
 		<div>
 			<Input
 				type="text"

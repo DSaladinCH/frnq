@@ -35,8 +35,8 @@
 	});
 </script>
 
-<dialog bind:this={dialog} class="{showModal ? '' : 'hidden'} bg-transparent" onclose={onClose}>
-	<div id="dialog-content" class="fixed inset-0 m-4 flex items-center justify-center p-4">
+<dialog bind:this={dialog} class="{showModal ? '' : 'hidden'} bg-transparent p-3 sm:p-6" onclose={onClose}>
+	<div id="dialog-content" class="fixed inset-0 flex items-center justify-center p-3 sm:p-6">
 		<div
 			class="bg-background color-default relative flex h-max max-h-full w-full xs:w-max max-w-full flex-col overflow-hidden rounded-2xl md:p-0 lg:p-0"
 		>
@@ -79,7 +79,6 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		padding: 1.5rem; /* matches p-6 approx */
 		background: transparent; /* keep backdrop separate */
 	}
 

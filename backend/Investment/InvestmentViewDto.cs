@@ -20,6 +20,7 @@ public class InvestmentViewDto
 	public decimal Amount { get; set; }
 	public decimal PricePerUnit { get; set; }
 	public decimal TotalFees { get; set; }
+	public bool ExcludeFromForecast { get; set; }
 
 	[JsonConstructor]
 	private InvestmentViewDto() { }
@@ -34,5 +35,6 @@ public class InvestmentViewDto
 		Amount = investment.Amount;
 		PricePerUnit = investment.PricePerUnit;
 		TotalFees = investment.TotalFees;
+		ExcludeFromForecast = investment.ExcludeFromForecast;
 	}
 }

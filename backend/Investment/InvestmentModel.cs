@@ -24,6 +24,7 @@ public class InvestmentModel
     public decimal Amount { get; set; }
     public decimal PricePerUnit { get; set; }
     public decimal TotalFees { get; set; }
+	public bool ExcludeFromForecast { get; set; }
 
     public virtual UserModel User { get; set; } = null!;
     public virtual QuoteModel Quote { get; set; } = null!;

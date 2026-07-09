@@ -46,7 +46,8 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 			UserId = user.Id,
 			Email = user.Email,
 			Name = user.Firstname,
-			DateFormat = user.DateFormat.ToString()
+			DateFormat = user.DateFormat.ToString(),
+			ForecastNumberOfInvestments = user.ForecastNumberOfInvestments
 		}, System.Net.HttpStatusCode.OK);
 	}
 
@@ -59,6 +60,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 			return ApiResponse.Create("USER_NOT_FOUND", "User not found", System.Net.HttpStatusCode.NotFound);
 
 		user.DateFormat = userDto.DateFormat;
+		user.ForecastNumberOfInvestments = userDto.ForecastNumberOfInvestments;
 
 		await databaseContext.SaveChangesAsync(cancellationToken);
 		return ApiResponse.Create("SUCCESS", "User updated successfully", System.Net.HttpStatusCode.OK);

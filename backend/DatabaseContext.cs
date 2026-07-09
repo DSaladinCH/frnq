@@ -34,6 +34,10 @@ public class DatabaseContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+		modelBuilder.Entity<UserModel>()
+			.Property(u => u.ForecastNumberOfInvestments)
+			.HasDefaultValue(5);
+
         modelBuilder.Entity<QuoteModel>()
             .HasIndex(q => new { q.ProviderId, q.Symbol })
             .IsUnique();

@@ -6,6 +6,7 @@ import { getPositionSnapshots } from '$lib/services/positionService';
 import type { QuoteGroup } from '$lib/Models/QuoteGroup';
 import { getQuoteGroups } from '$lib/services/groupService';
 import { infiniteFeesList } from './infiniteFeesList';
+import { getForecast, type ForecastDayDto } from '$lib/services/forecastService';
 
 // Simple reactive data store without using runes in TS file
 export class DataStore {
@@ -16,6 +17,7 @@ export class DataStore {
 	private _groups: QuoteGroup[] = [];
 	private _groupFeesSummaries: GroupFeesSummary[] = [];
 	private _overallFees = 0;
+	private _forecast: ForecastDayDto[] = [];
 	private _primaryLoading = true;
 	private _secondaryLoading = false;
 	private _error: string | null = null;
@@ -44,6 +46,9 @@ export class DataStore {
 	get overallFees() {
 		return this._overallFees;
 	}
+	get forecast() {
+		return this._forecast;
+	}
 	get loading() {
 		return this._primaryLoading || this._secondaryLoading;
 	}
@@ -70,11 +75,21 @@ export class DataStore {
 		this._listeners.forEach((listener) => listener());
 	}
 
-	private async fetchAllData() {
-		const [positionsData, investmentsData, groupsData] = await Promise.all([
+	getSavedForecastType(): boolean {
+		try {
+			const saved = localStorage.getItem('forecastChart.selectedType');
+			return saved === 'predict';
+		} catch {
+			return false; // Default to false if localStorage is unavailable
+		}
+	}
+
+	private async fetchAllData(includeContributions: boolean = false) {
+		const [positionsData, investmentsData, groupsData, forecastData] = await Promise.all([
 			getPositionSnapshots(null, null),
 			getInvestments(0, 25), // Get all investments for initial load
-			getQuoteGroups()
+			getQuoteGroups(),
+			getForecast(includeContributions)
 		]);
 
 		this._snapshots = positionsData.snapshots;
@@ -84,6 +99,7 @@ export class DataStore {
 		this._investments = investmentsData.items;
 		this._investmentsTotalCount = investmentsData.totalCount;
 		this._groups = groupsData;
+		this._forecast = forecastData;
 		this._error = null;
 		this.notify();
 	}
@@ -117,7 +133,8 @@ export class DataStore {
 		this.notify();
 
 		try {
-			await this.fetchAllData();
+			const includeContributions = this.getSavedForecastType();
+			await this.fetchAllData(includeContributions);
 			this._initialized = true;
 		} catch (e) {
 			this._error = (e as Error).message;
@@ -235,6 +252,14 @@ export class DataStore {
 			);
 			await removeCustomQuoteNameAPI(quoteId);
 			await this.fetchAllData();
+		});
+	}
+
+	async refreshForecast() {
+		await this.runWithSecondaryLoading(async () => {
+			const includeContributions = this.getSavedForecastType();
+			const forecastData = await getForecast(includeContributions);
+			this._forecast = forecastData;
 		});
 	}
 }

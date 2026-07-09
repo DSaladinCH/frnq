@@ -73,12 +73,12 @@ public class OidcManagement(
 
 		// Build redirect URL
 		string baseUrl = configuration.GetValue<string>("ApiBaseUrl") ?? 
-                     $"{httpContextAccessor.HttpContext!.Request.Scheme}://{httpContextAccessor.HttpContext.Request.Host}";
+			$"{httpContextAccessor.HttpContext!.Request.Scheme}://{httpContextAccessor.HttpContext.Request.Host}";
 		string redirectUri = $"{baseUrl}/api/authoidc/callback/{provider.ProviderId}";
 
 		string authUrl = BuildAuthorizationUrl(provider, redirectUri, state, nonce);
 
-        return ApiResponse<string>.Create(authUrl, System.Net.HttpStatusCode.OK);
+        return ApiResponse.Create(authUrl, System.Net.HttpStatusCode.OK);
     }
 
     /// <summary>
@@ -200,7 +200,7 @@ public class OidcManagement(
     private async Task<TokenResponse?> ExchangeCodeForTokensAsync(OidcProvider provider, string code, CancellationToken cancellationToken)
     {
 		string baseUrl = configuration.GetValue<string>("ApiBaseUrl") ?? 
-                     $"{httpContextAccessor.HttpContext!.Request.Scheme}://{httpContextAccessor.HttpContext.Request.Host}";
+			$"{httpContextAccessor.HttpContext!.Request.Scheme}://{httpContextAccessor.HttpContext.Request.Host}";
 		string redirectUri = $"{baseUrl}/api/authoidc/callback/{provider.ProviderId}";
 
 		Dictionary<string, string> tokenRequest = new Dictionary<string, string>

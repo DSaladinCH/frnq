@@ -295,7 +295,7 @@ export function initiateOidcLogin(providerId: string, returnUrl?: string): void 
  */
 export async function getExternalLinks(): Promise<ExternalLink[]> {
 	try {
-		const res = await fetchWithAuth(`${getFullUrl('/api/authexternallinks')}`);
+		const res = await fetchWithAuth(`/api/authexternallinks`);
 		if (!res.ok) return [];
 		return await res.json();
 	} catch (error) {
@@ -310,7 +310,7 @@ export async function getExternalLinks(): Promise<ExternalLink[]> {
  */
 export async function linkExternalAccount(providerId: string): Promise<{ authorizationUrl: string } | null> {
 	try {
-		const res = await fetchWithAuth(`${getFullUrl(`/api/authexternallinks/link/${providerId}`)}`, {
+		const res = await fetchWithAuth(`/api/authexternallinks/link/${providerId}`, {
 			method: 'POST'
 		});
 		if (!res.ok) return null;
@@ -326,7 +326,7 @@ export async function linkExternalAccount(providerId: string): Promise<{ authori
  */
 export async function unlinkExternalAccount(linkId: string): Promise<boolean> {
 	try {
-		const res = await fetchWithAuth(`${getFullUrl(`/api/authexternallinks/${linkId}`)}`, {
+		const res = await fetchWithAuth(`/api/authexternallinks/${linkId}`, {
 			method: 'DELETE'
 		});
 		return res.ok;
