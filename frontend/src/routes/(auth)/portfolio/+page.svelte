@@ -7,13 +7,26 @@
 	import PageHead from '$lib/components/PageHead.svelte';
 
 	// Reactive values that track the store - use $derived for efficiency
-	let snapshots = $derived(dataStore.snapshots);
-	let quotes = $derived(dataStore.quotes);
-	let groupFeesSummaries = $derived(dataStore.groupFeesSummaries);
-	let overallFees = $derived(dataStore.overallFees);
+	let snapshots = $state(dataStore.snapshots);
+	let quotes = $state(dataStore.quotes);
+	let groupFeesSummaries = $state(dataStore.groupFeesSummaries);
+	let overallFees = $state(dataStore.overallFees);
 
 	// Create quote lookup map for O(1) access
 	let quoteMap = $derived(new Map(quotes.map(q => [q.id, q])));
+
+	$effect(() => {
+		const unsubscribe = dataStore.subscribe(() => {
+			snapshots = dataStore.snapshots;
+			quotes = dataStore.quotes;
+			groupFeesSummaries = dataStore.groupFeesSummaries;
+			overallFees = dataStore.overallFees;
+		});
+
+		return () => {
+			unsubscribe();
+		};
+	});
 
 	// Group by quote group (from quote), then by quoteId
 	let groupedSnapshots = $derived.by(() => {
