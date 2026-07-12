@@ -15,7 +15,8 @@
 	import PillToggle from './PillToggle.svelte';
 
 	type InvestmentTypeIcon = { type: InvestmentType; faIcon: string };
-	let isLoading = $state(false);
+	let isLoading1 = $state(false);
+	let isLoading2 = $state(false);
 
 	let {
 		investment = $bindable({
@@ -35,7 +36,7 @@
 	}: {
 		investment?: InvestmentModel;
 		quote?: QuoteModel | null;
-		saveInvestment: (investment: InvestmentModel) => Promise<void>;
+		saveInvestment: (investment: InvestmentModel, createNew: boolean) => Promise<void>;
 	} = $props();
 
 	// Update investment fields when quote changes
@@ -86,7 +87,7 @@
 		return value.toLocaleString(undefined, { style: 'currency', currency: 'CHF' });
 	}
 
-	async function saveChanges() {
+	async function saveChanges(createNew: boolean = false) {
 		if (!investmentValuesValid(investment)) {
 			let errorMsg = 'Please fix the following issues:\n';
 			if (!investmentValuesValid(investment)) {
@@ -98,9 +99,12 @@
 		// Create a snapshot of the investment to prevent reactive updates from affecting the saved data
 		const investmentSnapshot = { ...investment };
 
-		isLoading = true;
-		await saveInvestment(investmentSnapshot);
-		isLoading = false;
+		if (createNew) { isLoading2 = true; } else { isLoading1 = true; }
+
+		await saveInvestment(investmentSnapshot, createNew);
+
+		isLoading1 = false;
+		isLoading2 = false;
 	}
 </script>
 
@@ -202,16 +206,30 @@
 		</div>
 	</div>
 
-	<div class="grid">
+	<div class="grid {investment.id === 0 ? 'xs:grid-cols-2' : 'xs:grid-cols-1'} gap-2">
 		<Button
 			icon={investment.id === 0 ? 'fa-solid fa-plus' : 'fa-solid fa-floppy-disk'}
-			text={investment.id === 0 ? 'Create Investment' : 'Save Changes'}
+			text={investment.id === 0 ? 'Create' : 'Save Changes'}
 			style={ColorStyle.Success}
 			width={ContentWidth.Full}
 			padding={StylePadding.Reduced}
-			{isLoading}
+			isLoading={isLoading1}
+			disabled={isLoading2}
 			onclick={() => saveChanges()}
 		/>
+
+		{#if investment.id === 0}
+			<Button
+				icon="fa-solid fa-plus"
+				text="Create and New"
+				style={ColorStyle.Secondary}
+				width={ContentWidth.Full}
+				padding={StylePadding.Reduced}
+				isLoading={isLoading2}
+				disabled={isLoading1}
+				onclick={() => saveChanges(true)}
+			/>
+		{/if}
 	</div>
 </div>
 

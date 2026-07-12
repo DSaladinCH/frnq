@@ -58,10 +58,10 @@
 		inputElement?: HTMLInputElement;
 	} = $props();
 
-	id = id || `textbox-${Math.random().toString(36).slice(2, 11)}`;
-	const isCheckbox = type === 'checkbox';
-	const isFileInput = type === 'file';
-	const isDateTimeInput = type === 'datetime-local' || type === 'date' || type === 'time';
+	let calculatedId = $derived(id || `textbox-${Math.random().toString(36).slice(2, 11)}`);
+	let isCheckbox = $derived(type === 'checkbox');
+	let isFileInput = $derived(type === 'file');
+	let isDateTimeInput = $derived(type === 'datetime-local' || type === 'date' || type === 'time');
 
 	let dateInputRef: HTMLInputElement | null = $state(null);
 	let datepicker: AirDatepicker<HTMLInputElement> | null = null;
@@ -301,7 +301,7 @@
 >
 	{#if title}
 		<!-- Check if title is string or snippet -->
-		<label for={id} class="leading-none">
+		<label for={calculatedId} class="leading-none">
 			{#if typeof title === 'string'}
 				{title}
 			{:else}
@@ -311,13 +311,13 @@
 	{/if}
 
 	{#if isCheckbox}
-		<input class="checkbox" type="checkbox" {id} bind:checked {required} {onchange} {disabled} />
+		<input class="checkbox" type="checkbox" id={calculatedId} bind:checked {required} {onchange} {disabled} />
 	{:else if isFileInput}
 		<div class="gradient-border" style="--gradient-border-radius: 0.25em;">
 			<input
 				class="absolute h-0 w-0 overflow-hidden opacity-0"
 				type="file"
-				{id}
+				id={calculatedId}
 				bind:files
 				bind:value
 				{name}
@@ -328,7 +328,7 @@
 				{disabled}
 			/>
 			<label
-				for={id}
+				for={calculatedId}
 				class="textbox flex w-full flex-1 grow cursor-pointer items-center transition-all duration-200 {disabled
 					? 'cursor-not-allowed opacity-60'
 					: ''}"
@@ -342,7 +342,7 @@
 				bind:this={dateInputRef}
 				class="textbox grow"
 				type="text"
-				{id}
+				id={calculatedId}
 				{required}
 				{disabled}
 				{placeholder}
@@ -356,7 +356,7 @@
 				class="textbox grow"
 				bind:this={inputElement}
 				{type}
-				{id}
+				id={calculatedId}
 				{autocomplete}
 				{required}
 				{oninput}

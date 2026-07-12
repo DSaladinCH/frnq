@@ -100,7 +100,7 @@
 		showInvestmentDialog = false;
 	}
 
-	async function saveInvestment(investment: InvestmentModel) {
+	async function saveInvestment(investment: InvestmentModel, createNew: boolean) {
 		if (secondaryLoading) return;
 		// Validate inputs
 		if (!investmentValuesValid(investment)) {
@@ -119,7 +119,11 @@
 				await investmentsList.refresh();
 			}
 
-			onInvestmentDialogClose();
+			if (createNew) {
+				newInvestment();
+			} else {
+				onInvestmentDialogClose();
+			}
 		} catch (error) {
 			console.error('Error saving investment:', error);
 			notify.error('Error saving investment: ' + error);
