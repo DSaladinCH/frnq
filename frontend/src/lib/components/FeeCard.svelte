@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { GeneralFeeViewDto } from '$lib/services/positionService';
+	import type { GeneralFeeModel } from '$lib/services/feeService';
 	import type { QuoteGroup } from '$lib/Models/QuoteGroup';
 	import Button from './Button.svelte';
 	import { ColorStyle } from '$lib/types/ColorStyle';
@@ -15,7 +15,7 @@
 		onEdit,
 		onDelete
 	}: {
-		fee: GeneralFeeViewDto;
+		fee: GeneralFeeModel;
 		groups?: QuoteGroup[];
 		onEdit: () => void;
 		onDelete: (event: MouseEvent) => Promise<void>;

@@ -3,7 +3,7 @@
 	import Button from '$lib/components/Button.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
-	import type { GeneralFeeViewDto } from '$lib/services/positionService';
+	import { type GeneralFeeModel, createDefaultFee, feeValuesValid } from '$lib/services/feeService';
 	import { dataStore } from '$lib/stores/dataStore';
 	import FeeCard from '$lib/components/FeeCard.svelte';
 	import PageHead from '$lib/components/PageHead.svelte';
@@ -15,7 +15,6 @@
 	import { StylePadding } from '$lib/types/StylePadding';
 	import { onMount } from 'svelte';
 	import { formatDate, DateFormatType } from '$lib/utils/dateFormat';
-	import { fetchWithAuth } from '$lib/services/authService';
 	import { infiniteFeesList } from '$lib/stores/infiniteFeesList';
 
 	let showFeeDialog = $state(false);
@@ -24,8 +23,8 @@
 	let groups = $state(dataStore.groups);
 
 	// Subscribe to both stores
-	let fees = $state<GeneralFeeViewDto[]>([]);
-	
+	let fees = $state<GeneralFeeModel[]>([]);
+
 	$effect(() => {
 		const unsubscribe1 = dataStore.subscribe(() => {
 			secondaryLoading = dataStore.secondaryLoading;
@@ -51,96 +50,54 @@
 		}
 	});
 
-	let currentFee = $state<Partial<GeneralFeeViewDto>>({
-		id: 0,
-		userId: '',
-		date: new Date().toISOString().split('T')[0],
-		amount: 0,
-		description: '',
-		groupId: null,
-		createdAt: new Date().toISOString()
-	});
+	let currentFee = $state<GeneralFeeModel>(createDefaultFee());
 
 	function newFee() {
-		currentFee = {
-			id: 0,
-			userId: '',
-			date: new Date().toISOString().split('T')[0],
-			amount: 0,
-			description: '',
-			groupId: null,
-			createdAt: new Date().toISOString()
-		};
+		currentFee = createDefaultFee();
 		showFeeDialog = true;
 	}
 
-	function openFeeDialog(fee: GeneralFeeViewDto) {
+	function openFeeDialog(fee: GeneralFeeModel) {
 		currentFee = { ...fee };
 		showFeeDialog = true;
 	}
 
 	function onFeeDialogClose() {
 		showFeeDialog = false;
-		// Reset form to initial state
-		currentFee = {
-			id: 0,
-			userId: '',
-			date: new Date().toISOString().split('T')[0],
-			amount: 0,
-			description: '',
-			groupId: null,
-			createdAt: new Date().toISOString()
-		};
 	}
 
-	async function saveFee(fee: Partial<GeneralFeeViewDto>) {
+	async function saveFee(fee: GeneralFeeModel, createNew: boolean) {
 		if (secondaryLoading) return;
+
+		if (!feeValuesValid(fee)) {
+			notify.error('Please fill in all required fields with valid values.');
+			return;
+		}
 
 		try {
 			if (fee.id === 0) {
-				// Create new fee
-				const response = await fetchWithAuth('/api/general-fees', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						amount: fee.amount,
-						date: new Date(fee.date as string).toISOString(),
-						description: fee.description,
-						groupId: fee.groupId
-					})
-				});
-
-				if (!response.ok) throw new Error('Failed to create fee');
+				await dataStore.addFee(fee);
 				notify.success('Fee created successfully');
 			} else {
-				// Update existing fee
-				const response = await fetchWithAuth(`/api/general-fees/${fee.id}`, {
-					method: 'PUT',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						amount: fee.amount,
-						date: new Date(fee.date as string).toISOString(),
-						description: fee.description,
-						groupId: fee.groupId
-					})
-				});
-
-				if (!response.ok) throw new Error('Failed to update fee');
+				await dataStore.updateFee(fee);
 				notify.success('Fee updated successfully');
 			}
 
-			// Refresh both the fee list and dataStore snapshots
-			infiniteFeesList.reset();
-			await infiniteFeesList.initialize(25);
-			await dataStore.refreshData();
-			onFeeDialogClose();
+			// Refresh the list to reflect the change
+			await infiniteFeesList.refresh();
+
+			if (createNew) {
+				newFee();
+			} else {
+				onFeeDialogClose();
+			}
 		} catch (error) {
-			notify.error('Error saving fee: ' + error);
 			console.error('Error saving fee:', error);
+			notify.error('Error saving fee: ' + error);
 		}
 	}
 
-	async function deleteFee(fee: GeneralFeeViewDto) {
+	async function deleteFee(fee: GeneralFeeModel) {
 		if (secondaryLoading) return;
 		onFeeDialogClose();
 
@@ -158,16 +115,9 @@
 		}
 
 		try {
-			const response = await fetchWithAuth(`/api/general-fees/${fee.id}`, {
-				method: 'DELETE'
-			});
-
-			if (!response.ok) throw new Error('Failed to delete fee');
-
-			// Refresh both the fee list and dataStore snapshots
-			infiniteFeesList.reset();
-			await infiniteFeesList.initialize(25);
-			await dataStore.refreshData();
+			await dataStore.deleteFee(fee.id);
+			// Refresh the list to remove the deleted fee
+			await infiniteFeesList.refresh();
 			notify.success('Fee deleted successfully');
 		} catch (error) {
 			notify.error('Error deleting fee: ' + error);
@@ -209,15 +159,10 @@
 			</div>
 
 			<div class="lg:hidden">
-				<FeeCard
-					{fee}
-					{groups}
-					onEdit={() => openFeeDialog(fee)}
-					onDelete={() => deleteFee(fee)}
-				/>
+				<FeeCard {fee} {groups} onEdit={() => openFeeDialog(fee)} onDelete={() => deleteFee(fee)} />
 			</div>
 		{/each}
-		
+
 		<!-- Infinite scroll component -->
 		<InfiniteScroll
 			onLoadMore={() => infiniteFeesList.loadMore()}
@@ -235,4 +180,3 @@
 >
 	<FeeForm bind:fee={currentFee} {saveFee} />
 </Modal>
-

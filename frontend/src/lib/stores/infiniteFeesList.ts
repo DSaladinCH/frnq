@@ -1,13 +1,7 @@
-import { fetchWithAuth } from '$lib/services/authService';
-import type { GeneralFeeViewDto } from '$lib/services/positionService';
-
-export interface PaginatedFeesResponse {
-	items: GeneralFeeViewDto[];
-	totalCount: number;
-}
+import { getFees, type GeneralFeeModel, type PaginatedFeesResponse } from '$lib/services/feeService';
 
 export class InfiniteFeesList {
-	private _items: GeneralFeeViewDto[] = [];
+	private _items: GeneralFeeModel[] = [];
 	private _totalCount = 0;
 	private _loading = false;
 	private _hasMore = true;
@@ -57,21 +51,11 @@ export class InfiniteFeesList {
 		this.notify();
 
 		try {
-			const skip = this._items.length;
-			const url = `/api/general-fees?skip=${skip}&take=${this._pageSize}`;
-			const response = await fetchWithAuth(url);
+			const response: PaginatedFeesResponse = await getFees(this._items.length, this._pageSize);
 
-			if (!response.ok) throw new Error('Failed to load fees');
-
-			const data = await response.json();
-			
-			// Support both direct array and paginated response
-			const items = Array.isArray(data) ? data : data.items || [];
-			const totalCount = Array.isArray(data) ? data.length : data.totalCount || 0;
-
-			this._items = [...this._items, ...items];
-			this._totalCount = totalCount;
-			this._hasMore = this._items.length < totalCount;
+			this._items = [...this._items, ...response.items];
+			this._totalCount = response.totalCount;
+			this._hasMore = this._items.length < response.totalCount;
 		} catch (error) {
 			console.error('Error loading fees:', error);
 			throw error;

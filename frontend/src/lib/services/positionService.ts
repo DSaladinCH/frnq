@@ -1,4 +1,5 @@
 import type { QuoteModel } from '$lib/Models/QuoteModel';
+import type { GroupFeesSummary } from './feeService';
 import { fetchWithAuth } from './authService';
 
 export interface PositionSnapshot {
@@ -16,23 +17,6 @@ export interface PositionSnapshot {
 	unrealizedGain: number;
 	totalProfit: number;
 	totalInvestedCash: number;
-}
-
-export interface GeneralFeeViewDto {
-	id: number;
-	userId: string;
-	date: string;
-	amount: number;
-	description: string;
-	groupId: number | null;
-	createdAt: string;
-}
-
-export interface GroupFeesSummary {
-	groupId: number | null;
-	groupName: string | null;
-	totalGeneralFees: number;
-	feeDetails: GeneralFeeViewDto[];
 }
 
 export interface PositionsResponse {
