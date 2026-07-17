@@ -56,7 +56,8 @@
 			bind:value
 			{placeholder}
 			{onkeypress}
-			{disabled} />
+			{disabled}
+			spaceForRightAction />
 
 		<button
 			type="button"
@@ -68,9 +69,3 @@
 		</button>
 	</div>
 </div>
-
-<style>
-	:global(.textbox) {
-		padding-right: 2.5rem !important;
-	}
-</style>
