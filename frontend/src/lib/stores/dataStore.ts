@@ -171,13 +171,6 @@ export class DataStore {
 			});
 	}
 
-	private refreshDataInBackground() {
-		this.runFetchInBackground(async () => {
-			await this.fetchAllData();
-			await infiniteFeesList.refresh();
-		});
-	}
-
 	private fetchAllDataInBackground() {
 		this.runFetchInBackground(() => this.fetchAllData());
 	}
@@ -206,7 +199,7 @@ export class DataStore {
 	// `fetchLoading`) instead of blocking via `secondaryLoading`.
 	async refreshData(background: boolean = false) {
 		if (background) {
-			this.refreshDataInBackground();
+			this.fetchAllDataInBackground();
 			return;
 		}
 
@@ -227,7 +220,7 @@ export class DataStore {
 			const { addInvestment: addInvestmentAPI } = await import('$lib/services/investmentService');
 			await addInvestmentAPI(investment as any);
 		});
-		this.refreshDataInBackground();
+		this.fetchAllDataInBackground();
 	}
 
 	// Method to update investment and refresh data in the background
@@ -238,7 +231,7 @@ export class DataStore {
 			);
 			await updateInvestmentAPI(investment);
 		});
-		this.refreshDataInBackground();
+		this.fetchAllDataInBackground();
 	}
 
 	async deleteInvestment(investmentId: number) {
@@ -248,7 +241,7 @@ export class DataStore {
 			);
 			await deleteInvestmentAPI(investmentId);
 		});
-		this.refreshDataInBackground();
+		this.fetchAllDataInBackground();
 	}
 
 	async addQuoteGroup(name: string) {
@@ -332,7 +325,7 @@ export class DataStore {
 			const { addFee: addFeeAPI } = await import('$lib/services/feeService');
 			await addFeeAPI(fee);
 		});
-		this.refreshDataInBackground();
+		this.fetchAllDataInBackground();
 	}
 
 	// Method to update fee and refresh data in the background
@@ -341,7 +334,7 @@ export class DataStore {
 			const { updateFee: updateFeeAPI } = await import('$lib/services/feeService');
 			await updateFeeAPI(fee);
 		});
-		this.refreshDataInBackground();
+		this.fetchAllDataInBackground();
 	}
 
 	async deleteFee(feeId: number) {
@@ -349,7 +342,7 @@ export class DataStore {
 			const { deleteFee: deleteFeeAPI } = await import('$lib/services/feeService');
 			await deleteFeeAPI(feeId);
 		});
-		this.refreshDataInBackground();
+		this.fetchAllDataInBackground();
 	}
 }
 
