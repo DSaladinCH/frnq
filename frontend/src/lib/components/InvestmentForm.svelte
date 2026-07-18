@@ -13,10 +13,22 @@
 	import { notify } from '$lib/services/notificationService';
 	import { StylePadding } from '$lib/types/StylePadding';
 	import PillToggle from './PillToggle.svelte';
+	import { formatCurrency } from '$lib/utils/numberFormat';
+	import { userPreferences } from '$lib/stores/userPreferences';
 
 	type InvestmentTypeIcon = { type: InvestmentType; faIcon: string };
 	let isLoading1 = $state(false);
 	let isLoading2 = $state(false);
+
+	let preferences = $state($userPreferences);
+
+	// Subscribe to user preferences changes
+	$effect(() => {
+		const unsubscribe = userPreferences.subscribe((prefs) => {
+			preferences = prefs;
+		});
+		return unsubscribe;
+	});
 
 	let {
 		investment = $bindable({
@@ -81,10 +93,6 @@
 
 	function selectType(type: InvestmentType) {
 		investment.type = type;
-	}
-
-	function formatCurrency(value: number): string {
-		return value.toLocaleString(undefined, { style: 'currency', currency: 'CHF' });
 	}
 
 	async function saveChanges(createNew: boolean = false) {
@@ -200,7 +208,7 @@
 				{#if totalInvestment === 0}
 					<span class="text-(--color-error)">-</span>
 				{:else}
-					{formatCurrency(totalInvestment)}
+					{formatCurrency(totalInvestment, 'CHF', preferences.numberFormat)}
 				{/if}
 			</span>
 		</div>

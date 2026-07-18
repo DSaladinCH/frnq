@@ -6,6 +6,8 @@
 	import { dataStore } from '$lib/stores/dataStore';
 	import PageHead from '$lib/components/PageHead.svelte';
 	import Loading from '$lib/components/Loading.svelte';
+	import { formatCurrency } from '$lib/utils/numberFormat';
+	import { userPreferences } from '$lib/stores/userPreferences';
 
 	// Reactive values that track the store - use $derived for efficiency
 	let snapshots = $state(dataStore.snapshots);
@@ -14,6 +16,7 @@
 	let overallFees = $state(dataStore.overallFees);
 	let fetchLoading = $state(dataStore.fetchLoading);
 	let showFetchLoading = $state(dataStore.fetchLoading);
+	let preferences = $state($userPreferences);
 
 	// Create quote lookup map for O(1) access
 	let quoteMap = $derived(new Map(quotes.map((q) => [q.id, q])));
@@ -43,6 +46,14 @@
 			showFetchLoading = true;
 			fadeOut = false;
 		}
+	});
+
+	// Subscribe to user preferences changes
+	$effect(() => {
+		const unsubscribe = userPreferences.subscribe((prefs) => {
+			preferences = prefs;
+		});
+		return unsubscribe;
 	});
 
 	// Group by quote group (from quote), then by quoteId
@@ -523,10 +534,7 @@
 					<div class="flex justify-between items-center text-base">
 						<span class="font-medium color-muted">Unassigned Fees:</span>
 						<span class="font-semibold">
-							- {portfolioFeeCard.fees.toLocaleString(undefined, {
-								style: 'currency',
-								currency: 'CHF'
-							})}
+							- {formatCurrency(portfolioFeeCard.fees, 'CHF', preferences.numberFormat)}
 						</span>
 					</div>
 				</div>
@@ -543,10 +551,7 @@
 					<div class="flex justify-between items-center text-base">
 						<span class="font-medium color-muted">Group Fees:</span>
 						<span class="font-semibold">
-							- {groupFeeCard.fees.toLocaleString(undefined, {
-								style: 'currency',
-								currency: 'CHF'
-							})}
+							- {formatCurrency(groupFeeCard.fees, 'CHF', preferences.numberFormat)}
 						</span>
 					</div>
 				</div>

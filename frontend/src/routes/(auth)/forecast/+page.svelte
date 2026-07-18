@@ -5,12 +5,15 @@
 	import { dataStore } from '$lib/stores/dataStore';
 	import PageTitle from '$lib/components/PageTitle.svelte';
 	import Loading from '$lib/components/Loading.svelte';
+	import { formatCurrency, formatNumber } from '$lib/utils/numberFormat';
+	import { userPreferences } from '$lib/stores/userPreferences';
 
 	// Reactive values that track the store
 	let forecast = $state(dataStore.forecast);
 	let quotes = $state(dataStore.quotes);
 	let fetchLoading = $state(dataStore.fetchLoading);
 	let showFetchLoading = $state(dataStore.fetchLoading);
+	let preferences = $state($userPreferences);
 
 	let fadeOut = $state(false);
 
@@ -24,6 +27,14 @@
 		return () => {
 			unsubscribe();
 		};
+	});
+
+	// Subscribe to user preferences changes
+	$effect(() => {
+		const unsubscribe = userPreferences.subscribe((prefs) => {
+			preferences = prefs;
+		});
+		return unsubscribe;
 	});
 
 	$effect(() => {
@@ -351,11 +362,7 @@
 					<i class="fa-solid fa-chart-line mr-2"></i>Latest Median
 				</div>
 				<div class="text-2xl font-bold">
-					{stats.latestMedian.toLocaleString(undefined, {
-						style: 'currency',
-						currency: 'CHF',
-						maximumFractionDigits: 0
-					})}
+					{formatCurrency(stats.latestMedian, 'CHF', preferences.numberFormat, { maximumFractionDigits: 0 })}
 				</div>
 			</div>
 
@@ -364,11 +371,7 @@
 					<i class="fa-solid fa-arrow-up mr-2"></i>Upside (Max)
 				</div>
 				<div class="text-2xl font-bold color-success">
-					{stats.maxUpper.toLocaleString(undefined, {
-						style: 'currency',
-						currency: 'CHF',
-						maximumFractionDigits: 0
-					})}
+					{formatCurrency(stats.maxUpper, 'CHF', preferences.numberFormat, { maximumFractionDigits: 0 })}
 				</div>
 			</div>
 
@@ -377,11 +380,7 @@
 					<i class="fa-solid fa-arrow-down mr-2"></i>Downside (Min)
 				</div>
 				<div class="text-2xl font-bold color-error">
-					{stats.minLower.toLocaleString(undefined, {
-						style: 'currency',
-						currency: 'CHF',
-						maximumFractionDigits: 0
-					})}
+					{formatCurrency(stats.minLower, 'CHF', preferences.numberFormat, { maximumFractionDigits: 0 })}
 				</div>
 			</div>
 
@@ -392,13 +391,9 @@
 					></i>Expected Change
 				</div>
 				<div class={`text-2xl font-bold ${stats.change >= 0 ? 'color-success' : 'color-error'}`}>
-					{stats.change >= 0 ? '+' : ''}{stats.change.toLocaleString(undefined, {
-						style: 'currency',
-						currency: 'CHF',
-						maximumFractionDigits: 0
-					})}
+					{stats.change >= 0 ? '+' : ''}{formatCurrency(stats.change, 'CHF', preferences.numberFormat, { maximumFractionDigits: 0 })}
 					<span class="text-sm"
-						>({stats.changePercent >= 0 ? '+' : ''}{stats.changePercent.toFixed(2)}%)</span
+						>({stats.changePercent >= 0 ? '+' : ''}{formatNumber(stats.changePercent, preferences.numberFormat, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%)</span
 					>
 				</div>
 			</div>
@@ -443,27 +438,15 @@
 						<div class="flex max-xs:flex-col justify-between text-sm">
 							<span class="color-muted">Median:</span>
 							<span class="font-medium">
-								{values.median.toLocaleString(undefined, {
-									style: 'currency',
-									currency: 'CHF',
-									maximumFractionDigits: 0
-								})}
+								{formatCurrency(values.median, 'CHF', preferences.numberFormat, { maximumFractionDigits: 0 })}
 							</span>
 						</div>
 						<div class="flex max-xs:flex-col justify-between text-sm">
 							<span class="color-muted">Range:</span>
 							<span class="font-medium">
-								{values.lower.toLocaleString(undefined, {
-									style: 'currency',
-									currency: 'CHF',
-									maximumFractionDigits: 0
-								})}
+								{formatCurrency(values.lower, 'CHF', preferences.numberFormat, { maximumFractionDigits: 0 })}
 								-
-								{values.upper.toLocaleString(undefined, {
-									style: 'currency',
-									currency: 'CHF',
-									maximumFractionDigits: 0
-								})}
+								{formatCurrency(values.upper, 'CHF', preferences.numberFormat, { maximumFractionDigits: 0 })}
 							</span>
 						</div>
 					</div>
@@ -481,27 +464,15 @@
 						<div class="flex justify-between text-sm">
 							<span class="color-muted">Median:</span>
 							<span class="font-medium">
-								{values.median.toLocaleString(undefined, {
-									style: 'currency',
-									currency: 'CHF',
-									maximumFractionDigits: 0
-								})}
+								{formatCurrency(values.median, 'CHF', preferences.numberFormat, { maximumFractionDigits: 0 })}
 							</span>
 						</div>
 						<div class="flex justify-between text-sm">
 							<span class="color-muted">Range:</span>
 							<span class="font-medium">
-								{values.lower.toLocaleString(undefined, {
-									style: 'currency',
-									currency: 'CHF',
-									maximumFractionDigits: 0
-								})}
+								{formatCurrency(values.lower, 'CHF', preferences.numberFormat, { maximumFractionDigits: 0 })}
 								-
-								{values.upper.toLocaleString(undefined, {
-									style: 'currency',
-									currency: 'CHF',
-									maximumFractionDigits: 0
-								})}
+								{formatCurrency(values.upper, 'CHF', preferences.numberFormat, { maximumFractionDigits: 0 })}
 							</span>
 						</div>
 					</div>

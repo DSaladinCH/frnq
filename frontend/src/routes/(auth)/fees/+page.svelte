@@ -15,12 +15,15 @@
 	import { StylePadding } from '$lib/types/StylePadding';
 	import { onMount } from 'svelte';
 	import { formatDate, DateFormatType } from '$lib/utils/dateFormat';
+	import { formatCurrency } from '$lib/utils/numberFormat';
+	import { userPreferences } from '$lib/stores/userPreferences';
 	import { infiniteFeesList } from '$lib/stores/infiniteFeesList';
 
 	let showFeeDialog = $state(false);
 	let secondaryLoading = $state(dataStore.secondaryLoading);
 	let listLoading = $state(false);
 	let groups = $state(dataStore.groups);
+	let preferences = $state($userPreferences);
 
 	// Subscribe to both stores
 	let fees = $state<GeneralFeeModel[]>([]);
@@ -40,6 +43,14 @@
 			unsubscribe1();
 			unsubscribe2();
 		};
+	});
+
+	// Subscribe to user preferences changes
+	$effect(() => {
+		const unsubscribe = userPreferences.subscribe((prefs) => {
+			preferences = prefs;
+		});
+		return unsubscribe;
 	});
 
 	onMount(async () => {
@@ -107,7 +118,7 @@
 		}
 
 		const confirmed = confirm(
-			`Are you sure you want to delete the fee of ${formatCurrency(fee.amount)} on ${formatDate(fee.date, DateFormatType.English)}? This action cannot be undone.`
+			`Are you sure you want to delete the fee of ${formatCurrency(fee.amount, 'CHF', preferences.numberFormat)} on ${formatDate(fee.date, DateFormatType.English)}? This action cannot be undone.`
 		);
 
 		if (!confirmed) {
@@ -125,9 +136,6 @@
 		}
 	}
 
-	function formatCurrency(value: number): string {
-		return value.toLocaleString(undefined, { style: 'currency', currency: 'CHF' });
-	}
 </script>
 
 <PageHead title="Fees" />

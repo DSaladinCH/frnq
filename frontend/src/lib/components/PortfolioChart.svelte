@@ -4,6 +4,18 @@
 	import type { PositionSnapshot } from '../services/positionService';
 	import PillToggle from './PillToggle.svelte';
 	import DropDown from './DropDown.svelte';
+	import { formatCurrency, formatNumber } from '$lib/utils/numberFormat';
+	import { userPreferences } from '$lib/stores/userPreferences';
+
+	let preferences = $state($userPreferences);
+
+	// Subscribe to user preferences changes
+	$effect(() => {
+		const unsubscribe = userPreferences.subscribe((prefs) => {
+			preferences = prefs;
+		});
+		return unsubscribe;
+	});
 
 	let {
 		snapshots,
@@ -500,17 +512,14 @@
 			<div class="text-4xl font-bold flex w-full justify-center md:justify-start">
 				<span class="text-left" style="color: {profitColor}"
 					>{totalProfit >= 0 ? '+' : ''}
-					{totalProfit.toLocaleString(undefined, { style: 'currency', currency: 'CHF' })}</span
+					{formatCurrency(totalProfit, 'CHF', preferences.numberFormat)}</span
 				>
 			</div>
 
 			<div class="flex items-center gap-3 w-full justify-center md:justify-start mt-1">
 				<span class="text-base font-semibold" style="color: {profitColor}">
 					{profitChange >= 0 ? '+' : ''}
-					{profitChange.toLocaleString(undefined, {
-						style: 'currency',
-						currency: 'CHF'
-					})}
+					{formatCurrency(profitChange, 'CHF', preferences.numberFormat)}
 				</span>
 
 				<div class="border-l border-button h-3.5"></div>
@@ -519,17 +528,17 @@
 					<span
 						class="text-base font-semibold"
 						style="color: {profitColor}"
-						title={profitChangePct.toFixed(2) + '%'}>{profitChangePctDisplay}%</span
+						title={formatNumber(profitChangePct, preferences.numberFormat, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%'}>{profitChangePctDisplay}%</span
 					>
 				{:else if profitChangePctDisplay === '+9999' || profitChangePctDisplay === '-9999'}
 					<span
 						class="text-base font-semibold"
 						style="color: {profitColor}"
-						title={profitChangePct.toFixed(2) + '%'}>{profitChangePctDisplay}%</span
+						title={formatNumber(profitChangePct, preferences.numberFormat, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%'}>{profitChangePctDisplay}%</span
 					>
 				{:else}
 					<span class="text-base font-semibold" style="color: {profitColor}"
-						>{profitChangePctDisplay}%</span
+						>{formatNumber(profitChangePct, preferences.numberFormat, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%'}</span
 					>
 				{/if}
 			</div>

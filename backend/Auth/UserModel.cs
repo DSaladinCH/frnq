@@ -11,6 +11,13 @@ public enum DateFormat
     German = 1    // de-DE: DD.MM.YYYY
 }
 
+public enum NumberFormat
+{
+    English = 0,  // en-US: 1,234.56
+    German = 1,   // de-DE: 1.234,56
+    Swiss = 2     // de-CH: 1'234.56
+}
+
 [Table("user")]
 [Index(nameof(Email), IsUnique = true)]
 public class UserModel
@@ -29,7 +36,9 @@ public class UserModel
     public string Firstname { get; set; } = string.Empty;
 
     public DateFormat DateFormat { get; set; } = DateFormat.English;
-	
+
+    public NumberFormat NumberFormat { get; set; } = NumberFormat.English;
+
 	[MinLength(2)]
 	public int ForecastNumberOfInvestments { get; set; } = 5;
 

@@ -4,9 +4,21 @@
 	import MenuButton from './MenuButton.svelte';
 	import MenuItem from './MenuItem.svelte';
 	import MenuSeparator from './MenuSeparator.svelte';
+	import { formatCurrency, formatNumber } from '$lib/utils/numberFormat';
+	import { userPreferences } from '$lib/stores/userPreferences';
 
 	let isGroupRemoving = $state(false);
 	let isCustomNameRemoving = $state(false);
+
+	let preferences = $state($userPreferences);
+
+	// Subscribe to user preferences changes
+	$effect(() => {
+		const unsubscribe = userPreferences.subscribe((prefs) => {
+			preferences = prefs;
+		});
+		return unsubscribe;
+	});
 
 	let {
 		quote,
@@ -37,14 +49,6 @@
 				? (totalProfit / snapshot.invested) * 100
 				: 0
 	);
-
-	function formatCurrency(value: number): string {
-		return value.toLocaleString(undefined, { style: 'currency', currency: quote.currency });
-	}
-
-	function formatNumber(value: number): string {
-		return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 });
-	}
 
 	async function removeGroup() {
 		isGroupRemoving = true;
@@ -108,27 +112,27 @@
 	<div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-3 mt-4">
 		<div class="flex flex-col">
 			<span class="text-xs leading-none color-muted mb-1">Amount</span>
-			<span class="text-sm font-semibold leading-none">{formatNumber(snapshot.amount)}</span>
+			<span class="text-sm font-semibold leading-none">{formatNumber(snapshot.amount, preferences.numberFormat, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</span>
 		</div>
 
 		<div class="flex flex-col">
 			<span class="text-xs leading-none color-muted mb-1">Market Price</span>
-			<span class="text-sm font-semibold leading-none">{formatCurrency(snapshot.marketPricePerUnit)}</span>
+			<span class="text-sm font-semibold leading-none">{formatCurrency(snapshot.marketPricePerUnit, quote.currency, preferences.numberFormat)}</span>
 		</div>
 
 		<div class="flex flex-col">
 			<span class="text-xs leading-none color-muted mb-1">Current Value</span>
-			<span class="text-sm font-bold leading-none">{formatCurrency(snapshot.currentValue)}</span>
+			<span class="text-sm font-bold leading-none">{formatCurrency(snapshot.currentValue, quote.currency, preferences.numberFormat)}</span>
 		</div>
 
 		<div class="flex flex-col">
 			<span class="text-xs leading-none color-muted mb-1">Invested</span>
-			<span class="text-sm font-semibold leading-none">{formatCurrency(snapshot.invested)}</span>
+			<span class="text-sm font-semibold leading-none">{formatCurrency(snapshot.invested, quote.currency, preferences.numberFormat)}</span>
 		</div>
 
 		<div class="flex flex-col">
 			<span class="text-xs leading-none color-muted mb-1">Total Fees</span>
-			<span class="text-sm font-semibold leading-none">{formatCurrency(snapshot.totalFees)}</span>
+			<span class="text-sm font-semibold leading-none">{formatCurrency(snapshot.totalFees, quote.currency, preferences.numberFormat)}</span>
 		</div>
 	</div>
 
@@ -138,10 +142,10 @@
 			<span class="text-xs leading-none color-muted mb-1">Position Gain</span>
 			<div class="flex items-baseline gap-1.5">
 				<span class="text-sm font-bold leading-none {unrealizedGain < 0 ? 'color-error' : 'color-success'}"
-					>{unrealizedGain >= 0 ? '+' : ''} {formatCurrency(unrealizedGain)}</span
+					>{unrealizedGain >= 0 ? '+' : ''} {formatCurrency(unrealizedGain, quote.currency, preferences.numberFormat)}</span
 				>
 				<span class="text-xs font-semibold leading-none {unrealizedGain < 0 ? 'color-error' : 'color-success'}"
-					>({positionPerformancePct >= 0 ? '+' : ''} {positionPerformancePct.toFixed(2)}%)</span
+					>({positionPerformancePct >= 0 ? '+' : ''} {formatNumber(positionPerformancePct, preferences.numberFormat, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%)</span
 				>
 			</div>
 		</div>
@@ -151,7 +155,7 @@
 				<span class="text-xs leading-none color-muted mb-1">Realized Gains</span>
 				<span
 					class="text-sm font-semibold leading-none {snapshot.realizedGain < 0 ? 'color-error' : 'color-success'}"
-					>{snapshot.realizedGain >= 0 ? '+' : ''} {formatCurrency(snapshot.realizedGain)}</span
+					>{snapshot.realizedGain >= 0 ? '+' : ''} {formatCurrency(snapshot.realizedGain, quote.currency, preferences.numberFormat)}</span
 				>
 			</div>
 		{/if}
@@ -160,10 +164,10 @@
 			<span class="text-xs leading-none color-muted font-semibold mb-1">Total Profit</span>
 			<div class="flex items-baseline gap-1.5">
 				<span class="text-lg font-bold leading-none {totalProfit < 0 ? 'color-error' : 'color-success'}"
-					>{totalProfit >= 0 ? '+' : ''} {formatCurrency(totalProfit)}</span
+					>{totalProfit >= 0 ? '+' : ''} {formatCurrency(totalProfit, quote.currency, preferences.numberFormat)}</span
 				>
 				<span class="text-sm font-semibold leading-none {totalProfit < 0 ? 'color-error' : 'color-success'}"
-					>({totalReturnPct >= 0 ? '+' : ''} {totalReturnPct.toFixed(2)}%)</span
+					>({totalReturnPct >= 0 ? '+' : ''} {formatNumber(totalReturnPct, preferences.numberFormat, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%)</span
 				>
 			</div>
 		</div>

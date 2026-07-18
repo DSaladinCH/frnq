@@ -11,6 +11,7 @@
 	import { notify } from '$lib/services/notificationService';
 	import { tick } from 'svelte';
 	import { DateFormatType } from '$lib/utils/dateFormat';
+	import { NumberFormatType } from '$lib/utils/numberFormat';
 
 	// Reactive values that track the store
 	let secondaryLoading = $state(dataStore.secondaryLoading);
@@ -29,6 +30,7 @@
 	// User preferences
 	let preferences = $state($userPreferences);
 	let savingDateFormat = $state(false);
+	let savingNumberFormat = $state(false);
 	let savingForecastNumber = $state(false);
 
 	// Subscribe to store changes
@@ -113,14 +115,15 @@
 		}
 	}
 
-	async function handleSettingsUpdate(dateFormat: string, forecastNumberOfInvestments: number) {
-		if (savingDateFormat || savingForecastNumber) return;
+	async function handleSettingsUpdate(dateFormat: string, numberFormat: string, forecastNumberOfInvestments: number) {
+		if (savingDateFormat || savingNumberFormat || savingForecastNumber) return;
 
 		savingDateFormat = preferences.dateFormat !== dateFormat as DateFormatType;
+		savingNumberFormat = preferences.numberFormat !== numberFormat as NumberFormatType;
 		savingForecastNumber = preferences.forecastNumberOfInvestments !== forecastNumberOfInvestments;
-		
+
 		try {
-			const success = await userPreferences.updateUser(dateFormat as DateFormatType, forecastNumberOfInvestments);
+			const success = await userPreferences.updateUser(dateFormat as DateFormatType, numberFormat as NumberFormatType, forecastNumberOfInvestments);
 			if (success) {
 				notify.success('Settings updated successfully');
 			} else {
@@ -130,6 +133,7 @@
 			notify.error('Failed to update settings');
 		} finally {
 			savingDateFormat = false;
+			savingNumberFormat = false;
 			savingForecastNumber = false;
 		}
 	}
@@ -137,6 +141,12 @@
 	const dateFormatOptions = [
 		{ value: DateFormatType.English, label: 'English (MM/DD/YYYY)' },
 		{ value: DateFormatType.German, label: 'German (DD.MM.YYYY)' }
+	];
+
+	const numberFormatOptions = [
+		{ value: NumberFormatType.English, label: 'English (1,234.56)' },
+		{ value: NumberFormatType.German, label: 'German (1.234,56)' },
+		{ value: NumberFormatType.Swiss, label: "Swiss (1'234.56)" }
 	];
 </script>
 
@@ -250,14 +260,26 @@
 			</p>
 			<div class="flex flex-col gap-4">
 				<div class="flex flex-col gap-2">
-					<span class="color-default font-medium">Format:</span>
+					<span class="color-default font-medium">Date Format:</span>
 					<div class="xs:w-64">
 						<DropDown
 							options={dateFormatOptions}
 							value={preferences.dateFormat}
 							disabled={savingDateFormat}
 							isLoading={savingDateFormat}
-							onchange={(e) => handleSettingsUpdate(e, preferences.forecastNumberOfInvestments)}
+							onchange={(e) => handleSettingsUpdate(e, preferences.numberFormat, preferences.forecastNumberOfInvestments)}
+						/>
+					</div>
+				</div>
+				<div class="flex flex-col gap-2">
+					<span class="color-default font-medium">Number Format:</span>
+					<div class="xs:w-64">
+						<DropDown
+							options={numberFormatOptions}
+							value={preferences.numberFormat}
+							disabled={savingNumberFormat}
+							isLoading={savingNumberFormat}
+							onchange={(e) => handleSettingsUpdate(preferences.dateFormat, e, preferences.forecastNumberOfInvestments)}
 						/>
 					</div>
 				</div>
@@ -270,7 +292,7 @@
 							max="100"
 							bind:value={preferences.forecastNumberOfInvestments}
 							disabled={savingForecastNumber}
-							onchange={(e) => handleSettingsUpdate(preferences.dateFormat, preferences.forecastNumberOfInvestments)}
+							onchange={(e) => handleSettingsUpdate(preferences.dateFormat, preferences.numberFormat, preferences.forecastNumberOfInvestments)}
 						/>
 					</div>
 				</div>

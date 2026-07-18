@@ -8,6 +8,7 @@
 	import { dataStore } from '$lib/stores/dataStore';
 	import { userPreferences } from '$lib/stores/userPreferences';
 	import { formatDate } from '$lib/utils/dateFormat';
+	import { formatCurrency } from '$lib/utils/numberFormat';
 
 	let {
 		forecast = [],
@@ -177,20 +178,8 @@
 									// Use the correct data based on filter mode
 									const dataPoint = chartData[context.dataIndex];
 									return [
-										`Median: ${dataPoint.median.toLocaleString('en-US', {
-											style: 'currency',
-											currency: 'CHF',
-											maximumFractionDigits: 2
-										})}`,
-										`Range: ${dataPoint.lower.toLocaleString('en-US', {
-											style: 'currency',
-											currency: 'CHF',
-											maximumFractionDigits: 2
-										})} - ${dataPoint.upper.toLocaleString('en-US', {
-											style: 'currency',
-											currency: 'CHF',
-											maximumFractionDigits: 2
-										})}`
+										`Median: ${formatCurrency(dataPoint.median, 'CHF', preferences.numberFormat, { maximumFractionDigits: 2 })}`,
+										`Range: ${formatCurrency(dataPoint.lower, 'CHF', preferences.numberFormat, { maximumFractionDigits: 2 })} - ${formatCurrency(dataPoint.upper, 'CHF', preferences.numberFormat, { maximumFractionDigits: 2 })}`
 									];
 								}
 								return '';
@@ -205,9 +194,7 @@
 						position: 'left',
 						ticks: {
 							callback: function (value) {
-								return (value as number).toLocaleString('en-US', {
-									style: 'currency',
-									currency: 'CHF',
+								return formatCurrency(value as number, 'CHF', preferences.numberFormat, {
 									notation: 'compact',
 									maximumFractionDigits: 1
 								});

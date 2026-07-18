@@ -3,6 +3,7 @@
 	import { TextSize } from "$lib/types/TextSize";
 	import Button from "./Button.svelte";
 	import { formatDateTime } from "$lib/utils/dateFormat";
+	import { formatCurrency } from "$lib/utils/numberFormat";
 	import { userPreferences } from "$lib/stores/userPreferences";
 
 	interface Props {
@@ -214,14 +215,6 @@
 		};
 	}
 
-	function formatCurrency(value: number): string {
-		return new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency: 'CHF',
-			minimumFractionDigits: 2
-		}).format(value);
-	}
-
 	function handleBack() {
 		onback?.();
 	}
@@ -322,8 +315,8 @@
 									<td class="px-2 py-3 text-sm color-muted" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.type || '-'}</td>
 									<td class="px-2 py-3 text-sm color-muted" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.datetime ? formatDateTime(row.datetime, preferences.dateFormat) : '-'}</td>
 									<td class="px-2 py-3 text-sm color-muted" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.amount > 0 ? row.amount : '-'}</td>
-									<td class="px-2 py-3 text-sm color-muted" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.unitPrice > 0 ? formatCurrency(row.unitPrice) : '-'}</td>
-									<td class="px-2 py-3 text-sm color-muted" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.feePrice > 0 ? formatCurrency(row.feePrice) : '-'}</td>
+									<td class="px-2 py-3 text-sm color-muted" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.unitPrice > 0 ? formatCurrency(row.unitPrice, 'CHF', preferences.numberFormat, { minimumFractionDigits: 2 }) : '-'}</td>
+									<td class="px-2 py-3 text-sm color-muted" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.feePrice > 0 ? formatCurrency(row.feePrice, 'CHF', preferences.numberFormat, { minimumFractionDigits: 2 }) : '-'}</td>
 									<td class="px-2 py-3 text-sm" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">
 										<div class="flex flex-col gap-1">
 											{#each row.errors as error}
@@ -371,9 +364,9 @@
 									</td>
 									<td class="px-2 py-3 text-sm color-default" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{formatDateTime(row.datetime, preferences.dateFormat)}</td>
 									<td class="px-2 py-3 text-sm color-default text-right font-mono" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.amount}</td>
-									<td class="px-2 py-3 text-sm color-default text-right font-mono" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{formatCurrency(row.unitPrice)}</td>
-									<td class="px-2 py-3 text-sm color-default text-right font-mono" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.feePrice > 0 ? formatCurrency(row.feePrice) : '-'}</td>
-									<td class="px-2 py-3 text-sm color-default text-right font-mono font-semibold" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{formatCurrency(row.amount * row.unitPrice)}</td>
+									<td class="px-2 py-3 text-sm color-default text-right font-mono" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{formatCurrency(row.unitPrice, 'CHF', preferences.numberFormat, { minimumFractionDigits: 2 })}</td>
+									<td class="px-2 py-3 text-sm color-default text-right font-mono" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{row.feePrice > 0 ? formatCurrency(row.feePrice, 'CHF', preferences.numberFormat, { minimumFractionDigits: 2 }) : '-'}</td>
+									<td class="px-2 py-3 text-sm color-default text-right font-mono font-semibold" style="border-bottom: 1px solid color-mix(in srgb, var(--color-button), transparent 50%);">{formatCurrency(row.amount * row.unitPrice, 'CHF', preferences.numberFormat, { minimumFractionDigits: 2 })}</td>
 								</tr>
 							{/each}
 						</tbody>

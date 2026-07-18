@@ -6,6 +6,7 @@
 	import { TextSize } from '$lib/types/TextSize';
 	import { ContentWidth } from '$lib/types/ContentSize';
 	import { formatDateTime } from '$lib/utils/dateFormat';
+	import { formatCurrency, formatNumber } from '$lib/utils/numberFormat';
 	import { userPreferences } from '$lib/stores/userPreferences';
 	import { StylePadding } from '$lib/types/StylePadding';
 
@@ -43,14 +44,6 @@
 		}
 	}
 
-	function formatCurrency(value: number): string {
-		return value.toLocaleString(undefined, { style: 'currency', currency: quote.currency });
-	}
-
-	function formatNumber(value: number): string {
-		return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 });
-	}
-
 	async function deleteInvestment(event: MouseEvent) {
 		if (isDeleting) return;
 
@@ -81,27 +74,27 @@
 		</div>
 
 		<span class="row-1 color-muted">Amount</span>
-		<span class="row-2 font-bold">{formatNumber(investment.amount)}</span>
+		<span class="row-2 font-bold">{formatNumber(investment.amount, preferences.numberFormat, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</span>
 
 		<span class="row-1 color-muted {dividendHidden}"
 			>Price per Unit</span
 		>
 		<span class="row-2 font-bold {dividendHidden}"
-			>{formatCurrency(investment.pricePerUnit)}</span
+			>{formatCurrency(investment.pricePerUnit, quote.currency, preferences.numberFormat)}</span
 		>
 
 		<span class="row-1 color-muted {dividendHidden}"
 			>Total Fees</span
 		>
 		<span class="row-2 font-bold {dividendHidden}"
-			>{formatCurrency(investment.totalFees)}</span
+			>{formatCurrency(investment.totalFees, quote.currency, preferences.numberFormat)}</span
 		>
 
 		<span class="row-1 color-muted {dividendHidden}"
 			>Total</span
 		>
 		<span class="row-2 font-bold {dividendHidden}"
-			>{formatCurrency(investment.pricePerUnit * investment.amount + investment.totalFees)}</span
+			>{formatCurrency(investment.pricePerUnit * investment.amount + investment.totalFees, quote.currency, preferences.numberFormat)}</span
 		>
 
 		<div class="row-span-2 -col-1 h-full">

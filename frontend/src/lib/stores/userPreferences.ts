@@ -1,18 +1,21 @@
 import { writable } from 'svelte/store';
 import { fetchWithAuth } from '$lib/services/authService';
 import { DateFormatType } from '$lib/utils/dateFormat';
+import { NumberFormatType } from '$lib/utils/numberFormat';
 import { dataStore } from './dataStore';
 
-export { DateFormatType };
+export { DateFormatType, NumberFormatType };
 
 export interface UserPreferences {
 	dateFormat: DateFormatType;
+	numberFormat: NumberFormatType;
 	forecastNumberOfInvestments: number;
 }
 
 // Default preferences
 const defaultPreferences: UserPreferences = {
 	dateFormat: DateFormatType.English,
+	numberFormat: NumberFormatType.English,
 	forecastNumberOfInvestments: 5
 };
 
@@ -33,6 +36,7 @@ function createUserPreferencesStore() {
 					const userData = await res.json();
 					set({
 						dateFormat: userData.dateFormat || DateFormatType.English,
+						numberFormat: userData.numberFormat || NumberFormatType.English,
 						forecastNumberOfInvestments: userData.forecastNumberOfInvestments || 5
 					});
 				}
@@ -42,9 +46,9 @@ function createUserPreferencesStore() {
 		},
 
 		/**
-		 * Update the date format preference
+		 * Update the date format, number format and forecast preferences
 		 */
-		async updateUser(format: DateFormatType, forecastNumberOfInvestments: number): Promise<boolean> {
+		async updateUser(format: DateFormatType, numberFormat: NumberFormatType, forecastNumberOfInvestments: number): Promise<boolean> {
 			try {
 				let currentPrefs: UserPreferences | undefined;
 				const unsubscribe = subscribe(prefs => {
@@ -55,11 +59,11 @@ function createUserPreferencesStore() {
 				const res = await fetchWithAuth('/api/auth/me', {
 					method: 'PUT',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ dateFormat: format, forecastNumberOfInvestments })
+					body: JSON.stringify({ dateFormat: format, numberFormat, forecastNumberOfInvestments })
 				});
 
 				if (res.ok) {
-					update(prefs => ({ ...prefs, dateFormat: format, forecastNumberOfInvestments }));
+					update(prefs => ({ ...prefs, dateFormat: format, numberFormat, forecastNumberOfInvestments }));
 
 					if (currentPrefs && forecastNumberOfInvestments !== currentPrefs.forecastNumberOfInvestments) {
 						dataStore.refreshForecast();
