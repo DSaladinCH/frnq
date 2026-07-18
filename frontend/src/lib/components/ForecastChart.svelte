@@ -6,6 +6,8 @@
 	import PillToggle from './PillToggle.svelte';
 	import DropDown from './DropDown.svelte';
 	import { dataStore } from '$lib/stores/dataStore';
+	import { userPreferences } from '$lib/stores/userPreferences';
+	import { formatDate } from '$lib/utils/dateFormat';
 
 	let {
 		forecast = [],
@@ -24,6 +26,17 @@
 	} = $props();
 	let canvas: HTMLCanvasElement;
 	let chart: Chart<'line', { x: string; y: number }[]>;
+
+	let preferences = $state($userPreferences);
+
+	// Subscribe to user preferences changes
+	$effect(() => {
+		const unsubscribe = userPreferences.subscribe((prefs) => {
+			preferences = prefs;
+		});
+		
+		return unsubscribe;
+	});
 
 	function getChartData(sortedForecast: ForecastDayDto[]) {
 		// Determine which band to use based on filter mode
@@ -155,6 +168,10 @@
 							size: 11
 						},
 						callbacks: {
+							title: function (context) {
+								if (context.length === 0) return '';
+								return formatDate(dates[context[0].dataIndex], preferences.dateFormat);
+							},
 							label: function (context) {
 								if (context.datasetIndex === 2) {
 									// Use the correct data based on filter mode
@@ -208,7 +225,6 @@
 						type: 'time',
 						time: {
 							minUnit: 'month',
-							tooltipFormat: 'MMM d, yyyy',
 							displayFormats: {
 								month: 'MMM yyyy',
 								year: 'yyyy'
