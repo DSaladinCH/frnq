@@ -222,13 +222,17 @@ public class ForecastManagement(DatabaseContext databaseContext, AuthManagement 
 		int?[] uniqueGroupIds = groupByQuote.Values.Distinct().ToArray();
 		int groupCount = uniqueGroupIds.Length;
 
-		Dictionary<int?, int> groupSlot = new Dictionary<int?, int>(groupCount);
+		// Dictionary<TKey, TValue> throws on a null key even when TKey is a nullable value type,
+		// so the "no group" slot (GroupId == null) is tracked under this sentinel instead.
+		const int ungroupedSlotKey = int.MinValue;
+
+		Dictionary<int, int> groupSlot = new Dictionary<int, int>(groupCount);
 		for (int i = 0; i < groupCount; i++)
-			groupSlot[uniqueGroupIds[i]] = i;
+			groupSlot[uniqueGroupIds[i] ?? ungroupedSlotKey] = i;
 
 		int[] groupOfQuote = new int[quoteIds.Length];
 		for (int q = 0; q < quoteIds.Length; q++)
-			groupOfQuote[q] = groupSlot[groupByQuote.GetValueOrDefault(quoteIds[q])];
+			groupOfQuote[q] = groupSlot[groupByQuote.GetValueOrDefault(quoteIds[q]) ?? ungroupedSlotKey];
 
 		return (groupOfQuote, uniqueGroupIds, groupCount);
 	}

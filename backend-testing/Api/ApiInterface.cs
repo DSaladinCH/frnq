@@ -30,6 +30,7 @@ public class ApiInterface(HttpClient httpClient)
 	public QuoteApi Quotes => new(httpClient);
 	public AuthExternalLinksApi ExternalLinks => new(httpClient);
 	public AuthOidcApi Oidc => new(httpClient);
+	public ForecastApi Forecast => new(httpClient);
 }
 
 public abstract class BaseApi(HttpClient httpClient)
