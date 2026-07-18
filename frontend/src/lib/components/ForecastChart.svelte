@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Chart from 'chart.js/auto';
+	import 'chartjs-adapter-date-fns';
 	import type { ForecastDayDto } from '../services/forecastService';
 	import PillToggle from './PillToggle.svelte';
 	import DropDown from './DropDown.svelte';
@@ -11,17 +12,18 @@
 		filterMode = 'full',
 		filterGroupId = null,
 		filterQuoteId = null,
-		onTypeChange
+		onTypeChange,
+		onDurationChange
 	}: {
 		forecast: ForecastDayDto[];
 		filterMode?: 'full' | 'group' | 'quote';
 		filterGroupId?: string | null;
 		filterQuoteId?: number | null;
 		onTypeChange?: (period: string) => void;
+		onDurationChange?: (duration: Duration) => void;
 	} = $props();
 	let canvas: HTMLCanvasElement;
-	let chart: Chart;
-	let isMobile = false;
+	let chart: Chart<'line', { x: string; y: number }[]>;
 
 	function getChartData(sortedForecast: ForecastDayDto[]) {
 		// Determine which band to use based on filter mode
@@ -74,75 +76,16 @@
 		const lowers = chartData.map(d => d.lower);
 		const uppers = chartData.map(d => d.upper);
 
-		// Calculate date range to determine label strategy
-		const firstDate = new Date(dates[0] + 'T00:00:00');
-		const lastDate = new Date(dates[dates.length - 1] + 'T00:00:00');
-		const rangeInDays = (lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24);
-		const rangeInYears = rangeInDays / 365.25;
-
-		// Calculate tick indices for year labels
-		let tickIndices: number[] = [];
-		if (rangeInDays >= 730) {
-			const yearInterval = rangeInYears > 15 ? 3 : rangeInYears > 8 ? 2 : 1;
-			
-			// Find all indices where we should show year labels
-			for (let i = 0; i < dates.length; i++) {
-				const dateObj = new Date(dates[i] + 'T00:00:00');
-				const yearsSinceFirst = dateObj.getFullYear() - firstDate.getFullYear();
-				
-				// Show year on first index and every yearInterval years
-				if (i === 0 || yearsSinceFirst % yearInterval === 0) {
-					// Only add if it's a new year or first index
-					if (i === 0 || (i > 0 && new Date(dates[i - 1] + 'T00:00:00').getFullYear() !== dateObj.getFullYear())) {
-						tickIndices.push(i);
-					}
-				}
-			}
-		}
-
-		// Create labels for display
-		const labels = dates.map((date, idx) => {
-			if (rangeInDays >= 730 && tickIndices.includes(idx)) {
-				const dateObj = new Date(date + 'T00:00:00');
-				return dateObj.toLocaleString('en-US', { year: 'numeric' });
-			}
-			
-			const dateObj = new Date(date + 'T00:00:00');
-			const prevDate = idx > 0 ? new Date(dates[idx - 1] + 'T00:00:00') : null;
-
-			// For ranges >= 1 year: show months but skip some to avoid overlap
-			if (rangeInDays >= 365 && rangeInDays < 730) {
-				if (idx === 0 || dateObj.getMonth() !== prevDate?.getMonth()) {
-					// Show month names, but only every other month if range is large
-					const monthInterval = rangeInDays > 500 ? 2 : 1;
-					const monthsSinceFirst = dateObj.getMonth() - firstDate.getMonth() + (dateObj.getFullYear() - firstDate.getFullYear()) * 12;
-					if (monthsSinceFirst % monthInterval === 0) {
-						return dateObj.toLocaleString('en-US', { month: 'short' });
-					}
-				}
-				return '';
-			}
-
-			// For ranges < 1 year: show all month changes
-			if (rangeInDays < 365) {
-				if (idx === 0 || dateObj.getMonth() !== prevDate?.getMonth()) {
-					return dateObj.toLocaleString('en-US', { month: 'short' });
-				}
-			}
-			return '';
-		});
-
 		const ctx = canvas.getContext('2d');
 		if (!ctx) return;
 
 		chart = new Chart(ctx, {
 			type: 'line',
 			data: {
-				labels: labels,
 				datasets: [
 					{
 						label: 'Upper Bound',
-						data: uppers,
+						data: dates.map((date, i) => ({ x: date, y: uppers[i] })),
 						borderColor: '#c14bac21',
 						backgroundColor: '#c14bac21',
 						borderWidth: 0,
@@ -153,7 +96,7 @@
 					},
 					{
 						label: 'Lower Bound',
-						data: lowers,
+						data: dates.map((date, i) => ({ x: date, y: lowers[i] })),
 						borderColor: '#c14bac21',
 						backgroundColor: '#c14bac21',
 						borderWidth: 0,
@@ -164,13 +107,13 @@
 					},
 					{
 						label: 'Median',
-						data: medians,
+						data: dates.map((date, i) => ({ x: date, y: medians[i] })),
 						borderColor: '#c14bac',
 						backgroundColor: 'transparent',
 						borderWidth: 2,
 						fill: false,
 						pointRadius: 0,
-						pointHoverRadius: isMobile ? 5 : 6,
+						pointHoverRadius: 6,
 						pointBackgroundColor: '#c14bac',
 						pointBorderColor: '#c14bac',
 						pointBorderWidth: 2,
@@ -203,21 +146,15 @@
 						bodyColor: '#fff',
 						borderColor: 'rgba(255, 255, 255, 0.2)',
 						borderWidth: 1,
-						padding: isMobile ? 8 : 12,
+						padding: 12,
 						displayColors: true,
 						titleFont: {
-							size: isMobile ? 10 : 12
+							size: 12
 						},
 						bodyFont: {
-							size: isMobile ? 9 : 11
+							size: 11
 						},
 						callbacks: {
-							title: (context) => {
-								if (context.length > 0) {
-									return dates[context[0].dataIndex];
-								}
-								return '';
-							},
 							label: function (context) {
 								if (context.datasetIndex === 2) {
 									// Use the correct data based on filter mode
@@ -254,12 +191,13 @@
 								return (value as number).toLocaleString('en-US', {
 									style: 'currency',
 									currency: 'CHF',
-									maximumFractionDigits: 0
+									notation: 'compact',
+									maximumFractionDigits: 1
 								});
 							},
 							color: 'rgba(255, 255, 255, 0.7)',
 							font: {
-								size: isMobile ? 9 : 12
+								size: 12
 							}
 						},
 						grid: {
@@ -267,23 +205,27 @@
 						}
 					},
 					x: {
-						type: 'category',
+						type: 'time',
+						time: {
+							minUnit: 'month',
+							tooltipFormat: 'MMM d, yyyy',
+							displayFormats: {
+								month: 'MMM yyyy',
+								year: 'yyyy'
+							}
+						},
 						display: true,
 						grid: {
 							display: false
 						},
 						ticks: {
+							autoSkip: true,
+							autoSkipPadding: 40,
+							maxRotation: 0,
 							font: {
-								size: isMobile ? 9 : 12
+								size: 12
 							},
-							color: 'rgba(255, 255, 255, 0.7)',
-							autoSkip: false,
-							maxRotation: isMobile ? 45 : 0,
-							minRotation: isMobile ? 45 : 0,
-							callback: function (value, index) {
-								// Display the label for this index
-								return labels[index as number] || '';
-							}
+							color: 'rgba(255, 255, 255, 0.7)'
 						}
 					}
 				}
@@ -293,23 +235,9 @@
 
 	onMount(() => {
 		selectedType = dataStore.getSavedForecastType() ? 'predict' : 'current';
-
-		// Detect mobile
-		isMobile = window.innerWidth < 768;
-
-		// Handle window resize
-		const handleResize = () => {
-			const wasMobile = isMobile;
-			isMobile = window.innerWidth < 768;
-			if (wasMobile !== isMobile) {
-				chart?.resize();
-			}
-		};
-
-		window.addEventListener('resize', handleResize);
+		selectedDuration = dataStore.getSavedForecastDuration().toString() as Duration;
 
 		return () => {
-			window.removeEventListener('resize', handleResize);
 			chart?.destroy();
 		};
 	});
@@ -327,9 +255,18 @@
 		{ value: 'predict', label: 'Predict future investments' }
 	] as const;
 
+	const forecastDuration = [
+		{ value: '1', label: '1 Year' },
+		{ value: '3', label: '3 Years' },
+		{ value: '10', label: '10 Years' }
+	] as const;
+
 	type Period = (typeof forecastType)[number]['value'];
+	type Duration = (typeof forecastDuration)[number]['value'];
 	const FORECAST_TYPE_STORAGE_KEY = 'forecastChart.selectedType';
+	const FORECAST_DURATION_STORAGE_KEY = 'forecastChart.selectedDuration';
 	let selectedType: Period = $state('current');
+	let selectedDuration: Duration = $state('1');
 
 	function selectType(val: string) {
 		selectedType = val as Period;
@@ -342,28 +279,55 @@
 			onTypeChange(selectedType);
 		}
 	}
+
+	function selectDuration(val: string) {
+		selectedDuration = val as Duration;
+		// Save to localStorage
+		try {
+			localStorage.setItem(FORECAST_DURATION_STORAGE_KEY, selectedDuration);
+		} catch {}
+
+		// Notify parent component
+		if (onDurationChange) {
+			onDurationChange(selectedDuration);
+		}
+	}
 </script>
 
 <div class="relative bg-transparent h-[280px] md:h-[400px]">
 	<canvas bind:this={canvas}></canvas>
 </div>
 
-<div class="bflex h-20 -mt-2.5 w-full pointer-events-none z-1 relative">
-	<div class="flex justify-center items-center mt-5 absolute w-full left-0 top-0 z-1 pointer-events-auto">
-		<div class="hidden sm:block">
+<div class="bflex h-max -mt-2.5 w-full pointer-events-none z-1 relative">
+	<div class="flex justify-center items-center mt-5 w-full z-1 pointer-events-auto">
+		<div class="hidden md:flex gap-4">
 			<PillToggle
 				options={forecastType.map((opt) => ({ value: opt.value, label: opt.label }))}
 				selected={selectedType}
 				onSelect={selectType}
 				direction="horizontal"
 			/>
+
+			<PillToggle
+				options={forecastDuration.map((opt) => ({ value: opt.value, label: opt.label }))}
+				selected={selectedDuration}
+				onSelect={selectDuration}
+				direction="horizontal"
+			/>
 		</div>
-		<div class="block sm:hidden">
+		<div class="flex flex-wrap justify-center md:hidden gap-4">
 			<DropDown
 				options={forecastType.map((opt) => ({ value: opt.value, label: opt.label }))}
 				value={selectedType}
 				onchange={selectType}
 				placeholder="Select period"
+			/>
+
+			<DropDown
+				options={forecastDuration.map((opt) => ({ value: opt.value, label: opt.label }))}
+				value={selectedDuration}
+				onchange={selectDuration}
+				placeholder="Select duration"
 			/>
 		</div>
 	</div>

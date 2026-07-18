@@ -251,7 +251,7 @@
 				}
 			}
 		});
-		return () => {
+				return () => {
 			chart?.destroy();
 			// Remove tooltip element on destroy
 			const el = document.getElementById('chartjs-custom-tooltip');

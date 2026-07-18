@@ -9,18 +9,32 @@
 	// Reactive values that track the store
 	let forecast = $state(dataStore.forecast);
 	let quotes = $state(dataStore.quotes);
-	let secondaryLoading = $state(dataStore.secondaryLoading);
+	let fetchLoading = $state(dataStore.fetchLoading);
+	let showFetchLoading = $state(dataStore.fetchLoading);
+
+	let fadeOut = $state(false);
 
 	$effect(() => {
 		const unsubscribe = dataStore.subscribe(() => {
-			secondaryLoading = dataStore.secondaryLoading;
 			forecast = dataStore.forecast;
 			quotes = dataStore.quotes;
+			fetchLoading = dataStore.fetchLoading;
 		});
 
 		return () => {
 			unsubscribe();
 		};
+	});
+
+	$effect(() => {
+		if (!fetchLoading && showFetchLoading && !fadeOut) {
+			// Start fade-out when loading completes
+			fadeOut = true;
+		} else if (fetchLoading && !showFetchLoading) {
+			// Reset loading screen when loading starts again
+			showFetchLoading = true;
+			fadeOut = false;
+		}
 	});
 
 	// Extract quote IDs that are actually in the forecast
@@ -110,7 +124,7 @@
 	}
 
 	// Handle forecast type change (with/without contributions)
-	async function handleTypeChange(forecastType: string) {
+	async function handleFilterChange() {
 		try {
 			// Let the store fetch and update the forecast data
 			await dataStore.refreshForecast();
@@ -296,25 +310,36 @@
 
 <PageHead title="Forecast" />
 
+{#if showFetchLoading}
+	<div
+		class="absolute bg-black/75 top-0 left-0 right-0 bottom-0 z-10 scrollbar-none fetch-loading-screen"
+		class:fade-out={fadeOut}
+		onanimationend={() => {
+			if (fadeOut) {
+				showFetchLoading = false;
+			}
+		}}
+	>
+		<div class="h-screen flex items-center justify-center">
+			<Loading text="Updating forecast..." />
+		</div>
+	</div>
+{/if}
+
 <div class="xs:p-8 p-4">
 	<div class="mb-6">
 		<PageTitle title="Forecast" icon="fa-solid fa-compass" />
 	</div>
 
 	<div class="mb-6 grid">
-		{#if secondaryLoading}
-			<div class="w-full h-full flex items-center justify-center row-1 col-1">
-				<Loading text="Refreshing forecast..." />
-			</div>
-		{/if}
-
-		<div class="{secondaryLoading ? 'opacity-0' : ''} row-1 col-1">
+		<div class="row-1 col-1 min-w-0">
 			<ForecastChart
 				forecast={filteredForecast}
 				{filterMode}
 				{filterGroupId}
 				{filterQuoteId}
-				onTypeChange={handleTypeChange}
+				onTypeChange={handleFilterChange}
+				onDurationChange={handleFilterChange}
 			/>
 		</div>
 	</div>
@@ -489,5 +514,15 @@
 <style>
 	.quote-groups {
 		margin-bottom: 4.5rem;
+	}
+
+	.fetch-loading-screen.fade-out {
+		animation: fadeOut 0.8s forwards;
+	}
+
+	@keyframes fadeOut {
+		to {
+			opacity: 0;
+		}
 	}
 </style>

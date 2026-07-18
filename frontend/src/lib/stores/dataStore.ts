@@ -98,13 +98,22 @@ export class DataStore {
 		}
 	}
 
-	private async fetchAllData(includeContributions: boolean = false) {
+	getSavedForecastDuration(): number {
+		try {
+			const saved = localStorage.getItem('forecastChart.selectedDuration');
+			return parseInt(saved || '1', 10); // Default to 1 if not set
+		} catch {
+			return 1; // Default to 1 if localStorage is unavailable
+		}
+	}
+
+	private async fetchAllData(includeContributions: boolean = false, years: number = 1) {
 		const [positionsData, investmentsData, feesData, groupsData, forecastData] = await Promise.all([
 			getPositionSnapshots(null, null),
 			getInvestments(0, 25), // Get all investments for initial load
 			getFees(0, 25), // Get all fees for initial load
 			getQuoteGroups(),
-			getForecast(includeContributions)
+			getForecast(includeContributions, years)
 		]);
 
 		this._snapshots = positionsData.snapshots;
@@ -145,7 +154,7 @@ export class DataStore {
 	// Runs a data refresh in the background without blocking the caller. Tracked via
 	// `fetchLoading` instead of `secondaryLoading` so mutating actions (add/update/delete)
 	// can resolve as soon as the write itself completes.
-	private runFetchInBackground(action: () => Promise<void>) {
+	private async runFetchInBackground(action: () => Promise<void>) {
 		this._fetchLoading = true;
 		this.notify();
 
@@ -182,7 +191,8 @@ export class DataStore {
 
 		try {
 			const includeContributions = this.getSavedForecastType();
-			await this.fetchAllData(includeContributions);
+			const forecastDuration = this.getSavedForecastDuration();
+			await this.fetchAllData(includeContributions, forecastDuration);
 			this._initialized = true;
 		} catch (e) {
 			this._error = (e as Error).message;
@@ -302,9 +312,10 @@ export class DataStore {
 	}
 
 	async refreshForecast() {
-		await this.runWithSecondaryLoading(async () => {
+		await this.runFetchInBackground(async () => {
 			const includeContributions = this.getSavedForecastType();
-			const forecastData = await getForecast(includeContributions);
+			const forecastDuration = this.getSavedForecastDuration();
+			const forecastData = await getForecast(includeContributions, forecastDuration);
 			this._forecast = forecastData;
 		});
 	}

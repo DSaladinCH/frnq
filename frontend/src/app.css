@@ -178,6 +178,7 @@ body {
 	background-color: var(--color-background);
 	font-family: 'Roboto', sans-serif;
 	min-height: 100vh;
+	scrollbar-gutter: stable;
 }
 
 @layer utilities {

@@ -8,14 +8,22 @@ namespace DSaladin.Frnq.Api.Forecast;
 public class ForecastManagement(DatabaseContext databaseContext, AuthManagement authManagement)
 {
 	private const int simulationCount = 2000;
-	// private const int horizon = 252;   // 1 year of trading days
-	// private const int horizon = 504;   // 2 year of trading days
-	private const int horizon = 2520;   // 10 year of trading days
+	private const int tradingDaysPerYear = 252;
+	private const int minForecastYears = 1;
+	private const int maxForecastYears = 30;
 	private const int blockLength = 10;
 	private const double tradingDaysPerCalendarDay = 5.0 / 7.0;
 
-	public async Task<ApiResponse<List<ForecastDayDto>>> CreateForecast(bool includeContributions = false, CancellationToken cancellationToken = default)
+	public async Task<ApiResponse<List<ForecastDayDto>>> CreateForecast(int years = 10, bool includeContributions = false, CancellationToken cancellationToken = default)
 	{
+		if (years < minForecastYears || years > maxForecastYears)
+		{
+			return ApiResponse.Create<List<ForecastDayDto>>(
+				"Invalid parameter", $"Years must be between {minForecastYears} and {maxForecastYears}.", System.Net.HttpStatusCode.BadRequest);
+		}
+
+		int horizon = years * tradingDaysPerYear;
+
 		Guid userId = authManagement.GetCurrentUserId();
 
 		(ApiResponse<List<ForecastDayDto>>? positionsError, ActivePositions? positions) = await GetActivePositionsAsync(userId, cancellationToken);
@@ -57,12 +65,12 @@ public class ForecastManagement(DatabaseContext databaseContext, AuthManagement 
 
 		SimulationResult simulation = RunSimulations(
 			currentValues, history!.RatioMatrix, groupOfQuote, groupCount, quoteCount,
-			schedule, includeContributions, cancellationToken);
+			schedule, includeContributions, horizon, cancellationToken);
 
-		DateOnly[] forecastDates = GenerateForecastDates();
+		DateOnly[] forecastDates = GenerateForecastDates(horizon);
 
 		List<ForecastDayDto> result = BuildForecastDtos(
-			forecastDates, simulation, positions.QuoteIds, uniqueGroupIds, groupCount, quoteCount);
+			forecastDates, simulation, positions.QuoteIds, uniqueGroupIds, groupCount, quoteCount, horizon);
 
 		return ApiResponse.Create(result, System.Net.HttpStatusCode.OK);
 	}
@@ -287,7 +295,7 @@ public class ForecastManagement(DatabaseContext databaseContext, AuthManagement 
 
 	private static SimulationResult RunSimulations(
 		double[] currentValues, double[][] ratioMatrix, int[] groupOfQuote, int groupCount, int quoteCount,
-		ContributionSchedule schedule, bool includeContributions, CancellationToken cancellationToken)
+		ContributionSchedule schedule, bool includeContributions, int horizon, CancellationToken cancellationToken)
 	{
 		int returnLen = ratioMatrix.Length;
 		int cellCount = horizon * simulationCount;
@@ -358,7 +366,7 @@ public class ForecastManagement(DatabaseContext databaseContext, AuthManagement 
 
 	// ---------- Dates & DTO assembly ----------
 
-	private static DateOnly[] GenerateForecastDates()
+	private static DateOnly[] GenerateForecastDates(int horizon)
 	{
 		DateOnly[] forecastDates = new DateOnly[horizon];
 		DateOnly current = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -375,7 +383,7 @@ public class ForecastManagement(DatabaseContext databaseContext, AuthManagement 
 	}
 
 	private static List<ForecastDayDto> BuildForecastDtos(
-		DateOnly[] forecastDates, SimulationResult simulation, int[] quoteIds, int?[] uniqueGroupIds, int groupCount, int quoteCount)
+		DateOnly[] forecastDates, SimulationResult simulation, int[] quoteIds, int?[] uniqueGroupIds, int groupCount, int quoteCount, int horizon)
 	{
 		ForecastBand[] portfolioBands = ExtractBands(simulation.PortfolioSeries, horizon, simulationCount);
 

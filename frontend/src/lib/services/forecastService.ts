@@ -23,8 +23,8 @@ export interface ForecastDayDto {
 	quotes: ForecastQuoteDto[];
 }
 
-export async function getForecast(includeContributions: boolean = false): Promise<ForecastDayDto[]> {
-	const response = await fetchWithAuth(`api/forecast?includeContributions=${includeContributions}`);
+export async function getForecast(includeContributions: boolean = false, years: number = 1): Promise<ForecastDayDto[]> {
+	const response = await fetchWithAuth(`api/forecast?includeContributions=${includeContributions}&years=${years}`);
 
 	if (!response.ok) {
 		throw new Error('Failed to fetch forecast');
