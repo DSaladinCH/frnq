@@ -180,14 +180,17 @@ public class Auth : TestBase
 	}
 
 	[Theory]
-	[InlineData(DateFormat.German, "German")] // German format
-	[InlineData(DateFormat.English, "English")] // English format
-	public async Task UpdateCurrentUserValid(DateFormat dateFormat, string expectedFormat)
+	[InlineData(DateFormat.German, "German", NumberFormat.German, "German")] // German format
+	[InlineData(DateFormat.English, "English", NumberFormat.English, "English")] // English format
+	[InlineData(DateFormat.English, "English", NumberFormat.Swiss, "Swiss")] // Swiss number format
+	public async Task UpdateCurrentUserValid(DateFormat dateFormat, string expectedDateFormat, NumberFormat numberFormat, string expectedNumberFormat)
 	{
 		using AuthenticationScope<UserModel> authScope = await Authenticate();
 		UserDto update = new UserDto
 		{
-			DateFormat = dateFormat
+			DateFormat = dateFormat,
+			NumberFormat = numberFormat,
+			ForecastNumberOfInvestments = 5
 		};
 
 		ApiResponse response = await ApiInterface.Auth.UpdateCurrentUser(update);
@@ -196,7 +199,9 @@ public class Auth : TestBase
 
 		DbContext.ChangeTracker.Clear();
 		ApiResponse<UserViewDto> me = await ApiInterface.Auth.GetCurrentUser();
-		Assert.Equal(expectedFormat, me.Value?.DateFormat);
+		Assert.Equal(expectedDateFormat, me.Value?.DateFormat);
+		Assert.Equal(expectedNumberFormat, me.Value?.NumberFormat);
+		Assert.Equal(5, me.Value?.ForecastNumberOfInvestments);
 	}
 
 	[Fact]
@@ -204,7 +209,9 @@ public class Auth : TestBase
 	{
 		UserDto update = new UserDto
 		{
-			DateFormat = DateFormat.German
+			DateFormat = DateFormat.German,
+			NumberFormat = NumberFormat.German,
+			ForecastNumberOfInvestments = 5
 		};
 
 		ApiResponse response = await ApiInterface.Auth.UpdateCurrentUser(update);

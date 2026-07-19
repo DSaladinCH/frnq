@@ -22,6 +22,7 @@
 	import InfiniteScroll from '$lib/components/InfiniteScroll.svelte';
 	import { onMount } from 'svelte';
 	import { formatDate } from '$lib/utils/dateFormat';
+	import { formatNumber } from '$lib/utils/numberFormat';
 	import { userPreferences } from '$lib/stores/userPreferences';
 	import InvestmentFiltersComponent from '$lib/components/InvestmentFilters.svelte';
 	import { StylePadding } from '$lib/types/StylePadding';
@@ -78,10 +79,6 @@
 		return quote?.customName || quote?.name;
 	}
 
-	function formatNumber(value: number): string {
-		return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 });
-	}
-
 	function newInvestment() {
 		currentInvestment = createDefaultInvestment();
 		currentQuote = null;
@@ -100,7 +97,7 @@
 		showInvestmentDialog = false;
 	}
 
-	async function saveInvestment(investment: InvestmentModel) {
+	async function saveInvestment(investment: InvestmentModel, createNew: boolean) {
 		if (secondaryLoading) return;
 		// Validate inputs
 		if (!investmentValuesValid(investment)) {
@@ -119,7 +116,11 @@
 				await investmentsList.refresh();
 			}
 
-			onInvestmentDialogClose();
+			if (createNew) {
+				newInvestment();
+			} else {
+				onInvestmentDialogClose();
+			}
 		} catch (error) {
 			console.error('Error saving investment:', error);
 			notify.error('Error saving investment: ' + error);
@@ -138,7 +139,9 @@
 		// TODO: Implement dialog component for confirmation
 		const confirmed = confirm(
 			`Are you sure you want to delete the investment of ${formatNumber(
-				investment.amount
+				investment.amount,
+				preferences.numberFormat,
+				{ minimumFractionDigits: 2, maximumFractionDigits: 6 }
 			)} units of ${getQuoteName(investment) || 'unknown quote'} on ${formatDate(
 				investment.date,
 				preferences.dateFormat

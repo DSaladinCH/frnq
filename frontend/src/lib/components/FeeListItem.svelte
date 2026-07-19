@@ -1,11 +1,12 @@
 <script lang="ts">
-	import type { GeneralFeeViewDto } from '$lib/services/positionService';
+	import type { GeneralFeeModel } from '$lib/services/feeService';
 	import type { QuoteGroup } from '$lib/Models/QuoteGroup';
 	import Button from './Button.svelte';
 	import { ColorStyle } from '$lib/types/ColorStyle';
 	import { TextSize } from '$lib/types/TextSize';
 	import { ContentWidth } from '$lib/types/ContentSize';
 	import { formatDate, DateFormatType, formatDateTime } from '$lib/utils/dateFormat';
+	import { formatCurrency } from '$lib/utils/numberFormat';
 	import { StylePadding } from '$lib/types/StylePadding';
 	import { userPreferences } from '$lib/stores/userPreferences';
 
@@ -15,7 +16,7 @@
 		onEdit,
 		onDelete
 	}: {
-		fee: GeneralFeeViewDto;
+		fee: GeneralFeeModel;
 		groups?: QuoteGroup[];
 		onEdit: () => void;
 		onDelete: (event: MouseEvent) => Promise<void>;
@@ -28,10 +29,6 @@
 		if (!groupId) return 'Portfolio-Level';
 		const group = groups.find(g => g.id === groupId);
 		return group?.name || 'Unknown Group';
-	}
-
-	function formatCurrency(value: number): string {
-		return value.toLocaleString(undefined, { style: 'currency', currency: 'CHF' });
 	}
 
 	async function deleteFee(event: MouseEvent) {
@@ -61,7 +58,7 @@
 		</div>
 
 		<span class="row-1 color-muted">Amount</span>
-		<span class="row-2 font-bold">{formatCurrency(fee.amount)}</span>
+		<span class="row-2 font-bold">{formatCurrency(fee.amount, 'CHF', preferences.numberFormat)}</span>
 
 		<div class="row-span-2 -col-1 h-10 w-10">
 			<Button

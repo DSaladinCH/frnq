@@ -5,7 +5,7 @@ import type { LayoutServerLoad } from './$types';
 export const load: LayoutServerLoad = async ({ fetch, url }) => {
 	const data = await bootstrapAuth(fetch);
 
-	if (!data.accessToken && url.pathname !== '/login') {
+	if (!data.accessToken && !data.transient && url.pathname !== '/login') {
 		throw redirect(302, '/login');
 	}
 

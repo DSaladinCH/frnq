@@ -14,6 +14,7 @@
 	import { ColorStyle } from '$lib/types/ColorStyle';
 	import { formatDateTime } from '$lib/utils/dateFormat';
 	import { userPreferences } from '$lib/stores/userPreferences';
+	import Loading from './Loading.svelte';
 
 	let links = $state<ExternalLink[]>([]);
 	let availableProviders = $state<OidcProvider[]>([]);
@@ -108,20 +109,14 @@
 	}
 </script>
 
-<div class="bg-card mt-6 rounded-lg p-6 shadow-lg">
+<div class="bg-card rounded-lg p-6 shadow-lg">
 	<h2 class="mb-2 text-xl font-semibold">External Accounts</h2>
 	<p class="color-muted mb-4">Link external authentication providers to your account.</p>
 
 	{#if isLoading}
-		<div class="flex justify-center py-8">
-			<div class="bouncing-dots">
-				<div class="dot"></div>
-				<div class="dot"></div>
-				<div class="dot"></div>
-			</div>
-		</div>
+		<Loading />
 	{:else}
-		<div class="bg-background md:w-md relative mt-2 w-full overflow-hidden rounded-lg">
+		<div class="bg-background relative mt-2 w-full overflow-hidden rounded-lg">
 			<div class="grid w-full grid-cols-1">
 				{#if availableProviders.length === 0}
 					<div class="p-8 text-center">
@@ -131,8 +126,8 @@
 				{:else}
 					{#each availableProviders as provider, i}
 						{@const linked = links.find((link) => link.providerId === provider.providerId)}
-						<div class="provider-item flex h-16 items-center justify-between px-4 py-2">
-							<div class="flex items-center gap-3">
+						<div class="provider-item flex xs:h-16 items-center justify-between px-4 py-2">
+							<div class="flex max-xs:flex-col xs:items-center gap-3">
 								<div class="flex h-8 w-8 items-center justify-center">
 									{#if provider.faviconUrl}
 										<img src={provider.faviconUrl} alt={provider.displayName} class="h-full w-full object-contain" />
@@ -191,38 +186,5 @@
 <style>
 	.provider-item:hover {
 		background-color: var(--color-background-backdrop);
-	}
-
-	.bouncing-dots {
-		display: flex;
-		gap: 10px;
-		justify-content: center;
-	}
-
-	.dot {
-		width: 12px;
-		height: 12px;
-		background: var(--color-primary);
-		border-radius: 50%;
-		animation: bounce 1.4s infinite ease-in-out both;
-	}
-
-	.dot:nth-child(1) {
-		animation-delay: -0.32s;
-	}
-
-	.dot:nth-child(2) {
-		animation-delay: -0.16s;
-	}
-
-	@keyframes bounce {
-		0%,
-		80%,
-		100% {
-			transform: scale(0);
-		}
-		40% {
-			transform: scale(1);
-		}
 	}
 </style>

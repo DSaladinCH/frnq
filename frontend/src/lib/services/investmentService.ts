@@ -11,6 +11,7 @@ export function createDefaultInvestment(): InvestmentModel {
 		pricePerUnit: 0,
 		amount: 0,
 		totalFees: 0,
+		excludeFromForecast: false,
 		date: new Date().toISOString().slice(0, 16)
 	};
 }
@@ -25,6 +26,7 @@ export interface InvestmentModel {
 	amount: number;
 	pricePerUnit: number;
 	totalFees: number;
+	excludeFromForecast: boolean;
 }
 
 export interface PaginatedInvestmentsResponse {

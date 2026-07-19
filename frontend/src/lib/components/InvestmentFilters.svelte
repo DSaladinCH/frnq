@@ -48,7 +48,7 @@
 		filters.toDate = toDate || undefined;
 		filters.quoteId = selectedQuoteId ? parseInt(selectedQuoteId) : undefined;
 		filters.groupId = selectedGroupId ? parseInt(selectedGroupId) : undefined;
-		filters.type = selectedType !== '' ? parseInt(selectedType) : undefined;
+		filters.type = selectedType !== '' ? (selectedType as InvestmentType) : undefined;
 		await onApplyFilters();
 
 		applyingFilters = false;

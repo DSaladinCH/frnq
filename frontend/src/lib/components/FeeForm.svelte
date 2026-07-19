@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { GeneralFeeViewDto } from '$lib/services/positionService';
+	import { feeValuesValid, createDefaultFee, type GeneralFeeModel } from '$lib/services/feeService';
 	import { ColorStyle } from '$lib/types/ColorStyle';
 	import Button from './Button.svelte';
 	import Input from './Input.svelte';
@@ -9,22 +9,15 @@
 	import { dataStore } from '$lib/stores/dataStore';
 	import { notify } from '$lib/services/notificationService';
 
-	let isLoading = $state(false);
+	let isLoading1 = $state(false);
+	let isLoading2 = $state(false);
 
 	let {
-		fee = $bindable({
-			id: 0,
-			userId: '',
-			date: getLocalDateString(new Date()),
-			amount: 0,
-			description: '',
-			groupId: null,
-			createdAt: new Date().toISOString()
-		}),
+		fee = $bindable(createDefaultFee()),
 		saveFee
 	}: {
-		fee?: Partial<GeneralFeeViewDto>;
-		saveFee: (fee: Partial<GeneralFeeViewDto>) => Promise<void>;
+		fee?: GeneralFeeModel;
+		saveFee: (fee: GeneralFeeModel, createNew: boolean) => Promise<void>;
 	} = $props();
 
 	// Get groups from dataStore
@@ -50,39 +43,21 @@
 		selectedGroupId = value;
 	}
 
-	function getLocalDateString(date: Date): string {
-		const pad = (n: number) => n.toString().padStart(2, '0');
-		return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-	}
-
-	function formatCurrency(value: number): string {
-		return value.toLocaleString(undefined, { style: 'currency', currency: 'CHF' });
-	}
-
-	async function saveChanges() {
-		if (!fee.amount || fee.amount <= 0) {
-			notify.error('Please enter a valid amount (greater than 0)');
-			return;
-		}
-		if (!fee.date) {
-			notify.error('Please select a date');
-			return;
-		}
-		if (!fee.description?.trim()) {
-			notify.error('Please enter a description');
+	async function saveChanges(createNew: boolean = false) {
+		if (!feeValuesValid(fee)) {
+			notify.error('Please fill in all required fields with valid values.');
 			return;
 		}
 
+		// Create a snapshot of the fee to prevent reactive updates from affecting the saved data
 		const feeSnapshot = { ...fee };
 
-		isLoading = true;
-		try {
-			await saveFee(feeSnapshot);
-		} catch (error) {
-			console.error('Error saving fee:', error);
-		} finally {
-			isLoading = false;
-		}
+		if (createNew) { isLoading2 = true; } else { isLoading1 = true; }
+
+		await saveFee(feeSnapshot, createNew);
+
+		isLoading1 = false;
+		isLoading2 = false;
 	}
 </script>
 
@@ -126,15 +101,29 @@
 		/>
 	</div>
 
-	<div class="grid">
+	<div class="grid {fee.id === 0 ? 'xs:grid-cols-2' : 'xs:grid-cols-1'} gap-2">
 		<Button
 			icon={fee.id === 0 ? 'fa-solid fa-plus' : 'fa-solid fa-floppy-disk'}
 			text={fee.id === 0 ? 'Create Fee' : 'Save Changes'}
 			style={ColorStyle.Success}
 			width={ContentWidth.Full}
 			padding={StylePadding.Reduced}
-			isLoading={isLoading}
+			isLoading={isLoading1}
+			disabled={isLoading2}
 			onclick={() => saveChanges()}
 		/>
+
+		{#if fee.id === 0}
+			<Button
+				icon="fa-solid fa-plus"
+				text="Create and New"
+				style={ColorStyle.Secondary}
+				width={ContentWidth.Full}
+				padding={StylePadding.Reduced}
+				isLoading={isLoading2}
+				disabled={isLoading1}
+				onclick={() => saveChanges(true)}
+			/>
+		{/if}
 	</div>
 </div>

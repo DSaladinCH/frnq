@@ -6,4 +6,6 @@ public class UserViewDto
 	public required string Email { get; set; }
 	public required string Name { get; set; }
 	public required string DateFormat { get; set; }
+	public required string NumberFormat { get; set; }
+	public required int ForecastNumberOfInvestments { get; set; }
 }

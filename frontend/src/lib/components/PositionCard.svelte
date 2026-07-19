@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { formatCurrency, formatNumber } from '$lib/utils/numberFormat';
+	import { userPreferences } from '$lib/stores/userPreferences';
+
 	interface Props {
 		summary?: {
 			invested: number;
@@ -24,6 +27,16 @@
 		minimal = false,
 		groupFees = 0
 	}: Props = $props();
+
+	let preferences = $state($userPreferences);
+
+	// Subscribe to user preferences changes
+	$effect(() => {
+		const unsubscribe = userPreferences.subscribe((prefs) => {
+			preferences = prefs;
+		});
+		return unsubscribe;
+	});
 
 	// Calculate metrics for display
 	let unrealizedGain = $derived(summary.unrealizedGain ?? (summary.currentValue - summary.invested));
@@ -64,19 +77,13 @@
 			<div class="flex justify-between items-center text-base">
 				<span class="font-medium color-muted">Current Value:</span>
 				<span class="font-semibold"
-					>{summary.currentValue.toLocaleString(undefined, {
-						style: 'currency',
-						currency: 'CHF'
-					})}</span
+					>{formatCurrency(summary.currentValue, 'CHF', preferences.numberFormat)}</span
 				>
 			</div>
 			<div class="flex justify-between items-center text-base">
 				<span class="font-medium color-muted">Invested:</span>
 				<span class="font-semibold"
-					>{summary.invested.toLocaleString(undefined, {
-						style: 'currency',
-						currency: 'CHF'
-					})}</span
+					>{formatCurrency(summary.invested, 'CHF', preferences.numberFormat)}</span
 				>
 			</div>
 			<div class="h-px bg-muted my-1.25 opacity-30"></div>
@@ -84,14 +91,11 @@
 				<div class="flex items-center justify-between gap-2">
 					<span class="font-medium color-muted">Position Gain:</span>
 					<span class="text-xl font-bold {unrealizedGain >= 0 ? 'color-success' : 'color-error'}">
-						{unrealizedGain >= 0 ? '+' : ''} {unrealizedGain.toLocaleString(undefined, {
-							style: 'currency',
-							currency: 'CHF'
-						})}
+						{unrealizedGain >= 0 ? '+' : ''} {formatCurrency(unrealizedGain, 'CHF', preferences.numberFormat)}
 					</span>
 				</div>
 				<span class="text-base font-semibold self-end {unrealizedGain >= 0 ? 'color-success' : 'color-error'}">
-					({positionPerformancePct >= 0 ? '+' : ''} {positionPerformancePct.toLocaleString(undefined, {
+					({positionPerformancePct >= 0 ? '+' : ''} {formatNumber(positionPerformancePct, preferences.numberFormat, {
 						maximumFractionDigits: 2
 					})}%)
 				</span>
@@ -100,10 +104,7 @@
 				<div class="realized-gains-note flex items-center gap-1.5 text-sm color-success mt-1.25 px-2 py-1.25 rounded-sm border-l-2 border-success">
 					<i class="fa-solid fa-circle-info text-sm opacity-80"></i>
 					<span class="font-medium">
-						+ {summary.realized.toLocaleString(undefined, {
-							style: 'currency',
-							currency: 'CHF'
-						})} in realized gains
+						+ {formatCurrency(summary.realized, 'CHF', preferences.numberFormat)} in realized gains
 					</span>
 				</div>
 			{/if}
@@ -112,10 +113,7 @@
 				<div class="flex justify-between items-center text-base">
 					<span class="font-medium color-muted">Fees:</span>
 					<span class="font-semibold">
-						- {groupFees.toLocaleString(undefined, {
-							style: 'currency',
-							currency: 'CHF'
-						})}
+						- {formatCurrency(groupFees, 'CHF', preferences.numberFormat)}
 					</span>
 				</div>
 			{/if}

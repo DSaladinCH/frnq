@@ -234,6 +234,15 @@ namespace DSaladin.Frnq.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("ForecastNumberOfInvestments")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(5);
+
+                    b.Property<string>("NumberFormat")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text");
@@ -317,6 +326,9 @@ namespace DSaladin.Frnq.Api.Migrations
 
                     b.Property<DateTime>("Date")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("ExcludeFromForecast")
+                        .HasColumnType("boolean");
 
                     b.Property<decimal>("PricePerUnit")
                         .HasColumnType("numeric");

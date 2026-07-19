@@ -5,6 +5,7 @@
 	import { ColorStyle } from '$lib/types/ColorStyle';
 	import { TextSize } from '$lib/types/TextSize';
 	import { formatDateTime } from '$lib/utils/dateFormat';
+	import { formatCurrency, formatNumber } from '$lib/utils/numberFormat';
 	import { userPreferences } from '$lib/stores/userPreferences';
 	import { StylePadding } from '$lib/types/StylePadding';
 	import { ContentWidth } from '$lib/types/ContentSize';
@@ -39,14 +40,6 @@
 			default:
 				return InvestmentType[investment.type];
 		}
-	}
-
-	function formatCurrency(value: number): string {
-		return value.toLocaleString(undefined, { style: 'currency', currency: quote.currency });
-	}
-
-	function formatNumber(value: number): string {
-		return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 });
 	}
 
 	async function deleteInvestment(event: MouseEvent) {
@@ -92,21 +85,23 @@
 		<div class="pt-2 row-3 col-span-2 @md:grid-cols-3 @lg:grid-cols-4 grid grid-cols-2 gap-1 text-sm">
 			<div class="grid grid-rows-2">
 				<span class="color-muted">Amount</span>
-				<span class="font-bold">{formatNumber(investment.amount)}</span>
+				<span class="font-bold">{formatNumber(investment.amount, preferences.numberFormat, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</span>
 			</div>
 			<div class="grid grid-rows-2 {investment.type === InvestmentType.Dividend ? 'hidden' : ''}">
 				<span class="color-muted">Price per Unit</span>
-				<span class="font-bold">{formatCurrency(investment.pricePerUnit)}</span>
+				<span class="font-bold">{formatCurrency(investment.pricePerUnit, quote.currency, preferences.numberFormat)}</span>
 			</div>
 			<div class="grid grid-rows-2 {investment.type === InvestmentType.Dividend ? 'hidden' : ''}">
 				<span class="color-muted">Total Fees</span>
-				<span class="font-bold">{formatCurrency(investment.totalFees)}</span>
+				<span class="font-bold">{formatCurrency(investment.totalFees, quote.currency, preferences.numberFormat)}</span>
 			</div>
 			<div class="grid grid-rows-2 {investment.type === InvestmentType.Dividend ? 'hidden' : ''}">
 				<span class="color-muted">Total</span>
 				<span class="font-bold"
 					>{formatCurrency(
-						investment.pricePerUnit * investment.amount + investment.totalFees
+						investment.pricePerUnit * investment.amount + investment.totalFees,
+						quote.currency,
+						preferences.numberFormat
 					)}</span
 				>
 			</div>

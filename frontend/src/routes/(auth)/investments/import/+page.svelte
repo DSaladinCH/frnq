@@ -50,7 +50,8 @@
 			type: investmentType,
 			amount: processed.amount,
 			pricePerUnit: processed.unitPrice,
-			totalFees: processed.feePrice
+			totalFees: processed.feePrice,
+			excludeFromForecast: false
 		};
 	}
 

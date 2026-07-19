@@ -23,6 +23,32 @@ export function getFullUrl(relativeUrl: string): string {
     return url;
 }
 
+function isTransientStatus(status: number): boolean {
+	return status === 502 || status === 503 || status === 504;
+}
+
+/**
+ * Fetch with a single retry for transient failures (network error or 502/503/504).
+ * Mobile tabs resuming from a long background period often reuse a stale/dead
+ * pooled connection for the first request, which surfaces as one of these -
+ * it isn't a real auth or server error, so it shouldn't be treated as one.
+ */
+async function fetchWithTransientRetry(
+	url: string,
+	options: RequestInit = {},
+	fetchImpl: typeof fetch = fetch
+): Promise<Response> {
+	try {
+		const res = await fetchImpl(url, options);
+		if (!isTransientStatus(res.status)) return res;
+		await new Promise((r) => setTimeout(r, 500));
+		return await fetchImpl(url, options);
+	} catch (err) {
+		await new Promise((r) => setTimeout(r, 500));
+		return await fetchImpl(url, options);
+	}
+}
+
 /**
  * Schedule automatic refresh ~30s before expiry
  */
@@ -61,19 +87,23 @@ export async function bootstrapAuth(fetchFn: typeof fetch) {
 		process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 	}
 
-	const res = await fetchFn(`${getFullUrl('/api/auth/refresh')}`, {
-		method: 'POST',
-		credentials: 'include'
-	});
+	const res = await fetchWithTransientRetry(
+		`${getFullUrl('/api/auth/refresh')}`,
+		{ method: 'POST', credentials: 'include' },
+		fetchFn
+	);
 
 	if (!res.ok) {
-		return { accessToken: null, expiresAt: null };
+		// Distinguish "no valid session" from "backend/proxy temporarily unreachable"
+		// (e.g. a stale connection on the SSR fetch agent right after a mobile tab
+		// reload) so the caller doesn't force a login redirect on a network blip.
+		return { accessToken: null, expiresAt: null, transient: isTransientStatus(res.status) };
 	}
 
 	const data: AuthResponse = await res.json();
 	setAuth(data.accessToken, data.expiresAt);
 
-	return data;
+	return { ...data, transient: false };
 }
 
 /**
@@ -114,14 +144,20 @@ export async function login(email: string, password: string): Promise<void> {
  * Refresh token using refresh cookie
  */
 export async function refreshToken(): Promise<boolean> {
-	const res = await fetch(`${getFullUrl('/api/auth/refresh')}`, {
+	const res = await fetchWithTransientRetry(`${getFullUrl('/api/auth/refresh')}`, {
 		method: 'POST',
 		credentials: 'include'
 	});
 
 	if (!res.ok) {
-		accessToken.set(null);
-		expiresAt.set(null);
+		// Only a real rejection from the server (e.g. refresh token expired/invalid)
+		// should log the user out. A transient 502/503/504 that survived the retry
+		// means the backend/proxy is temporarily unreachable - leave existing tokens
+		// alone so the next attempt (timer or 401 retry) can succeed once it recovers.
+		if (!isTransientStatus(res.status)) {
+			accessToken.set(null);
+			expiresAt.set(null);
+		}
 		return false;
 	}
 
@@ -192,7 +228,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
 		Authorization: token ? `Bearer ${token}` : ''
 	};
 
-	let res = await fetch(getFullUrl(url), options);
+	let res = await fetchWithTransientRetry(getFullUrl(url), options);
 
 	if (res.status === 401) {
 		// Try to refresh the token
@@ -214,7 +250,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
 		// Retry with new token
 		if (!options.headers) options.headers = {};
 		(options.headers as Record<string, string>).Authorization = `Bearer ${refreshedToken}`;
-		res = await fetch(getFullUrl(url), options);
+		res = await fetchWithTransientRetry(getFullUrl(url), options);
 		
 		// If still 401 after refresh, redirect to login
 		if (res.status === 401) {
@@ -295,7 +331,7 @@ export function initiateOidcLogin(providerId: string, returnUrl?: string): void 
  */
 export async function getExternalLinks(): Promise<ExternalLink[]> {
 	try {
-		const res = await fetchWithAuth(`${getFullUrl('/api/authexternallinks')}`);
+		const res = await fetchWithAuth(`/api/authexternallinks`);
 		if (!res.ok) return [];
 		return await res.json();
 	} catch (error) {
@@ -310,7 +346,7 @@ export async function getExternalLinks(): Promise<ExternalLink[]> {
  */
 export async function linkExternalAccount(providerId: string): Promise<{ authorizationUrl: string } | null> {
 	try {
-		const res = await fetchWithAuth(`${getFullUrl(`/api/authexternallinks/link/${providerId}`)}`, {
+		const res = await fetchWithAuth(`/api/authexternallinks/link/${providerId}`, {
 			method: 'POST'
 		});
 		if (!res.ok) return null;
@@ -326,7 +362,7 @@ export async function linkExternalAccount(providerId: string): Promise<{ authori
  */
 export async function unlinkExternalAccount(linkId: string): Promise<boolean> {
 	try {
-		const res = await fetchWithAuth(`${getFullUrl(`/api/authexternallinks/${linkId}`)}`, {
+		const res = await fetchWithAuth(`/api/authexternallinks/${linkId}`, {
 			method: 'DELETE'
 		});
 		return res.ok;

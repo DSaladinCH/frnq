@@ -1,11 +1,14 @@
 import type { InvestmentModel, PaginatedInvestmentsResponse } from '$lib/services/investmentService';
-import type { PositionSnapshot, GroupFeesSummary } from '$lib/services/positionService';
+import type { GeneralFeeModel, PaginatedFeesResponse, GroupFeesSummary } from '$lib/services/feeService';
+import type { PositionSnapshot } from '$lib/services/positionService';
 import type { QuoteModel } from '$lib/Models/QuoteModel';
 import { getInvestments } from '$lib/services/investmentService';
+import { getFees } from '$lib/services/feeService';
 import { getPositionSnapshots } from '$lib/services/positionService';
 import type { QuoteGroup } from '$lib/Models/QuoteGroup';
 import { getQuoteGroups } from '$lib/services/groupService';
 import { infiniteFeesList } from './infiniteFeesList';
+import { getForecast, type ForecastDayDto } from '$lib/services/forecastService';
 
 // Simple reactive data store without using runes in TS file
 export class DataStore {
@@ -13,11 +16,15 @@ export class DataStore {
 	private _quotes: QuoteModel[] = [];
 	private _investments: InvestmentModel[] = [];
 	private _investmentsTotalCount = 0;
+	private _fees: GeneralFeeModel[] = [];
+	private _feesTotalCount = 0;
 	private _groups: QuoteGroup[] = [];
 	private _groupFeesSummaries: GroupFeesSummary[] = [];
 	private _overallFees = 0;
+	private _forecast: ForecastDayDto[] = [];
 	private _primaryLoading = true;
 	private _secondaryLoading = false;
+	private _fetchLoading = false;
 	private _error: string | null = null;
 	private _initialized = false;
 	private _listeners = new Set<() => void>();
@@ -35,6 +42,12 @@ export class DataStore {
 	get investmentsTotalCount() {
 		return this._investmentsTotalCount;
 	}
+	get fees() {
+		return this._fees;
+	}
+	get feesTotalCount() {
+		return this._feesTotalCount;
+	}
 	get groups() {
 		return this._groups;
 	}
@@ -44,6 +57,9 @@ export class DataStore {
 	get overallFees() {
 		return this._overallFees;
 	}
+	get forecast() {
+		return this._forecast;
+	}
 	get loading() {
 		return this._primaryLoading || this._secondaryLoading;
 	}
@@ -52,6 +68,9 @@ export class DataStore {
 	}
 	get secondaryLoading() {
 		return this._secondaryLoading;
+	}
+	get fetchLoading() {
+		return this._fetchLoading;
 	}
 	get error() {
 		return this._error;
@@ -70,11 +89,31 @@ export class DataStore {
 		this._listeners.forEach((listener) => listener());
 	}
 
-	private async fetchAllData() {
-		const [positionsData, investmentsData, groupsData] = await Promise.all([
+	getSavedForecastType(): boolean {
+		try {
+			const saved = localStorage.getItem('forecastChart.selectedType');
+			return saved === 'predict';
+		} catch {
+			return false; // Default to false if localStorage is unavailable
+		}
+	}
+
+	getSavedForecastDuration(): number {
+		try {
+			const saved = localStorage.getItem('forecastChart.selectedDuration');
+			return parseInt(saved || '1', 10); // Default to 1 if not set
+		} catch {
+			return 1; // Default to 1 if localStorage is unavailable
+		}
+	}
+
+	private async fetchAllData(includeContributions: boolean = false, years: number = 1) {
+		const [positionsData, investmentsData, feesData, groupsData, forecastData] = await Promise.all([
 			getPositionSnapshots(null, null),
 			getInvestments(0, 25), // Get all investments for initial load
-			getQuoteGroups()
+			getFees(0, 25), // Get all fees for initial load
+			getQuoteGroups(),
+			getForecast(includeContributions, years)
 		]);
 
 		this._snapshots = positionsData.snapshots;
@@ -83,7 +122,10 @@ export class DataStore {
 		this._overallFees = positionsData.overallFees || 0;
 		this._investments = investmentsData.items;
 		this._investmentsTotalCount = investmentsData.totalCount;
+		this._fees = feesData.items;
+		this._feesTotalCount = feesData.totalCount;
 		this._groups = groupsData;
+		this._forecast = forecastData;
 		this._error = null;
 		this.notify();
 	}
@@ -109,6 +151,30 @@ export class DataStore {
 		}
 	}
 
+	// Runs a data refresh in the background without blocking the caller. Tracked via
+	// `fetchLoading` instead of `secondaryLoading` so mutating actions (add/update/delete)
+	// can resolve as soon as the write itself completes.
+	private async runFetchInBackground(action: () => Promise<void>) {
+		this._fetchLoading = true;
+		this.notify();
+
+		void action()
+			.then(() => {
+				this._error = null;
+			})
+			.catch((e) => {
+				this._error = (e as Error).message;
+			})
+			.finally(() => {
+				this._fetchLoading = false;
+				this.notify();
+			});
+	}
+
+	private fetchAllDataInBackground() {
+		this.runFetchInBackground(() => this.fetchAllData());
+	}
+
 	async initialize() {
 		if (this._initialized) return;
 
@@ -117,7 +183,9 @@ export class DataStore {
 		this.notify();
 
 		try {
-			await this.fetchAllData();
+			const includeContributions = this.getSavedForecastType();
+			const forecastDuration = this.getSavedForecastDuration();
+			await this.fetchAllData(includeContributions, forecastDuration);
 			this._initialized = true;
 		} catch (e) {
 			this._error = (e as Error).message;
@@ -127,7 +195,14 @@ export class DataStore {
 		}
 	}
 
-	async refreshData() {
+	// Pass `background: true` to refresh data without blocking the caller (tracked via
+	// `fetchLoading`) instead of blocking via `secondaryLoading`.
+	async refreshData(background: boolean = false) {
+		if (background) {
+			this.fetchAllDataInBackground();
+			return;
+		}
+
 		try {
 			await this.runWithSecondaryLoading(() => this.fetchAllData());
 		} catch (e) {}
@@ -139,32 +214,24 @@ export class DataStore {
 		return investmentsData;
 	}
 
-	// Method to append investments (for infinite scroll)
-	appendInvestments(newInvestments: InvestmentModel[]) {
-		this._investments = [...this._investments, ...newInvestments];
-		this.notify();
-	}
-
-	// Method to add new investment and refresh data
+	// Method to add new investment and refresh data in the background
 	async addInvestment(investment: Omit<InvestmentModel, 'id'>) {
 		await this.runWithSecondaryLoading(async () => {
 			const { addInvestment: addInvestmentAPI } = await import('$lib/services/investmentService');
 			await addInvestmentAPI(investment as any);
-			await this.fetchAllData();
-			await infiniteFeesList.refresh();
 		});
+		this.fetchAllDataInBackground();
 	}
 
-	// Method to update investment and refresh data
+	// Method to update investment and refresh data in the background
 	async updateInvestment(investment: InvestmentModel) {
 		await this.runWithSecondaryLoading(async () => {
 			const { updateInvestment: updateInvestmentAPI } = await import(
 				'$lib/services/investmentService'
 			);
 			await updateInvestmentAPI(investment);
-			await this.fetchAllData();
-			await infiniteFeesList.refresh();
 		});
+		this.fetchAllDataInBackground();
 	}
 
 	async deleteInvestment(investmentId: number) {
@@ -173,33 +240,32 @@ export class DataStore {
 				'$lib/services/investmentService'
 			);
 			await deleteInvestmentAPI(investmentId);
-			await this.fetchAllData();
-			await infiniteFeesList.refresh();
 		});
+		this.fetchAllDataInBackground();
 	}
 
 	async addQuoteGroup(name: string) {
 		await this.runWithSecondaryLoading(async () => {
 			const { createQuoteGroup: addQuoteGroupAPI } = await import('$lib/services/groupService');
 			await addQuoteGroupAPI(name);
-			await this.fetchAllData();
 		});
+		this.fetchAllDataInBackground();
 	}
 
 	async updateQuoteGroup(groupId: number, name: string) {
 		await this.runWithSecondaryLoading(async () => {
 			const { updateQuoteGroup: updateQuoteGroupAPI } = await import('$lib/services/groupService');
 			await updateQuoteGroupAPI(groupId, name);
-			await this.fetchAllData();
 		});
+		this.fetchAllDataInBackground();
 	}
 
 	async deleteQuoteGroup(groupId: number) {
 		await this.runWithSecondaryLoading(async () => {
 			const { deleteQuoteGroup: deleteQuoteGroupAPI } = await import('$lib/services/groupService');
 			await deleteQuoteGroupAPI(groupId);
-			await this.fetchAllData();
 		});
+		this.fetchAllDataInBackground();
 	}
 
 	async assignQuoteToGroup(quote: QuoteModel, groupId: number) {
@@ -214,8 +280,8 @@ export class DataStore {
 			} else {
 				await assignQuoteToGroupAPI(quote.id, groupId);
 			}
-			await this.fetchAllData();
 		});
+		this.fetchAllDataInBackground();
 	}
 
 	async updateQuoteCustomName(quoteId: number, customName: string) {
@@ -224,8 +290,8 @@ export class DataStore {
 				'$lib/services/quoteService'
 			);
 			await updateCustomQuoteNameAPI(quoteId, customName);
-			await this.fetchAllData();
 		});
+		this.fetchAllDataInBackground();
 	}
 
 	async removeQuoteCustomName(quoteId: number) {
@@ -234,8 +300,49 @@ export class DataStore {
 				'$lib/services/quoteService'
 			);
 			await removeCustomQuoteNameAPI(quoteId);
-			await this.fetchAllData();
 		});
+		this.fetchAllDataInBackground();
+	}
+
+	async refreshForecast() {
+		await this.runFetchInBackground(async () => {
+			const includeContributions = this.getSavedForecastType();
+			const forecastDuration = this.getSavedForecastDuration();
+			const forecastData = await getForecast(includeContributions, forecastDuration);
+			this._forecast = forecastData;
+		});
+	}
+
+	// Method to load more fees for infinite scrolling
+	async loadMoreFees(skip: number, take: number = 25): Promise<PaginatedFeesResponse> {
+		const feesData = await getFees(skip, take);
+		return feesData;
+	}
+
+	// Method to add new fee and refresh data in the background
+	async addFee(fee: Omit<GeneralFeeModel, 'id' | 'userId' | 'createdAt'>) {
+		await this.runWithSecondaryLoading(async () => {
+			const { addFee: addFeeAPI } = await import('$lib/services/feeService');
+			await addFeeAPI(fee);
+		});
+		this.fetchAllDataInBackground();
+	}
+
+	// Method to update fee and refresh data in the background
+	async updateFee(fee: GeneralFeeModel) {
+		await this.runWithSecondaryLoading(async () => {
+			const { updateFee: updateFeeAPI } = await import('$lib/services/feeService');
+			await updateFeeAPI(fee);
+		});
+		this.fetchAllDataInBackground();
+	}
+
+	async deleteFee(feeId: number) {
+		await this.runWithSecondaryLoading(async () => {
+			const { deleteFee: deleteFeeAPI } = await import('$lib/services/feeService');
+			await deleteFeeAPI(feeId);
+		});
+		this.fetchAllDataInBackground();
 	}
 }
 

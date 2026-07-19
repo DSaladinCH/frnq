@@ -608,6 +608,88 @@ public class Investment : TestBase
 	}
 
 	[Fact]
+	public async Task PerformanceCalculationWithSellInvestment()
+	{
+		// Setup: Mock the finance provider to return empty price history
+		FinanceProviderMock
+			.Setup(p => p.GetHistoricalPricesAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+			.ReturnsAsync(new List<QuotePrice>());
+
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+		UserModel user = await DataSeeder.GetTestUser(DbContext);
+
+		// Use seed data: AAPL quote (Id=1)
+		QuoteModel quote = DbContext.Quotes.First(q => q.Symbol == "AAPL");
+		Assert.NotNull(quote);
+
+		// Create buy investment: 100 units @ 50 CHF + 10 CHF fees
+		DbContext.Investments.Add(new InvestmentModel
+		{
+			UserId = user.Id,
+			QuoteId = quote.Id,
+			Date = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc),
+			Amount = 100m,
+			PricePerUnit = 50m,
+			TotalFees = 10m,
+			Type = InvestmentType.Buy
+		});
+
+		// Create sell investment: 60 units @ 60 CHF + 5 CHF fees (FIFO will match first 60 units of buy)
+		DbContext.Investments.Add(new InvestmentModel
+		{
+			UserId = user.Id,
+			QuoteId = quote.Id,
+			Date = new DateTime(2026, 3, 10, 0, 0, 0, DateTimeKind.Utc),
+			Amount = 60m,
+			PricePerUnit = 60m,
+			TotalFees = 5m,
+			Type = InvestmentType.Sell
+		});
+
+		// Add market price for the day after sell
+		DbContext.QuotePrices.Add(new QuotePrice
+		{
+			QuoteId = quote.Id,
+			Date = new DateTime(2026, 3, 11, 0, 0, 0, DateTimeKind.Utc),
+			Close = 65m
+		});
+
+		await DbContext.SaveChangesAsync();
+
+		// Query positions on the day after sell to check performance
+		var from = new DateTime(2026, 3, 11, 0, 0, 0, DateTimeKind.Utc);
+		var to = new DateTime(2026, 3, 11, 0, 0, 0, DateTimeKind.Utc);
+		ApiResponse<DSaladin.Frnq.Api.Position.PositionsResponse> response = await ApiInterface.Positions.GetPositions(from, to);
+
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		Assert.NotNull(response.Value);
+
+		// Get the snapshot for our quote
+		DSaladin.Frnq.Api.Position.PositionSnapshot? snapshot = response.Value.Snapshots.FirstOrDefault(s => s.QuoteId == quote.Id);
+		Assert.NotNull(snapshot);
+
+		// Verify portfolio state after sell:
+		// - Remaining units: 100 - 60 = 40
+		// - Invested (remaining basis): 40 * 50 + (10 * 40/100) = 2000 + 4 = 2004
+		// - Total invested cash (cash spent on buys): 100*50 + 10 = 5010
+		// - Realized gain: proceeds (60*60) - sell fees (5) - cost of sold units (60*50 + 6) = 3600 - 5 - 3006 = 589
+		// - Total fees: 10 + 5 = 15
+		// - Current market value: 40 * 65 = 2600
+		// - Unrealized gain: 2600 - 2004 = 596
+		// - Total profit: 589 + 596 = 1185
+
+		Assert.Equal(40m, snapshot.Amount);
+		Assert.Equal(2004m, snapshot.Invested);
+		Assert.Equal(5010m, snapshot.TotalInvestedCash);
+		Assert.Equal(589m, snapshot.RealizedGain);
+		Assert.Equal(15m, snapshot.TotalFees);
+		Assert.Equal(65m, snapshot.MarketPricePerUnit);
+		Assert.Equal(2600m, snapshot.CurrentValue);
+		Assert.Equal(596m, snapshot.UnrealizedGain);
+		Assert.Equal(1185m, snapshot.TotalProfit);
+	}
+
+	[Fact]
 	public async Task DeleteInvestmentUnauthenticated()
 	{
 		int investmentCountBefore = DbContext.Investments.Where(i => i.UserId == DataSeeder.TestUserId).Count();

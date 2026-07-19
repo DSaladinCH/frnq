@@ -5,15 +5,56 @@
 	import { type PositionSnapshot } from '$lib/services/positionService';
 	import { dataStore } from '$lib/stores/dataStore';
 	import PageHead from '$lib/components/PageHead.svelte';
+	import Loading from '$lib/components/Loading.svelte';
+	import { formatCurrency } from '$lib/utils/numberFormat';
+	import { userPreferences } from '$lib/stores/userPreferences';
 
 	// Reactive values that track the store - use $derived for efficiency
-	let snapshots = $derived(dataStore.snapshots);
-	let quotes = $derived(dataStore.quotes);
-	let groupFeesSummaries = $derived(dataStore.groupFeesSummaries);
-	let overallFees = $derived(dataStore.overallFees);
+	let snapshots = $state(dataStore.snapshots);
+	let quotes = $state(dataStore.quotes);
+	let groupFeesSummaries = $state(dataStore.groupFeesSummaries);
+	let overallFees = $state(dataStore.overallFees);
+	let fetchLoading = $state(dataStore.fetchLoading);
+	let showFetchLoading = $state(dataStore.fetchLoading);
+	let preferences = $state($userPreferences);
 
 	// Create quote lookup map for O(1) access
-	let quoteMap = $derived(new Map(quotes.map(q => [q.id, q])));
+	let quoteMap = $derived(new Map(quotes.map((q) => [q.id, q])));
+
+	let fadeOut = $state(false);
+
+	$effect(() => {
+		const unsubscribe = dataStore.subscribe(() => {
+			snapshots = dataStore.snapshots;
+			quotes = dataStore.quotes;
+			groupFeesSummaries = dataStore.groupFeesSummaries;
+			overallFees = dataStore.overallFees;
+			fetchLoading = dataStore.fetchLoading;
+		});
+
+		return () => {
+			unsubscribe();
+		};
+	});
+
+	$effect(() => {
+		if (!fetchLoading && showFetchLoading && !fadeOut) {
+			// Start fade-out when loading completes
+			fadeOut = true;
+		} else if (fetchLoading && !showFetchLoading) {
+			// Reset loading screen when loading starts again
+			showFetchLoading = true;
+			fadeOut = false;
+		}
+	});
+
+	// Subscribe to user preferences changes
+	$effect(() => {
+		const unsubscribe = userPreferences.subscribe((prefs) => {
+			preferences = prefs;
+		});
+		return unsubscribe;
+	});
 
 	// Group by quote group (from quote), then by quoteId
 	let groupedSnapshots = $derived.by(() => {
@@ -50,7 +91,7 @@
 			realized: last?.realizedGain ?? 0,
 			totalProfit: unrealizedGain + (last?.realizedGain ?? 0),
 			unrealizedGain: unrealizedGain,
-			totalInvestedCash: last?.totalInvestedCash ?? (last?.invested ?? 0)
+			totalInvestedCash: last?.totalInvestedCash ?? last?.invested ?? 0
 		};
 	}
 
@@ -70,7 +111,10 @@
 			totalValue: currentValue + realized,
 			totalProfit: unrealizedGain + realized,
 			unrealizedGain,
-			totalInvestedCash: lastSnaps.reduce((sum, s) => sum + (s.totalInvestedCash ?? s.invested ?? 0), 0)
+			totalInvestedCash: lastSnaps.reduce(
+				(sum, s) => sum + (s.totalInvestedCash ?? s.invested ?? 0),
+				0
+			)
 		};
 	}
 
@@ -83,7 +127,7 @@
 
 	// Helper to get fees for a group
 	function getGroupFees(groupId: string): number {
-		const summary = groupFeesSummaries.find(s => s.groupId?.toString() === groupId);
+		const summary = groupFeesSummaries.find((s) => s.groupId?.toString() === groupId);
 		return summary ? summary.totalGeneralFees : 0;
 	}
 
@@ -98,18 +142,6 @@
 	let filterQuoteId = $state<number | null>(null);
 	let chartPeriod = $state<string>('3m'); // Track the chart's selected period
 
-	// Compute filtered snapshots for the chart
-	function filterLeadingZeroSnapshots(snaps: PositionSnapshot[]): PositionSnapshot[] {
-		// Find the first index where at least one of the values is non-zero
-		const firstNonZeroIdx = snaps.findIndex(
-			(s) =>
-				(s.invested ?? 0) !== 0 ||
-				(s.currentValue ?? 0) !== 0 ||
-				(s.realizedGain ?? 0) !== 0
-		);
-		return firstNonZeroIdx === -1 ? [] : snaps.slice(firstNonZeroIdx);
-	}
-
 	let filteredSnapshots = $derived.by(() => {
 		let snaps: PositionSnapshot[];
 		if (filterMode === 'full') snaps = snapshots;
@@ -119,8 +151,8 @@
 		} else if (filterMode === 'quote' && filterQuoteId != null) {
 			snaps = snapshots.filter((s) => s.quoteId === filterQuoteId);
 		} else snaps = snapshots;
-		
-		return filterLeadingZeroSnapshots(snaps);
+
+		return snaps;
 	});
 
 	// UI handlers (update state)
@@ -179,7 +211,7 @@
 	let periodFromDate = $derived.by(() => {
 		const now = new Date();
 		let fromDate: Date;
-		
+
 		switch (chartPeriod) {
 			case '1w':
 				fromDate = new Date(now);
@@ -202,7 +234,7 @@
 				fromDate = new Date(now);
 				fromDate.setMonth(now.getMonth() - 3);
 		}
-		
+
 		// Remove time from fromDate for comparison
 		return new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
 	});
@@ -210,39 +242,39 @@
 	// Helper to check if a quote has any active positions based on the chart's selected period
 	function hasActivePosition(snapshots: PositionSnapshot[]): boolean {
 		if (snapshots.length === 0) return false;
-		
+
 		if (chartPeriod === 'all') {
-			return snapshots.some(snap => snap.amount > 0);
+			return snapshots.some((snap) => snap.amount > 0);
 		}
-		
+
 		const fromDate = periodFromDate;
-		if (!fromDate) return snapshots.some(snap => snap.amount > 0);
-		
-		const periodSnapshots = snapshots.filter(snap => new Date(snap.date) >= fromDate);
-		return periodSnapshots.some(snap => snap.amount > 0);
+		if (!fromDate) return snapshots.some((snap) => snap.amount > 0);
+
+		const periodSnapshots = snapshots.filter((snap) => new Date(snap.date) >= fromDate);
+		return periodSnapshots.some((snap) => snap.amount > 0);
 	}
 
 	// Helper to check if a group has any currently active positions
 	function hasActivePositionsInGroup(quotes: Record<number, PositionSnapshot[]>): boolean {
-		return Object.values(quotes).some(snaps => hasActivePosition(snaps));
+		return Object.values(quotes).some((snaps) => hasActivePosition(snaps));
 	}
 
 	// Cache active position checks to avoid redundant filtering
 	let activePositionsCache = $derived.by(() => {
 		const cache = new Map<string, boolean>();
-		
+
 		// Cache for all quotes in groups
 		for (const [groupId, { quotes: groupQuotes }] of Object.entries(groupedSnapshots.groups)) {
 			for (const [quoteKey, snaps] of Object.entries(groupQuotes)) {
 				cache.set(`${groupId}-${quoteKey}`, hasActivePosition(snaps));
 			}
 		}
-		
+
 		// Cache for ungrouped quotes
 		for (const [quoteKey, snaps] of Object.entries(groupedSnapshots.ungrouped)) {
 			cache.set(`ungrouped-${quoteKey}`, hasActivePosition(snaps));
 		}
-		
+
 		return cache;
 	});
 
@@ -258,10 +290,12 @@
 	): Card[] {
 		if (filterModeValue === 'full') {
 			const result: Card[] = [];
-			
+
 			// Add group cards
-			for (const [groupId, { name: groupName, quotes: groupQuotes }] of Object.entries(groupedSnapshotsValue.groups)) {
-				const hasActive = Object.keys(groupQuotes).some(qk => cache.get(`${groupId}-${qk}`));
+			for (const [groupId, { name: groupName, quotes: groupQuotes }] of Object.entries(
+				groupedSnapshotsValue.groups
+			)) {
+				const hasActive = Object.keys(groupQuotes).some((qk) => cache.get(`${groupId}-${qk}`));
 				if (hasActive) {
 					result.push({
 						type: 'group' as const,
@@ -271,7 +305,7 @@
 					});
 				}
 			}
-			
+
 			// Add ungrouped quote cards
 			for (const [quoteKey, snaps] of Object.entries(groupedSnapshotsValue.ungrouped)) {
 				if (cache.get(`ungrouped-${quoteKey}`)) {
@@ -282,12 +316,12 @@
 					});
 				}
 			}
-			
+
 			return result;
 		} else if (filterModeValue === 'group' && filterGroupIdValue) {
 			const group = groupedSnapshotsValue.groups[filterGroupIdValue];
 			if (!group) return [];
-			
+
 			const result: Card[] = [];
 			for (const [quoteKey, snaps] of Object.entries(group.quotes)) {
 				if (cache.get(`${filterGroupIdValue}-${quoteKey}`)) {
@@ -329,7 +363,13 @@
 	type PositionCardProps = {
 		type: 'group' | 'quote';
 		groupName?: string;
-		summary: { invested: number; currentValue: number; totalValue: number; realized: number; totalProfit: number };
+		summary: {
+			invested: number;
+			currentValue: number;
+			totalValue: number;
+			realized: number;
+			totalProfit: number;
+		};
 		title: string;
 		onView?: (() => void) | undefined;
 		isActiveQuote?: boolean;
@@ -350,7 +390,8 @@
 			const summary = getGroupSummaryLast(filteredQuotes);
 			const groupFees = getGroupFees(card.groupId);
 			// Only subtract fees when viewing full portfolio (filterMode === 'full')
-			const adjustedProfit = filterMode === 'full' ? summary.totalProfit - groupFees : summary.totalProfit;
+			const adjustedProfit =
+				filterMode === 'full' ? summary.totalProfit - groupFees : summary.totalProfit;
 			return {
 				type: 'group',
 				groupName: card.groupName,
@@ -359,12 +400,13 @@
 				onView: () => handleGroupView(card.groupId),
 				isActiveQuote: false,
 				viewLabel: 'Show only this group',
-				profitClass: adjustedProfit > 0 ? 'profit-positive' : adjustedProfit < 0 ? 'profit-negative' : '',
+				profitClass:
+					adjustedProfit > 0 ? 'profit-positive' : adjustedProfit < 0 ? 'profit-negative' : '',
 				groupFees: filterMode === 'full' ? groupFees : undefined
 			};
 		} else {
 			const summary = getSummaryFromLastSnapshots(card.snaps);
-			
+
 			return {
 				type: 'quote',
 				title: getQuoteDisplayName(card.quoteKey),
@@ -380,14 +422,21 @@
 						? 'Cancel quote filter'
 						: 'Back to full view'
 					: 'Show only this quote',
-				profitClass: summary.totalProfit > 0 ? 'profit-positive' : summary.totalProfit < 0 ? 'profit-negative' : ''
+				profitClass:
+					summary.totalProfit > 0
+						? 'profit-positive'
+						: summary.totalProfit < 0
+							? 'profit-negative'
+							: ''
 				// Note: groupFees is intentionally NOT passed - quote cards never show fees
 			};
 		}
 	}
 
 	// Reactive cards array for the template
-	let cards = $derived(getQuoteCards(groupedSnapshots, filterMode, filterGroupId, filterQuoteId, activePositionsCache));
+	let cards = $derived(
+		getQuoteCards(groupedSnapshots, filterMode, filterGroupId, filterQuoteId, activePositionsCache)
+	);
 
 	// Helper to create a card for portfolio-level fees
 	function getPortfolioFeeCard() {
@@ -430,13 +479,32 @@
 			return getGroupFees(filterGroupId);
 		} else {
 			// Full view: all fees (group + portfolio)
-			const groupFees = groupFeesSummaries.reduce((sum, gfs) => sum + (gfs.totalGeneralFees ?? 0), 0);
+			const groupFees = groupFeesSummaries.reduce(
+				(sum, gfs) => sum + (gfs.totalGeneralFees ?? 0),
+				0
+			);
 			return groupFees + (overallFees ?? 0);
 		}
 	});
 </script>
 
 <PageHead title="Portfolio" />
+
+{#if showFetchLoading}
+	<div
+		class="absolute bg-black/75 top-0 left-0 right-0 bottom-0 z-10 scrollbar-none fetch-loading-screen"
+		class:fade-out={fadeOut}
+		onanimationend={() => {
+			if (fadeOut) {
+				showFetchLoading = false;
+			}
+		}}
+	>
+		<div class="h-screen flex items-center justify-center">
+			<Loading text="Updating portfolio..." />
+		</div>
+	</div>
+{/if}
 
 {#if snapshots.length === 0}
 	<p>No data available.</p>
@@ -456,44 +524,34 @@
 			/>
 		{/if}
 		{#if portfolioFeeCard}
-			<div
-				class="card card-reactive"
-				role="region"
-				aria-label="Portfolio-Level Fees"
-			>
+			<div class="card card-reactive" role="region" aria-label="Portfolio-Level Fees">
 				<div class="mb-2 min-h-8.5">
-					<span class="text-xl font-bold"><i class="fa-solid fa-money-bill-transfer mr-2"></i>Portfolio-Level Fees</span>
+					<span class="text-xl font-bold"
+						><i class="fa-solid fa-money-bill-transfer mr-2"></i>Portfolio-Level Fees</span
+					>
 				</div>
 				<div class="w-full flex flex-col gap-2">
 					<div class="flex justify-between items-center text-base">
 						<span class="font-medium color-muted">Unassigned Fees:</span>
 						<span class="font-semibold">
-							- {portfolioFeeCard.fees.toLocaleString(undefined, {
-								style: 'currency',
-								currency: 'CHF'
-							})}
+							- {formatCurrency(portfolioFeeCard.fees, 'CHF', preferences.numberFormat)}
 						</span>
 					</div>
 				</div>
 			</div>
 		{/if}
 		{#if groupFeeCard}
-			<div
-				class="card card-reactive"
-				role="region"
-				aria-label={groupFeeCard.title}
-			>
+			<div class="card card-reactive" role="region" aria-label={groupFeeCard.title}>
 				<div class="mb-2 min-h-8.5">
-					<span class="text-xl font-bold"><i class="fa-solid fa-money-bill-transfer mr-2"></i>{groupFeeCard.title}</span>
+					<span class="text-xl font-bold"
+						><i class="fa-solid fa-money-bill-transfer mr-2"></i>{groupFeeCard.title}</span
+					>
 				</div>
 				<div class="w-full flex flex-col gap-2">
 					<div class="flex justify-between items-center text-base">
 						<span class="font-medium color-muted">Group Fees:</span>
 						<span class="font-semibold">
-							- {groupFeeCard.fees.toLocaleString(undefined, {
-								style: 'currency',
-								currency: 'CHF'
-							})}
+							- {formatCurrency(groupFeeCard.fees, 'CHF', preferences.numberFormat)}
 						</span>
 					</div>
 				</div>
@@ -508,5 +566,15 @@
 <style>
 	.quote-groups {
 		margin-bottom: 4.5rem;
+	}
+
+	.fetch-loading-screen.fade-out {
+		animation: fadeOut 0.8s forwards;
+	}
+
+	@keyframes fadeOut {
+		to {
+			opacity: 0;
+		}
 	}
 </style>

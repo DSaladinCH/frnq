@@ -1,16 +1,22 @@
 import { writable } from 'svelte/store';
 import { fetchWithAuth } from '$lib/services/authService';
 import { DateFormatType } from '$lib/utils/dateFormat';
+import { NumberFormatType } from '$lib/utils/numberFormat';
+import { dataStore } from './dataStore';
 
-export { DateFormatType };
+export { DateFormatType, NumberFormatType };
 
 export interface UserPreferences {
 	dateFormat: DateFormatType;
+	numberFormat: NumberFormatType;
+	forecastNumberOfInvestments: number;
 }
 
 // Default preferences
 const defaultPreferences: UserPreferences = {
-	dateFormat: DateFormatType.English
+	dateFormat: DateFormatType.English,
+	numberFormat: NumberFormatType.English,
+	forecastNumberOfInvestments: 5
 };
 
 // Create the store
@@ -29,7 +35,9 @@ function createUserPreferencesStore() {
 				if (res.ok) {
 					const userData = await res.json();
 					set({
-						dateFormat: userData.dateFormat || DateFormatType.English
+						dateFormat: userData.dateFormat || DateFormatType.English,
+						numberFormat: userData.numberFormat || NumberFormatType.English,
+						forecastNumberOfInvestments: userData.forecastNumberOfInvestments || 5
 					});
 				}
 			} catch (error) {
@@ -38,21 +46,35 @@ function createUserPreferencesStore() {
 		},
 
 		/**
-		 * Update the date format preference
+		 * Update the date format, number format and forecast preferences
 		 */
-		async setDateFormat(format: DateFormatType): Promise<boolean> {
+		async updateUser(format: DateFormatType, numberFormat: NumberFormatType, forecastNumberOfInvestments: number): Promise<boolean> {
 			try {
+				let currentPrefs: UserPreferences | undefined;
+				const unsubscribe = subscribe(prefs => {
+					currentPrefs = prefs;
+				});
+				unsubscribe();
+
 				const res = await fetchWithAuth('/api/auth/me', {
 					method: 'PUT',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ dateFormat: format })
+					body: JSON.stringify({ dateFormat: format, numberFormat, forecastNumberOfInvestments })
 				});
 
 				if (res.ok) {
-					update(prefs => ({ ...prefs, dateFormat: format }));
+					update(prefs => ({ ...prefs, dateFormat: format, numberFormat, forecastNumberOfInvestments }));
+
+					if (currentPrefs && forecastNumberOfInvestments !== currentPrefs.forecastNumberOfInvestments) {
+						dataStore.refreshForecast();
+					}
+
 					return true;
 				}
+
+				update(prefs => ({ ...prefs}));
 				return false;
+
 			} catch (error) {
 				console.error('Failed to update date format:', error);
 				return false;

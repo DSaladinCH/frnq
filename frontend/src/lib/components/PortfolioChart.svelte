@@ -4,8 +4,28 @@
 	import type { PositionSnapshot } from '../services/positionService';
 	import PillToggle from './PillToggle.svelte';
 	import DropDown from './DropDown.svelte';
+	import { formatCurrency, formatNumber } from '$lib/utils/numberFormat';
+	import { userPreferences } from '$lib/stores/userPreferences';
 
-	let { snapshots, onPeriodChange, totalFees = 0 }: { snapshots: PositionSnapshot[], onPeriodChange?: (period: string) => void, totalFees?: number } = $props();
+	let preferences = $state($userPreferences);
+
+	// Subscribe to user preferences changes
+	$effect(() => {
+		const unsubscribe = userPreferences.subscribe((prefs) => {
+			preferences = prefs;
+		});
+		return unsubscribe;
+	});
+
+	let {
+		snapshots,
+		onPeriodChange,
+		totalFees = 0
+	}: {
+		snapshots: PositionSnapshot[];
+		onPeriodChange?: (period: string) => void;
+		totalFees?: number;
+	} = $props();
 	let canvas: HTMLCanvasElement;
 	let chart: Chart;
 	let tooltipEl: HTMLDivElement;
@@ -47,21 +67,21 @@
 			const currentValue = snaps.reduce((sum, s) => sum + (s.currentValue ?? 0), 0);
 			const realizedGain = snaps.reduce((sum, s) => sum + (s.realizedGain ?? 0), 0);
 			const totalInvestedCash = snaps.reduce((sum, s) => sum + (s.totalInvestedCash ?? 0), 0);
-			
+
 			// Unrealized gain = current value - cost basis of current holdings
 			const unrealizedGain = currentValue - invested;
-			
+
 			// Total profit = unrealized + realized
 			const totalProfit = unrealizedGain + realizedGain;
 
 			return {
 				date,
-				invested,              // cost basis of current holdings
-				currentValue,          // market value of current holdings
-				unrealizedGain,        // gain/loss on current holdings
-				realizedGain,          // profit from sells + dividends
-				totalProfit,           // total gain (unrealized + realized)
-				totalInvestedCash      // all cash ever invested
+				invested, // cost basis of current holdings
+				currentValue, // market value of current holdings
+				unrealizedGain, // gain/loss on current holdings
+				realizedGain, // profit from sells + dividends
+				totalProfit, // total gain (unrealized + realized)
+				totalInvestedCash // all cash ever invested
 			};
 		});
 
@@ -251,6 +271,7 @@
 				}
 			}
 		});
+		
 		return () => {
 			chart?.destroy();
 			// Remove tooltip element on destroy
@@ -261,12 +282,12 @@
 
 	// Compute current portfolio info (latest date)
 	// Optimize by caching filtered and grouped data
-	let filteredSnapshots = $derived.by(() => 
+	let filteredSnapshots = $derived.by(() =>
 		filterSnapshotsWithActivePositionsInPeriod(snapshots, selectedPeriod)
 	);
-	
+
 	let groupedSnapshots = $derived.by(() => groupSnapshotsByDate(filteredSnapshots));
-	
+
 	let latest = $derived(
 		groupedSnapshots.length ? groupedSnapshots[groupedSnapshots.length - 1] : null
 	);
@@ -274,13 +295,13 @@
 
 	// Total profit (realized + unrealized) minus fees
 	let totalProfit = $derived(latest ? latest.totalProfit - totalFees : -totalFees);
-	
+
 	// Profit at start of period
 	let startProfit = $derived(first ? first.totalProfit : 0);
-	
+
 	// Profit change in this period
 	let profitChange = $derived(latest && first ? totalProfit - startProfit : 0);
-	
+
 	// Total Return % = (Total Profit / Total Cash Invested) × 100
 	// This shows overall performance including realized gains
 	let totalReturnPct = $derived(
@@ -288,13 +309,11 @@
 			? (latest.totalProfit / latest.totalInvestedCash) * 100
 			: 0
 	);
-	
+
 	// Position Performance % = (Unrealized Gain / Cost Basis of Current Holdings) × 100
 	// This shows how current holdings are performing
 	let positionPerformancePct = $derived(
-		latest && latest.invested > 1e-6
-			? (latest.unrealizedGain / latest.invested) * 100
-			: 0
+		latest && latest.invested > 1e-6 ? (latest.unrealizedGain / latest.invested) * 100 : 0
 	);
 
 	// Period change % - change in total profit during the selected period
@@ -325,11 +344,7 @@
 	let profitColor = $derived(profitChange > 0 ? 'green' : profitChange < 0 ? 'red' : 'gray');
 
 	// Dynamic background fade color based on chartOption
-	let fadeColor = $derived(
-		chartOption === 'profitOnly' 
-			? '#44223f' 
-			: '#6b2b67'
-	);
+	let fadeColor = $derived(chartOption === 'profitOnly' ? '#44223f' : '#6b2b67');
 
 	function updateChartData() {
 		if (!chart || !groupedSnapshots) return;
@@ -349,15 +364,15 @@
 			dataset0.pointBackgroundColor = '#c14bac';
 			dataset1.hidden = true; // Hide invested line
 		} else {
-			// totalValue: Show total value (position + realized gains) vs total invested
+			// totalValue: Show current portfolio value vs cost basis of current holdings
 			dataset0.label = 'Total Value';
 			dataset0.data = groupedSnapshots.map((s) => roundValue(s.currentValue + s.realizedGain));
-			dataset0.borderColor = '#c14bac'; // Green
+			dataset0.borderColor = '#c14bac'; // Purple
 			dataset0.backgroundColor = '#c14bac49';
 			dataset0.pointBackgroundColor = '#c14bac';
-			
-			dataset1.label = 'Total Invested';
-			dataset1.data = groupedSnapshots.map((s) => roundValue(s.totalInvestedCash));
+
+			dataset1.label = 'Cost Basis';
+			dataset1.data = groupedSnapshots.map((s) => roundValue(s.invested));
 			dataset1.borderColor = '#7a2b7d';
 			dataset1.backgroundColor = '#7a2b7d88';
 			dataset1.pointBackgroundColor = '#7a2b7d';
@@ -410,7 +425,7 @@
 		// Group by quoteId to check which quotes had active positions in this period
 		const activeQuoteIds = new Set<number>();
 		const quoteGroups = new Map<number, PositionSnapshot[]>();
-		
+
 		for (const snap of periodFiltered) {
 			let group = quoteGroups.get(snap.quoteId);
 			if (!group) {
@@ -418,7 +433,7 @@
 				quoteGroups.set(snap.quoteId, group);
 			}
 			group.push(snap);
-			
+
 			// Check if this snapshot has an active position
 			if (snap.amount > 0) {
 				activeQuoteIds.add(snap.quoteId);
@@ -490,42 +505,40 @@
 			md:grid-cols-[auto_120px] md:grid-rows-[1fr] md:justify-items-start"
 >
 	{#if latest}
-	
 		<div class="flex flex-wrap">
 			<div class="text-xs color-muted mb-1 w-full text-center md:text-left">
 				Total Profit (Unrealized + Realized)
 			</div>
 			<div class="text-4xl font-bold flex w-full justify-center md:justify-start">
 				<span class="text-left" style="color: {profitColor}"
-					>{totalProfit >= 0 ? '+' : ''} {totalProfit.toLocaleString(undefined, { style: 'currency', currency: 'CHF' })}</span
+					>{totalProfit >= 0 ? '+' : ''}
+					{formatCurrency(totalProfit, 'CHF', preferences.numberFormat)}</span
 				>
 			</div>
 
 			<div class="flex items-center gap-3 w-full justify-center md:justify-start mt-1">
 				<span class="text-base font-semibold" style="color: {profitColor}">
-					{profitChange >= 0 ? '+' : ''} {profitChange.toLocaleString(undefined, {
-						style: 'currency',
-						currency: 'CHF'
-					})}
+					{profitChange >= 0 ? '+' : ''}
+					{formatCurrency(profitChange, 'CHF', preferences.numberFormat)}
 				</span>
-				
+
 				<div class="border-l border-button h-3.5"></div>
 
 				{#if profitChangePctDisplay === '+∞' || profitChangePctDisplay === '-∞'}
 					<span
 						class="text-base font-semibold"
 						style="color: {profitColor}"
-						title={profitChangePct.toFixed(2) + '%'}>{profitChangePctDisplay}%</span
+						title={formatNumber(profitChangePct, preferences.numberFormat, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%'}>{profitChangePctDisplay}%</span
 					>
 				{:else if profitChangePctDisplay === '+9999' || profitChangePctDisplay === '-9999'}
 					<span
 						class="text-base font-semibold"
 						style="color: {profitColor}"
-						title={profitChangePct.toFixed(2) + '%'}>{profitChangePctDisplay}%</span
+						title={formatNumber(profitChangePct, preferences.numberFormat, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%'}>{profitChangePctDisplay}%</span
 					>
 				{:else}
 					<span class="text-base font-semibold" style="color: {profitColor}"
-						>{profitChangePctDisplay}%</span
+						>{formatNumber(profitChangePct, preferences.numberFormat, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%'}</span
 					>
 				{/if}
 			</div>
@@ -546,8 +559,13 @@
 	<canvas bind:this={canvas} class="w-screen max-w-full block" style="height: 400px;"></canvas>
 </div>
 
-<div class="background-fade flex h-20 -mt-2.5 w-full pointer-events-none z-1 relative" style="--fade-color: {fadeColor}">
-	<div class="flex justify-center items-center mt-5 absolute w-full left-0 top-0 z-1 pointer-events-auto">
+<div
+	class="background-fade flex h-20 -mt-2.5 w-full pointer-events-none z-1 relative"
+	style="--fade-color: {fadeColor}"
+>
+	<div
+		class="flex justify-center items-center mt-5 absolute w-full left-0 top-0 z-1 pointer-events-auto"
+	>
 		<div class="hidden sm:block">
 			<PillToggle
 				options={periodOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
@@ -569,11 +587,6 @@
 
 <style>
 	.background-fade {
-		background: linear-gradient(
-			to bottom,
-			transparent 0px,
-			var(--fade-color) 10%,
-			transparent 20%
-		);
+		background: linear-gradient(to bottom, transparent 0px, var(--fade-color) 10%, transparent 20%);
 	}
 </style>

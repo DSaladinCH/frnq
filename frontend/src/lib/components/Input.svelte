@@ -27,6 +27,7 @@
 		step,
 		min,
 		max,
+		spaceForRightAction = false,
 		oninput = $bindable(),
 		onkeydown = $bindable(),
 		onchange = $bindable(),
@@ -50,6 +51,7 @@
 		step?: string | number;
 		min?: string | number;
 		max?: string | number;
+		spaceForRightAction?: boolean;
 		oninput?: (event: Event) => void;
 		onkeydown?: (event: KeyboardEvent) => void;
 		onchange?: (event: Event) => void;
@@ -58,10 +60,9 @@
 		inputElement?: HTMLInputElement;
 	} = $props();
 
-	id = id || `textbox-${Math.random().toString(36).slice(2, 11)}`;
-	const isCheckbox = type === 'checkbox';
-	const isFileInput = type === 'file';
-	const isDateTimeInput = type === 'datetime-local' || type === 'date' || type === 'time';
+	let calculatedId = $derived(id || `textbox-${Math.random().toString(36).slice(2, 11)}`);
+	let isCheckbox = $derived(type === 'checkbox');
+	let isDateTimeInput = $derived(type === 'datetime-local' || type === 'date' || type === 'time');
 
 	let dateInputRef: HTMLInputElement | null = $state(null);
 	let datepicker: AirDatepicker<HTMLInputElement> | null = null;
@@ -301,7 +302,7 @@
 >
 	{#if title}
 		<!-- Check if title is string or snippet -->
-		<label for={id} class="leading-none">
+		<label for={calculatedId} class="leading-none">
 			{#if typeof title === 'string'}
 				{title}
 			{:else}
@@ -311,38 +312,14 @@
 	{/if}
 
 	{#if isCheckbox}
-		<input class="checkbox" type="checkbox" {id} bind:checked {required} {onchange} {disabled} />
-	{:else if isFileInput}
-		<div class="gradient-border" style="--gradient-border-radius: 0.25em;">
-			<input
-				class="absolute h-0 w-0 overflow-hidden opacity-0"
-				type="file"
-				{id}
-				bind:files
-				bind:value
-				{name}
-				{accept}
-				{required}
-				{onchange}
-				{onfocus}
-				{disabled}
-			/>
-			<label
-				for={id}
-				class="textbox flex w-full flex-1 grow cursor-pointer items-center transition-all duration-200 {disabled
-					? 'cursor-not-allowed opacity-60'
-					: ''}"
-			>
-				{files && files.length > 0 ? files[0].name : 'Select a file...'}
-			</label>
-		</div>
+		<input class="checkbox w-2.5 h-2.5 rounded-sm bg-card border border-primary cursor-pointer outline-0" type="checkbox" id={calculatedId} bind:checked {required} {onchange} {disabled} />
 	{:else if isDateTimeInput}
 		<div class="gradient-border" style="--gradient-border-radius: 0.25em;">
 			<input
 				bind:this={dateInputRef}
-				class="textbox grow"
+				class="textbox grow pr-2.5 block w-full max-w-full border-0 rounded-sm min-h-7.5 max-h-12.5 pl-2.5 outline-0 bg-card border-transparent color-default"
 				type="text"
-				{id}
+				id={calculatedId}
 				{required}
 				{disabled}
 				{placeholder}
@@ -353,10 +330,10 @@
 	{:else}
 		<div class="gradient-border" style="--gradient-border-radius: 0.25em;">
 			<input
-				class="textbox grow"
+				class="textbox grow {spaceForRightAction ? 'pr-10' : 'pr-2.5'} block w-full max-w-full border-0 rounded-sm min-h-7.5 max-h-12.5 pl-2.5 outline-0 bg-card border-transparent color-default"
 				bind:this={inputElement}
 				{type}
-				{id}
+				id={calculatedId}
 				{autocomplete}
 				{required}
 				{oninput}
@@ -377,42 +354,15 @@
 </div>
 
 <style>
-	.textbox,
 	.textbox:-webkit-autofill {
-		display: block;
-		width: 100%;
-		max-width: 100%;
-		border-width: 0;
-		border-radius: 0.25em;
-		border-style: solid;
-		min-height: 30px;
-		max-height: 50px;
-		padding-left: 10px;
-		padding-right: 10px;
-		outline: 0;
-		background-color: var(--color-card);
-		border-color: transparent;
-		color: var(--color-text);
+		box-shadow: 0 0 0 1000px var(--color-card) inset;
+		-webkit-text-fill-color: var(--color-text);
 	}
 
 	.textbox:focus,
 	.textbox:-webkit-autofill:focus {
 		outline: none !important;
 		box-shadow: none !important;
-	}
-
-	.textbox.flex {
-		display: flex !important;
-	}
-
-	.checkbox {
-		width: 20px;
-		height: 20px;
-		border-radius: 0.25rem;
-		background-color: var(--color-control);
-		border: 1px solid var(--color-primary);
-		cursor: pointer;
-		outline: 0;
 	}
 
 	.checkbox:hover {
