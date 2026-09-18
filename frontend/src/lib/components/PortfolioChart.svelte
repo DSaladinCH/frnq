@@ -71,8 +71,7 @@
 			// Unrealized gain = current value - cost basis of current holdings
 			const unrealizedGain = currentValue - invested;
 
-			// Total profit = unrealized + realized
-			const totalProfit = unrealizedGain + realizedGain;
+			const totalProfit = unrealizedGain + realizedGain - totalFees;
 
 			return {
 				date,
@@ -366,7 +365,9 @@
 		} else {
 			// totalValue: Show current portfolio value vs cost basis of current holdings
 			dataset0.label = 'Total Value';
-			dataset0.data = groupedSnapshots.map((s) => roundValue(s.currentValue + s.realizedGain));
+			dataset0.data = groupedSnapshots.map((s) =>
+				roundValue(s.currentValue + s.realizedGain - totalFees)
+			);
 			dataset0.borderColor = '#c14bac'; // Purple
 			dataset0.backgroundColor = '#c14bac49';
 			dataset0.pointBackgroundColor = '#c14bac';
