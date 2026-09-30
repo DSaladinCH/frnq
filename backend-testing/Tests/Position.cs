@@ -393,6 +393,49 @@ public class Position : TestBase
 	}
 
 	[Fact]
+	public async Task GetPositionsWithoutDatesStartsAtFirstInvestment()
+	{
+		SetupFinanceProviderMock();
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+		UserModel user = await DataSeeder.GetTestUser(DbContext);
+		DateTime buyDate = DateTime.UtcNow.Date.AddDays(-2);
+
+		QuoteModel quote = new()
+		{
+			ProviderId = "yahoo-finance",
+			Symbol = "DEFAULT-RANGE",
+			Name = "Default range test",
+			Currency = "CHF",
+			ExchangeDisposition = "Test",
+			TypeDisposition = "EQUITY"
+		};
+		DbContext.Quotes.Add(quote);
+		await DbContext.SaveChangesAsync();
+		DbContext.Investments.Add(new InvestmentModel
+		{
+			UserId = user.Id,
+			QuoteId = quote.Id,
+			Date = buyDate,
+			Amount = 10m,
+			PricePerUnit = 100m,
+			Type = InvestmentType.Buy
+		});
+		DbContext.QuotePrices.Add(new QuotePrice { QuoteId = quote.Id, Date = buyDate, Close = 100m });
+		await DbContext.SaveChangesAsync();
+
+		ApiResponse<PositionsResponse> response = await ApiInterface.Positions.GetPositions();
+
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		Assert.NotNull(response.Value);
+		Assert.Contains(response.Value.Snapshots, snapshot => snapshot.QuoteId == quote.Id && snapshot.Date.Date == buyDate.Date);
+		FinanceProviderMock.Verify(provider => provider.GetHistoricalPricesAsync(
+			It.IsAny<string>(),
+			It.Is<DateTime>(date => date <= DateTime.MinValue.AddDays(1)),
+			It.IsAny<DateTime>(),
+			It.IsAny<CancellationToken>()), Times.Never);
+	}
+
+	[Fact]
 	public async Task GetPositionsDateRangeBoundaries()
 	{
 		SetupFinanceProviderMock();
@@ -457,6 +500,44 @@ public class Position : TestBase
 		var endSnapshot = snapshots.First(s => s.Date.Date == boundaryEnd.Date);
 		Assert.Equal(50m, endSnapshot.Amount);
 		Assert.Equal(110m, endSnapshot.MarketPricePerUnit);
+	}
+
+	[Fact]
+	public async Task GetPositionsUsesLatestIntradayPrice()
+	{
+		SetupFinanceProviderMock();
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+		UserModel user = await DataSeeder.GetTestUser(DbContext);
+		DateTime date = new DateTime(2026, 2, 5, 0, 0, 0, DateTimeKind.Utc);
+		QuoteModel quote = new()
+		{
+			ProviderId = "yahoo-finance",
+			Symbol = "INTRADAY",
+			Name = "Intraday test",
+			Currency = "CHF",
+			ExchangeDisposition = "Test",
+			TypeDisposition = "ETF"
+		};
+		DbContext.Quotes.Add(quote);
+		await DbContext.SaveChangesAsync();
+		DbContext.Investments.Add(new InvestmentModel
+		{
+			UserId = user.Id,
+			QuoteId = quote.Id,
+			Date = date,
+			Amount = 10m,
+			PricePerUnit = 100m,
+			Type = InvestmentType.Buy
+		});
+		DbContext.QuotePrices.AddRange(
+			new QuotePrice { QuoteId = quote.Id, Date = date.AddHours(9), Close = 100m },
+			new QuotePrice { QuoteId = quote.Id, Date = date.AddHours(16), Close = 105m });
+		await DbContext.SaveChangesAsync();
+
+		ApiResponse<PositionsResponse> response = await ApiInterface.Positions.GetPositions(date, date);
+
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		Assert.Equal(105m, response.Value!.Snapshots.Single(snapshot => snapshot.QuoteId == quote.Id).MarketPricePerUnit);
 	}
 
 	[Fact]

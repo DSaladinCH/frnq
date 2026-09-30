@@ -1,6 +1,7 @@
 using DSaladin.Frnq.Api.Result;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 using System.Net;
 
 namespace DSaladin.Frnq.Api.GeneralFee;
@@ -41,8 +42,8 @@ public class GeneralFeesController(GeneralFeeManagement generalFeeManagement) : 
 	[HttpGet]
 	public async Task<ActionResult<PaginatedGeneralFeesResponse>> GetGeneralFees(
 		[FromQuery] int? groupId = null,
-		[FromQuery] int skip = 0,
-		[FromQuery] int take = 25,
+		[FromQuery, Range(0, int.MaxValue)] int skip = 0,
+		[FromQuery, Range(1, 100)] int take = 25,
 		CancellationToken cancellationToken = default)
 	{
 		try

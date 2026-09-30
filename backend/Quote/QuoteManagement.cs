@@ -124,23 +124,19 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 			QuotePrice? earliestDb = dbPrices.OrderBy(p => p.Date).FirstOrDefault();
 			QuotePrice? latestDb = dbPrices.OrderByDescending(p => p.Date).FirstOrDefault();
 
-			DateTime? fetchStart = null;
-			DateTime? fetchEnd = null;
+			DateTime? fetchStart = earliestDb == null || earliestDb.Date > from
+				? from
+				: latestDb != null && latestDb.Date < to
+					? latestDb.Date.AddDays(1)
+					: null;
 
-			if (earliestDb == null || earliestDb.Date > from)
-				fetchStart = from;
-			else
-				fetchStart = null;
+			if (fetchStart.HasValue)
+			{
+				ApiResponse<IEnumerable<QuotePrice>> externalPricesResponse = await GetExternalHistoricalPricesAsync(quote, fetchStart.Value, to, cancellationToken);
 
-			if (latestDb == null || latestDb.Date < to)
-				fetchEnd = to;
-			else
-				fetchEnd = null;
-
-			ApiResponse<IEnumerable<QuotePrice>> externalPricesResponse = await GetExternalHistoricalPricesAsync(quote, fetchStart, fetchEnd, cancellationToken);
-
-			if (externalPricesResponse.Success)
-				dbPrices.AddRange(externalPricesResponse.Value);
+				if (externalPricesResponse.Success)
+					dbPrices.AddRange(externalPricesResponse.Value);
+			}
 		}
 
 		List<QuotePrice> allCombined = [.. dbPrices
@@ -152,35 +148,26 @@ public class QuoteManagement(AuthManagement authManagement, DatabaseContext data
 		return ApiResponse.Create(allCombined, System.Net.HttpStatusCode.OK);
 	}
 
-	private async Task<ApiResponse<IEnumerable<QuotePrice>>> GetExternalHistoricalPricesAsync(QuoteModel quote, DateTime? fetchStart, DateTime? fetchEnd, CancellationToken cancellationToken)
+	private async Task<ApiResponse<IEnumerable<QuotePrice>>> GetExternalHistoricalPricesAsync(QuoteModel quote, DateTime fetchStart, DateTime fetchEnd, CancellationToken cancellationToken)
 	{
-		// If we need to fetch any range, combine into one request
-		if ((fetchStart.HasValue && fetchEnd.HasValue) || (fetchStart.HasValue && !fetchEnd.HasValue) || (!fetchStart.HasValue && fetchEnd.HasValue))
-		{
-			DateTime start = fetchStart ?? quote.LastUpdatedPrices;
-			DateTime end = fetchEnd ?? DateTime.UtcNow;
+		if (fetchStart > fetchEnd)
+			return ApiResponse.Create<IEnumerable<QuotePrice>>([], System.Net.HttpStatusCode.OK);
 
-			if (start > end)
-				return ApiResponse.Create<IEnumerable<QuotePrice>>([], System.Net.HttpStatusCode.OK);
+		IFinanceProvider? financeProvider = registry.GetProvider(quote.ProviderId);
 
-			IFinanceProvider? financeProvider = registry.GetProvider(quote.ProviderId);
+		if (financeProvider is null)
+			return ApiResponse.Create<IEnumerable<QuotePrice>>(ResponseCodes.Quote.ProviderNotFound, System.Net.HttpStatusCode.BadRequest);
 
-			if (financeProvider is null)
-				return ApiResponse.Create<IEnumerable<QuotePrice>>(ResponseCodes.Quote.ProviderNotFound, System.Net.HttpStatusCode.BadRequest);
+		IEnumerable<QuotePrice> fetched = await financeProvider.GetHistoricalPricesAsync(quote.Symbol, fetchStart, fetchEnd, cancellationToken);
 
-			IEnumerable<QuotePrice> fetched = await financeProvider.GetHistoricalPricesAsync(quote.Symbol, start, end, cancellationToken);
+		if (!fetched.Any())
+			return ApiResponse.Create<IEnumerable<QuotePrice>>([], System.Net.HttpStatusCode.OK);
 
-			if (!fetched.Any())
-				return ApiResponse.Create<IEnumerable<QuotePrice>>([], System.Net.HttpStatusCode.OK);
+		foreach (QuotePrice p in fetched)
+			p.QuoteId = quote.Id;
 
-			foreach (QuotePrice p in fetched)
-				p.QuoteId = quote.Id;
-
-			await databaseProvider.AddOrUpdateQuotePricesAsync(fetched.ToList(), cancellationToken);
-			return ApiResponse.Create(fetched, System.Net.HttpStatusCode.OK);
-		}
-
-		return ApiResponse.Create<IEnumerable<QuotePrice>>([], System.Net.HttpStatusCode.OK);
+		await databaseProvider.AddOrUpdateQuotePricesAsync(fetched.ToList(), cancellationToken);
+		return ApiResponse.Create(fetched, System.Net.HttpStatusCode.OK);
 	}
 
 	public async Task<ApiResponse> UpdateCustomNameAsync(int quoteId, string customName, CancellationToken cancellationToken)

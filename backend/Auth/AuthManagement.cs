@@ -124,7 +124,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 		RefreshTokenSession refreshTokenSession = new RefreshTokenSession
 		{
 			UserId = user.Id,
-			Token = refreshToken,
+			Token = HashRefreshToken(refreshToken),
 			ExpiryTime = DateTime.UtcNow.AddDays(7), // 7 days expiry
 			DeviceInfo = httpContextAccessor.HttpContext?.Request.Headers.UserAgent.ToString(),
 			IpAddress = httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString()
@@ -231,7 +231,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 		RefreshTokenSession? tokenSession = await databaseContext.RefreshTokenSessions
 			.Include(rts => rts.User)
 			.AsNoTracking()
-			.FirstOrDefaultAsync(rts => rts.Token == refreshToken && rts.IsActive && rts.ExpiryTime > DateTime.UtcNow, cancellationToken);
+			.FirstOrDefaultAsync(rts => rts.Token == HashRefreshToken(refreshToken) && rts.IsActive && rts.ExpiryTime > DateTime.UtcNow, cancellationToken);
 
 		if (tokenSession == null)
 			return ApiResponse.Create(ResponseCodes.Login.UserInvalid, System.Net.HttpStatusCode.Unauthorized);
@@ -256,7 +256,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 		if (!string.IsNullOrEmpty(refreshToken))
 		{
 			RefreshTokenSession? tokenSession = await databaseContext.RefreshTokenSessions
-				.FirstOrDefaultAsync(rts => rts.Token == refreshToken && rts.IsActive, cancellationToken);
+				.FirstOrDefaultAsync(rts => rts.Token == HashRefreshToken(refreshToken) && rts.IsActive, cancellationToken);
 
 			if (tokenSession != null)
 			{
@@ -270,4 +270,7 @@ public class AuthManagement(DatabaseContext databaseContext, IConfiguration conf
 
 		return ApiResponse.Create("SUCCESS", "Logged out successfully", System.Net.HttpStatusCode.OK);
 	}
+
+	private static string HashRefreshToken(string token)
+		=> Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 }

@@ -105,6 +105,9 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 			ExcludeFromForecast = investmentRequest.ExcludeFromForecast
 		};
 
+		if (!await CanApplyInvestmentsAsync([investment], null, cancellationToken))
+			return ApiResponse.Create("INSUFFICIENT_HOLDINGS", "A sell cannot exceed the shares held on its date.", System.Net.HttpStatusCode.BadRequest);
+
 		await databaseContext.Investments.AddAsync(investment, cancellationToken);
 		await databaseContext.SaveChangesAsync(cancellationToken);
 
@@ -143,6 +146,9 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 			investments.Add(investment);
 		}
 
+		if (!await CanApplyInvestmentsAsync(investments, null, cancellationToken))
+			return ApiResponse.Create<List<InvestmentViewDto>>("INSUFFICIENT_HOLDINGS", "A sell cannot exceed the shares held on its date.", System.Net.HttpStatusCode.BadRequest);
+
 		await databaseContext.Investments.AddRangeAsync(investments, cancellationToken);
 		await databaseContext.SaveChangesAsync(cancellationToken);
 
@@ -170,13 +176,29 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 		if (quote is null)
 			return ApiResponses.NotFound404;
 
-		investment.QuoteId = quote.Id;
-		investment.Date = DateTime.SpecifyKind(investmentRequest.Date, DateTimeKind.Utc);
-		investment.Type = investmentRequest.Type;
-		investment.Amount = investmentRequest.Amount;
-		investment.PricePerUnit = investmentRequest.PricePerUnit;
-		investment.TotalFees = investmentRequest.TotalFees;
-		investment.ExcludeFromForecast = investmentRequest.ExcludeFromForecast;
+		InvestmentModel candidate = new()
+		{
+			Id = investment.Id,
+			UserId = userId,
+			QuoteId = quote.Id,
+			Date = DateTime.SpecifyKind(investmentRequest.Date, DateTimeKind.Utc),
+			Type = investmentRequest.Type,
+			Amount = investmentRequest.Amount,
+			PricePerUnit = investmentRequest.PricePerUnit,
+			TotalFees = investmentRequest.TotalFees,
+			ExcludeFromForecast = investmentRequest.ExcludeFromForecast
+		};
+
+		if (!await CanApplyInvestmentsAsync([candidate], investment.Id, cancellationToken))
+			return ApiResponse.Create<InvestmentViewDto>("INSUFFICIENT_HOLDINGS", "A sell cannot exceed the shares held on its date.", System.Net.HttpStatusCode.BadRequest);
+
+		investment.QuoteId = candidate.QuoteId;
+		investment.Date = candidate.Date;
+		investment.Type = candidate.Type;
+		investment.Amount = candidate.Amount;
+		investment.PricePerUnit = candidate.PricePerUnit;
+		investment.TotalFees = candidate.TotalFees;
+		investment.ExcludeFromForecast = candidate.ExcludeFromForecast;
 
 		databaseContext.Investments.Update(investment);
 		await databaseContext.SaveChangesAsync(cancellationToken);
@@ -195,5 +217,43 @@ public class InvestmentManagement(QuoteManagement quoteManagement, DatabaseConte
 		await databaseContext.SaveChangesAsync(cancellationToken);
 
 		return ApiResponses.NoContent204;
+	}
+
+	private async Task<bool> CanApplyInvestmentsAsync(IReadOnlyCollection<InvestmentModel> candidates, int? replacementId, CancellationToken cancellationToken)
+	{
+		HashSet<int> quoteIds = candidates.Select(i => i.QuoteId).ToHashSet();
+		if (replacementId.HasValue)
+		{
+			int? originalQuoteId = await databaseContext.Investments
+				.Where(i => i.Id == replacementId.Value)
+				.Select(i => (int?)i.QuoteId)
+				.FirstOrDefaultAsync(cancellationToken);
+			if (originalQuoteId.HasValue)
+				quoteIds.Add(originalQuoteId.Value);
+		}
+
+		List<InvestmentModel> investments = await databaseContext.Investments
+			.AsNoTracking()
+			.Where(i => i.UserId == userId && quoteIds.Contains(i.QuoteId) && (!replacementId.HasValue || i.Id != replacementId.Value))
+			.ToListAsync(cancellationToken);
+		investments.AddRange(candidates);
+
+		foreach (IGrouping<int, InvestmentModel> quoteInvestments in investments.GroupBy(i => i.QuoteId))
+		{
+			decimal holdings = 0;
+			foreach (InvestmentModel investment in quoteInvestments.OrderBy(i => i.Date).ThenBy(i => i.Id))
+			{
+				if (investment.Type == InvestmentType.Buy)
+					holdings += investment.Amount;
+				else if (investment.Type == InvestmentType.Sell)
+				{
+					if (investment.Amount > holdings)
+						return false;
+					holdings -= investment.Amount;
+				}
+			}
+		}
+
+		return true;
 	}
 }

@@ -67,6 +67,19 @@ public class Investment : TestBase
 		Assert.Null(response.Value);
 	}
 
+	[Theory]
+	[InlineData(-1, 25)]
+	[InlineData(0, 0)]
+	[InlineData(0, 101)]
+	public async Task GetInvestmentsRejectsInvalidPagination(int skip, int take)
+	{
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+
+		ApiResponse<PaginatedInvestmentsResponse> response = await ApiInterface.Investments.GetInvestments(skip, take);
+
+		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+	}
+
 	[Fact]
 	public async Task GetInvestmentById()
 	{
@@ -108,9 +121,6 @@ public class Investment : TestBase
 	[InlineData("2023-01-15", 10, 150.0, 2.0, InvestmentType.Buy)]
 	[InlineData("2023-01-15", 10, 150.0, 0, InvestmentType.Buy)] // Buy with zero fees
 	[InlineData("2023-01-15", 10, 0.0, 2.0, InvestmentType.Buy)] // Buy with zero price (e.g., bonus shares)
-	[InlineData("2022-12-01", 5, 200.5, 1.5, InvestmentType.Sell)]
-	[InlineData("2022-12-01", 5, 200.5, 0, InvestmentType.Sell)] // Sell with zero fees
-	[InlineData("2022-12-01", 5, 0.0, 1.5, InvestmentType.Sell)] // Sell with zero price (e.g., worthless stock)
 	[InlineData("2023-03-10", 3.25, 0.0, 0.0, InvestmentType.Dividend)]
 	public async Task CreateInvestmentValid(DateTime date, decimal amount, decimal pricePerUnit, decimal totalFees, InvestmentType type)
 	{
@@ -251,6 +261,86 @@ public class Investment : TestBase
 		Assert.NotEqual(investment.QuoteSymbol, createdInvestment.Quote.Symbol);
 		Assert.Equal(investmentCountBefore, DbContext.Investments.Where(i => i.UserId == DataSeeder.TestUserId).Count());
 	}
+
+	[Fact]
+	public async Task CreateInvestmentSellExceedingHoldingsIsRejected()
+	{
+		QuoteModel quote = new()
+		{
+			ProviderId = "yahoo-finance",
+			Symbol = "OVERSOLD",
+			Name = "Oversold test",
+			Currency = "CHF",
+			ExchangeDisposition = "Test",
+			TypeDisposition = "EQUITY"
+		};
+		DbContext.Quotes.Add(quote);
+		await DbContext.SaveChangesAsync();
+
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+		await ApiInterface.Investments.CreateInvestment(new InvestmentDto
+		{
+			QuoteId = quote.Id,
+			Date = DateTime.UtcNow.Date.AddDays(-1),
+			Type = InvestmentType.Buy,
+			Amount = 10m,
+			PricePerUnit = 100m,
+			TotalFees = 0m
+		});
+
+		ApiResponse response = await ApiInterface.Investments.CreateInvestment(new InvestmentDto
+		{
+			QuoteId = quote.Id,
+			Date = DateTime.UtcNow.Date,
+			Type = InvestmentType.Sell,
+			Amount = 11m,
+			PricePerUnit = 100m,
+			TotalFees = 0m
+		});
+
+		Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+		Assert.Equal("INSUFFICIENT_HOLDINGS", response.Code);
+		Assert.Equal(1, await DbContext.Investments.CountAsync(i => i.UserId == DataSeeder.TestUserId && i.QuoteId == quote.Id));
+	}
+
+	[Fact]
+	public async Task CreateInvestmentSellWithinHoldingsIsCreated()
+	{
+		QuoteModel quote = new()
+		{
+			ProviderId = "yahoo-finance",
+			Symbol = "VALID-SELL",
+			Name = "Valid sell test",
+			Currency = "CHF",
+			ExchangeDisposition = "Test",
+			TypeDisposition = "EQUITY"
+		};
+		DbContext.Quotes.Add(quote);
+		await DbContext.SaveChangesAsync();
+
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+		await ApiInterface.Investments.CreateInvestment(new InvestmentDto
+		{
+			QuoteId = quote.Id,
+			Date = DateTime.UtcNow.Date.AddDays(-1),
+			Type = InvestmentType.Buy,
+			Amount = 10m,
+			PricePerUnit = 100m,
+			TotalFees = 0m
+		});
+
+		ApiResponse response = await ApiInterface.Investments.CreateInvestment(new InvestmentDto
+		{
+			QuoteId = quote.Id,
+			Date = DateTime.UtcNow.Date,
+			Type = InvestmentType.Sell,
+			Amount = 10m,
+			PricePerUnit = 100m,
+			TotalFees = 0m
+		});
+
+		Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+	}
 	
 	[Fact]
 	public async Task CreateInvestmentUnauthenticated()
@@ -375,9 +465,6 @@ public class Investment : TestBase
 	[InlineData("2022-12-01", 15, 200.0, 2.0, InvestmentType.Buy)]
 	[InlineData("2022-12-01", 15, 200.0, 0, InvestmentType.Buy)] // Buy with zero fees
 	[InlineData("2022-12-01", 15, 0.0, 2.0, InvestmentType.Buy)] // Buy with zero price (e.g., bonus shares)
-	[InlineData("2023-01-15", 20, 175.0, 3.5, InvestmentType.Sell)]
-	[InlineData("2023-01-15", 20, 175.0, 0, InvestmentType.Sell)] // Sell with zero fees
-	[InlineData("2023-01-15", 20, 0.0, 3.5, InvestmentType.Sell)] // Sell with zero price (e.g., worthless stock)
 	[InlineData("2023-03-10", 5.5, 0, 0, InvestmentType.Dividend)]
 	public async Task UpdateInvestmentValid(DateTime date, decimal amount, decimal pricePerUnit, decimal totalFees, InvestmentType type)
 	{

@@ -45,6 +45,7 @@ builder.Services.AddScoped<GroupManagement>();
 builder.Services.AddScoped<GeneralFeeManagement>();
 builder.Services.AddScoped<AuthManagement>();
 builder.Services.AddScoped<OidcManagement>();
+builder.Services.AddHttpClient("oidc", client => client.Timeout = TimeSpan.FromSeconds(15));
 
 // Add HTTP context accessor for AuthManagement
 builder.Services.AddHttpContextAccessor();

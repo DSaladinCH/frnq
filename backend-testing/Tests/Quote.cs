@@ -128,6 +128,27 @@ public class Quote : TestBase
 	}
 
 	[Fact]
+	public async Task GetHistoricalPricesDownloadsRequestedRangeWhenNoLocalHistoryExists()
+	{
+		using AuthenticationScope<UserModel> authScope = await Authenticate();
+		DateTime from = DateTime.UtcNow.Date.AddDays(-10);
+		DateTime to = DateTime.UtcNow.Date.AddDays(-5);
+
+		FinanceProviderMock
+			.Setup(provider => provider.GetHistoricalPricesAsync("AAPL", from, to, It.IsAny<CancellationToken>()))
+			.ReturnsAsync(new List<QuotePrice>
+			{
+				new() { Date = from, Close = 100m, AdjustedClose = 100m }
+			});
+
+		ApiResponse<List<QuotePrice>> response = await ApiInterface.Quotes.GetHistoricalPrices("AAPL", from, to);
+
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		Assert.NotEmpty(response.Value!);
+		FinanceProviderMock.Verify(provider => provider.GetHistoricalPricesAsync("AAPL", from, to, It.IsAny<CancellationToken>()), Times.Once);
+	}
+
+	[Fact]
 	public async Task GetHistoricalPricesInvalidDateRange()
 	{
 		using AuthenticationScope<UserModel> authScope = await Authenticate();

@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations;
 using DSaladin.Frnq.Api.Investment;
 using DSaladin.Frnq.Api.Quote;
 using DSaladin.Frnq.Api.Result;
@@ -16,8 +17,8 @@ public class InvestmentsController(InvestmentManagement investmentManagement) : 
 	[HttpGet]
 	[ProducesResponseType(typeof(PaginatedInvestmentsResponse), StatusCodes.Status200OK)]
 	public async Task<ApiResponse> GetInvestments(
-		[FromQuery] int skip = 0,
-		[FromQuery] int take = 25,
+		[FromQuery, Range(0, int.MaxValue)] int skip = 0,
+		[FromQuery, Range(1, 100)] int take = 25,
 		[FromQuery] DateTime? fromDate = null,
 		[FromQuery] DateTime? toDate = null,
 		[FromQuery] int? quoteId = null,

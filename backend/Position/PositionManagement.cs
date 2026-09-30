@@ -13,11 +13,9 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 
 	public async Task<ApiResponse<PositionsResponse>> GetPositionsAsync(DateTime? from, DateTime? to, CancellationToken cancellationToken)
 	{
-		from ??= DateTime.MinValue;
 		to ??= DateTime.UtcNow;
 
-		from = DateTime.SpecifyKind((DateTime)from, DateTimeKind.Utc);
-		to = DateTime.SpecifyKind((DateTime)to, DateTimeKind.Utc);
+		to = DateTime.SpecifyKind(to.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
 
 		// Get all investments up to the requested 'to' date
 		List<InvestmentModel> investments = await databaseContext.Investments
@@ -35,6 +33,12 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 		if (investments.Count == 0)
 			return ApiResponse.Create(new PositionsResponse { Snapshots = [], Quotes = [] }, System.Net.HttpStatusCode.OK);
 
+		DateTime calculationStart = investments.Min(i => i.Date.Date);
+		from ??= calculationStart;
+		from = DateTime.SpecifyKind(from.Value, DateTimeKind.Utc);
+		if (from > to)
+			return ApiResponse.Create("INVALID_DATE_RANGE", "The from date must not be after the to date.", System.Net.HttpStatusCode.BadRequest);
+
 		HashSet<int> quoteIds = investments.Select(i => i.QuoteId).ToHashSet();
 
 		// Update historical prices with any missing data
@@ -44,28 +48,22 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 			using IServiceScope scope = serviceProvider.CreateScope();
 			QuoteManagement scopedQuoteManagement = scope.ServiceProvider.GetRequiredService<QuoteManagement>();
 
-			await scopedQuoteManagement.GetHistoricalPricesAsync(quoteId, (DateTime)from, (DateTime)to, cancellationToken);
+			await scopedQuoteManagement.GetHistoricalPricesAsync(quoteId, calculationStart, (DateTime)to, ct);
 		});
 
 		// Get all prices up to the requested 'to' date
 		List<QuotePrice> prices = await databaseContext.QuotePrices
 			.AsNoTracking()
 			.Where(qp => quoteIds.Contains(qp.QuoteId))
-			.Where(qp => qp.Date <= to)
+			.Where(qp => qp.Date >= calculationStart && qp.Date <= to)
 			.ToListAsync(cancellationToken);
 
 		Dictionary<int, Dictionary<DateTime, QuotePrice>> priceLookup = prices
 			.GroupBy(qp => qp.QuoteId)
-			.ToDictionary(g => g.Key, g => g.ToDictionary(p => p.Date.Date, p => p));
-
-		// Find the earliest investment date
-		DateTime? firstInvestmentDate = investments.Count > 0 ? investments.Min(i => i.Date.Date) : (DateTime?)null;
-
-		if (firstInvestmentDate == null)
-			return ApiResponse.Create(new PositionsResponse { Snapshots = [], Quotes = [] }, System.Net.HttpStatusCode.OK);
-
-		List<DateTime> days = [.. Enumerable.Range(0, (((DateTime)to).Date
-			- firstInvestmentDate.Value).Days + 1).Select(offset => firstInvestmentDate.Value.AddDays(offset))];
+			.ToDictionary(
+				g => g.Key,
+				g => g.GroupBy(p => p.Date.Date)
+					.ToDictionary(day => day.Key, day => day.OrderByDescending(p => p.Date).First()));
 
 		List<PositionSnapshot> allSnapshots = [];
 		IEnumerable<IGrouping<(Guid UserId, int QuoteId), InvestmentModel>> investmentGroups =
@@ -84,10 +82,8 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 			QuoteModel quote = invs.First().Quote;
 			QuotePrice? lastKnownPrice = null;
 
-			for (int d = 0; d < days.Count; d++)
+			for (DateTime day = calculationStart; day <= ((DateTime)to).Date; day = day.AddDays(1))
 			{
-				DateTime day = days[d];
-
 				// Apply all investments on this day
 				while (invIndex < invs.Count && invs[invIndex].Date.Date == day)
 				{
@@ -175,25 +171,24 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 				decimal totalValue = marketValue + realizedCash;
 				decimal profit = totalValue - investedCash;
 
-				allSnapshots.Add(new PositionSnapshot
+				if (day >= from.Value.Date)
 				{
-					UserId = group.Key.UserId.ToString(),
-					QuoteId = group.Key.QuoteId,
-					Date = day,
-					Currency = quote.Currency,
-					Amount = currentShares,
-					Invested = investedCash,         // total money you still have tied up
-					TotalFees = totalFees,
-					MarketPricePerUnit = marketPrice,
-					RealizedGain = realizedGain,     // actual profit from sells and dividends
-					TotalInvestedCash = totalInvestedCash  // all cash ever invested
-				});
+					allSnapshots.Add(new PositionSnapshot
+					{
+						UserId = group.Key.UserId.ToString(),
+						QuoteId = group.Key.QuoteId,
+						Date = day,
+						Currency = quote.Currency,
+						Amount = currentShares,
+						Invested = investedCash,
+						TotalFees = totalFees,
+						MarketPricePerUnit = marketPrice,
+						RealizedGain = realizedGain,
+						TotalInvestedCash = totalInvestedCash
+					});
+				}
 			}
 		}
-
-		// Only return snapshots within the requested range
-		List<PositionSnapshot> filteredSnapshots =
-			allSnapshots.Where(s => s.Date >= ((DateTime)from).Date && s.Date <= ((DateTime)to).Date).ToList();
 
 		// Get unique quotes used in the investments
 		List<QuoteModel> uniqueQuotes = [.. investments
@@ -203,7 +198,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 			.Select(g => g.First())];
 
 		// Load general fees for the requested date range
-		DateTime fromDate = (DateTime)from;
+		DateTime fromDate = from.Value;
 		DateTime toDate = (DateTime)to;
 		List<GeneralFee.GeneralFeeModel> generalFees = await databaseContext.GeneralFees
 			.AsNoTracking()
@@ -241,7 +236,7 @@ public class PositionManagement(DatabaseContext databaseContext, IServiceProvide
 
 		return ApiResponse.Create(new PositionsResponse
 		{
-			Snapshots = filteredSnapshots,
+			Snapshots = allSnapshots,
 			Quotes = [.. uniqueQuotes.Select(QuoteViewDto.FromModel)],
 			GroupFeesSummaries = groupFeesSummaries,
 			OverallFees = overallFees

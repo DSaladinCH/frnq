@@ -15,15 +15,18 @@ public class OidcInitializationService : IHostedService, IDisposable
     private readonly IServiceProvider _serviceProvider;
     private readonly IConfiguration _configuration;
     private readonly ILogger<OidcInitializationService> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
     private Timer? _cleanupTimer;
 
     public OidcInitializationService(
         IServiceProvider serviceProvider,
         IConfiguration configuration,
+        IHttpClientFactory httpClientFactory,
         ILogger<OidcInitializationService> logger)
     {
         _serviceProvider = serviceProvider;
         _configuration = configuration;
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
 
@@ -173,8 +176,7 @@ public class OidcInitializationService : IHostedService, IDisposable
 			Uri uri = new Uri(issuerUrl);
 			string baseUrl = $"{uri.Scheme}://{uri.Host}";
             
-            using HttpClient httpClient = new HttpClient();
-            httpClient.Timeout = TimeSpan.FromSeconds(10);
+            HttpClient httpClient = _httpClientFactory.CreateClient("oidc");
             httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
             
             byte[]? imageBytes = null;

@@ -1,9 +1,11 @@
 using System.Security.Cryptography;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Text.Json;
 using DSaladin.Frnq.Api.Result;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
 
 namespace DSaladin.Frnq.Api.Auth;
 
@@ -15,9 +17,10 @@ public class OidcManagement(
     IConfiguration configuration,
     IHttpContextAccessor httpContextAccessor,
     AuthManagement authManagement,
+    IHttpClientFactory httpClientFactory,
     ILogger<OidcManagement> logger)
 {
-    private readonly HttpClient _httpClient = new();
+    private HttpClient HttpClient => httpClientFactory.CreateClient("oidc");
 
     /// <summary>
     /// Get all enabled OIDC providers for display on login page
@@ -120,7 +123,7 @@ public class OidcManagement(
             }
 
 			// Get user info from ID token or UserInfo endpoint
-			OidcUserInfo? userInfo = await GetUserInfoAsync(provider, tokenResponse, cancellationToken);
+            OidcUserInfo? userInfo = await GetUserInfoAsync(provider, tokenResponse, oidcState.Nonce, cancellationToken);
             if (userInfo == null)
             {
                 logger.LogError("Failed to get user info from provider {Provider}", providerId);
@@ -214,7 +217,7 @@ public class OidcManagement(
 
         try
         {
-			HttpResponseMessage response = await _httpClient.PostAsync(
+            HttpResponseMessage response = await HttpClient.PostAsync(
                 provider.TokenEndpoint,
                 new FormUrlEncodedContent(tokenRequest), cancellationToken);
 
@@ -235,12 +238,12 @@ public class OidcManagement(
         }
     }
 
-    private async Task<OidcUserInfo?> GetUserInfoAsync(OidcProvider provider, TokenResponse tokenResponse, CancellationToken cancellationToken)
+    private async Task<OidcUserInfo?> GetUserInfoAsync(OidcProvider provider, TokenResponse tokenResponse, string? expectedNonce, CancellationToken cancellationToken)
     {
         // First try to extract from ID token if present
         if (!string.IsNullOrEmpty(tokenResponse.IdToken))
         {
-			OidcUserInfo? userInfo = ExtractUserInfoFromIdToken(tokenResponse.IdToken, provider);
+            OidcUserInfo? userInfo = await ExtractUserInfoFromIdTokenAsync(tokenResponse.IdToken, provider, expectedNonce, cancellationToken);
             if (userInfo != null)
                 return userInfo;
         }
@@ -253,7 +256,7 @@ public class OidcManagement(
 				using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, provider.UserInfoEndpoint);
                 request.Headers.Add("Authorization", $"Bearer {tokenResponse.AccessToken}");
 
-				using HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
+                using HttpResponseMessage response = await HttpClient.SendAsync(request, cancellationToken);
                 if (!response.IsSuccessStatusCode)
                 {
                     logger.LogWarning("UserInfo endpoint returned {StatusCode}", response.StatusCode);
@@ -275,32 +278,92 @@ public class OidcManagement(
         return null;
     }
 
-    private OidcUserInfo? ExtractUserInfoFromIdToken(string idToken, OidcProvider provider)
+    private async Task<OidcUserInfo?> ExtractUserInfoFromIdTokenAsync(string idToken, OidcProvider provider, string? expectedNonce, CancellationToken cancellationToken)
     {
         try
         {
-			// Simple JWT parsing - in production, you should validate signature
-			string[] parts = idToken.Split('.');
-            if (parts.Length != 3)
-                return null;
-
-			string payload = parts[1];
-            // Add padding if needed
-            switch (payload.Length % 4)
+            string? issuer = configuration[$"OidcProviders:{provider.ProviderId}:IssuerUrl"];
+            if (string.IsNullOrWhiteSpace(issuer))
             {
-                case 2: payload += "=="; break;
-                case 3: payload += "="; break;
+                logger.LogError("OIDC provider {Provider} does not define an issuer URL", provider.ProviderId);
+                return null;
             }
 
-			byte[] jsonBytes = Convert.FromBase64String(payload);
-			string json = Encoding.UTF8.GetString(jsonBytes);
-			Dictionary<string, JsonElement>? claims = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            string normalizedIssuer = issuer.TrimEnd('/');
+            using HttpResponseMessage discoveryResponse = await HttpClient.GetAsync($"{normalizedIssuer}/.well-known/openid-configuration", cancellationToken);
+            discoveryResponse.EnsureSuccessStatusCode();
+            using JsonDocument discovery = JsonDocument.Parse(await discoveryResponse.Content.ReadAsStreamAsync(cancellationToken));
 
-            return MapClaimsToUserInfo(claims, provider);
+            if (!discovery.RootElement.TryGetProperty("jwks_uri", out JsonElement jwksUriElement) ||
+                string.IsNullOrWhiteSpace(jwksUriElement.GetString()))
+                return null;
+
+            using HttpResponseMessage jwksResponse = await HttpClient.GetAsync(jwksUriElement.GetString(), cancellationToken);
+            jwksResponse.EnsureSuccessStatusCode();
+            JsonWebKeySet keySet = new JsonWebKeySet(await jwksResponse.Content.ReadAsStringAsync(cancellationToken));
+
+            TokenValidationParameters validationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKeys = keySet.GetSigningKeys(),
+                RequireSignedTokens = true,
+                ValidateIssuer = true,
+                ValidIssuer = normalizedIssuer,
+                ValidateAudience = true,
+                ValidAudience = provider.ClientId,
+                ValidateLifetime = true,
+                RequireExpirationTime = true,
+                ClockSkew = TimeSpan.FromMinutes(1)
+            };
+
+            ClaimsPrincipal principal = new JwtSecurityTokenHandler().ValidateToken(idToken, validationParameters, out _);
+            if (!string.Equals(principal.FindFirst("nonce")?.Value, expectedNonce, StringComparison.Ordinal))
+            {
+                logger.LogWarning("OIDC ID token nonce validation failed for provider {Provider}", provider.ProviderId);
+                return null;
+            }
+
+            return MapClaimsToUserInfo(principal.Claims, provider);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error extracting user info from ID token");
+			logger.LogWarning(ex, "OIDC ID token validation failed for provider {Provider}", provider.ProviderId);
+            return null;
+        }
+    }
+
+    private OidcUserInfo? MapClaimsToUserInfo(IEnumerable<Claim> claims, OidcProvider provider)
+    {
+        Dictionary<string, string> claimValues = claims
+            .GroupBy(claim => claim.Type)
+            .ToDictionary(group => group.Key, group => group.First().Value);
+
+        try
+        {
+            Dictionary<string, string> mappings = JsonSerializer.Deserialize<Dictionary<string, string>>(provider.ClaimMappings)
+                ?? new Dictionary<string, string>();
+
+            string GetClaim(string name)
+            {
+                string claimName = mappings.GetValueOrDefault(name, name);
+                return claimValues.GetValueOrDefault(claimName, string.Empty);
+            }
+
+            OidcUserInfo userInfo = new()
+            {
+                Sub = GetClaim("sub"),
+                Email = GetClaim("email"),
+                Name = GetClaim("name")
+            };
+
+            if (string.IsNullOrEmpty(userInfo.Name))
+                userInfo.Name = GetClaim("given_name");
+
+            return string.IsNullOrEmpty(userInfo.Sub) ? null : userInfo;
+        }
+        catch (JsonException ex)
+        {
+            logger.LogError(ex, "Invalid claim mapping for OIDC provider {Provider}", provider.ProviderId);
             return null;
         }
     }
